@@ -7,17 +7,23 @@ Rails.application.routes.draw do
 
   get "welcome", to: "pages#welcome"
 
+  # Standalone posts (all posts, no user scoping)
   managed_resources :posts
 
-  scope "/readonly" do
+  # Posts nested under users (scoped to that user)
+  scope "users/:user_id" do
+    managed_resources :posts
+  end
+
+  scope "users/:user_id/readonly" do
     managed_resources :posts, only: [:index]
   end
 
-  scope "/deletable" do
+  scope "users/:user_id/deletable" do
     managed_resources :posts, only: %i[index destroy]
   end
 
-  scope "/admin" do
+  scope "users/:user_id/admin" do
     managed_resources :posts, only: [:index]
   end
 end

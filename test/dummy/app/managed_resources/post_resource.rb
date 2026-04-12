@@ -4,6 +4,7 @@ class PostResource < Layered::ManagedResource::Base
   columns [
     { attribute: :title, primary: true },
     { attribute: :body },
+    { attribute: :user_name, label: "Owner" },
     { attribute: :created_at, label: "Created" }
   ]
 
@@ -12,8 +13,19 @@ class PostResource < Layered::ManagedResource::Base
   default_sort attribute: :created_at, direction: :desc
 
   fields [
-    { attribute: :title, required: true },
-    { attribute: :body, as: :text },
-    { attribute: :user_id, as: :select, label: "Author", collection: -> { User.pluck(:email, :id) } }
+    { attribute: :title },
+    { attribute: :body, as: :text }
   ]
+
+  def self.scope(controller)
+    if controller.params[:user_id].present?
+      User.find(controller.params[:user_id]).posts
+    else
+      Post.all
+    end
+  end
+
+  def self.build_record(controller)
+    scope(controller).build
+  end
 end

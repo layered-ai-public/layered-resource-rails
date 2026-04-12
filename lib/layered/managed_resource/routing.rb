@@ -6,8 +6,13 @@ module Layered
       @registry = Concurrent::Map.new
 
       class << self
-        def register(route_key, resource_class_name, actions: [], routes: nil)
-          @registry[route_key.to_s] = { resource: resource_class_name.to_s, actions: actions, routes: routes }
+        def register(route_key, resource_class_name, actions: [], routes: nil, parent_params: [])
+          @registry[route_key.to_s] = {
+            resource: resource_class_name.to_s,
+            actions: actions,
+            routes: routes,
+            parent_params: parent_params
+          }
         end
 
         def clear!
@@ -25,6 +30,10 @@ module Layered
         def lookup_routes(route_key)
           @registry.fetch(route_key.to_s, {})[:routes]
         end
+
+        def lookup_parent_params(route_key)
+          @registry.fetch(route_key.to_s, {})[:parent_params] || []
+        end
       end
 
       MANAGED_ACTIONS = %i[index new create edit update destroy].freeze
@@ -34,7 +43,10 @@ module Layered
         route_key = resource_name.to_s
         singular_key = resource_name.to_s.singularize
 
-        prefix = @scope[:path].to_s.delete_prefix("/").tr("/", "_").gsub(/[^a-zA-Z0-9_]/, "_").squeeze("_").presence
+        raw_scope_path = @scope[:path].to_s
+        parent_params = raw_scope_path.scan(/:([a-zA-Z_]\w*)/).flatten.map(&:to_sym)
+        static_path = raw_scope_path.gsub(%r{/?:[a-zA-Z_]\w*}, "")
+        prefix = static_path.delete_prefix("/").tr("/", "_").gsub(/[^a-zA-Z0-9_]/, "_").squeeze("_").presence
         scoped_key = [prefix, route_key].compact.join("_")
         scoped_singular = [prefix, singular_key].compact.join("_")
 
@@ -73,7 +85,7 @@ module Layered
                 "Destroy redirects to the collection route; add :index to only:."
         end
 
-        Layered::ManagedResource::Routing.register(scoped_key, resource_class_name, actions: actions, routes: @set)
+        Layered::ManagedResource::Routing.register(scoped_key, resource_class_name, actions: actions, routes: @set, parent_params: parent_params)
 
         route_defaults = (options[:defaults] || {}).merge(
           _managed_route_key: scoped_key

@@ -2,10 +2,14 @@
 
 <% unless devise_controller? %>
   <% content_for :l_ui_navigation_items do %>
+    <% nav_user_id = params[:user_id].presence || User.first&.id %>
     <%= l_ui_navigation_item "Welcome", root_path %>
-    <%= l_ui_navigation_item "Posts", managed_posts_path do %>
-      <%= l_ui_navigation_item "Readonly", managed_readonly_posts_path %>
-      <%= l_ui_navigation_item "Deletable", managed_deletable_posts_path %>
+    <%= l_ui_navigation_item "All Posts", managed_posts_path %>
+    <% if nav_user_id %>
+      <%= l_ui_navigation_item "User Posts", managed_users_posts_path(user_id: nav_user_id) do %>
+        <%= l_ui_navigation_item "Readonly", managed_users_readonly_posts_path(user_id: nav_user_id) %>
+        <%= l_ui_navigation_item "Deletable", managed_users_deletable_posts_path(user_id: nav_user_id) %>
+      <% end %>
     <% end %>
   <% end %>
 <% end %>

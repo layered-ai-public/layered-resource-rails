@@ -83,8 +83,10 @@ module Layered
           proxy = Object.new
           proxy.singleton_class.include(rs.url_helpers)
           ctrl = self
+          parent_param_keys = Layered::ManagedResource::Routing.lookup_parent_params(@managed_route_key)
+          parent_values = request.path_parameters.slice(*parent_param_keys)
           proxy.singleton_class.remove_method(:default_url_options) if proxy.singleton_class.method_defined?(:default_url_options)
-          proxy.define_singleton_method(:default_url_options) { ctrl.send(:default_url_options) }
+          proxy.define_singleton_method(:default_url_options) { ctrl.send(:default_url_options).merge(parent_values) }
           proxy
         end
       end

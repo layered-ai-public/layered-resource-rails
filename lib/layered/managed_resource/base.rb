@@ -96,13 +96,19 @@ module Layered
           m = model
 
           m.define_singleton_method(:ransackable_attributes) do |_auth_object = nil|
-            attrs = resource.columns.map { |c| c[:attribute].to_s }
+            db_columns = column_names
+            attrs = resource.columns.map { |c| c[:attribute].to_s }.select { |a| db_columns.include?(a) }
             attrs |= resource.search_fields.map(&:to_s)
             attrs
           end
 
           m.define_singleton_method(:ransackable_associations) do |_auth_object = nil|
-            []
+            db_columns = column_names
+            virtual_attrs = resource.columns.map { |c| c[:attribute].to_s }.reject { |a| db_columns.include?(a) }
+            assoc_names = reflect_on_all_associations(:belongs_to).map { |a| a.name.to_s }
+            virtual_attrs.filter_map { |attr|
+              assoc_names.find { |assoc| attr.start_with?("#{assoc}_") }
+            }.uniq
           end
 
           @ransack_configured = true

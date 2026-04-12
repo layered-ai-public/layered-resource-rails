@@ -6,10 +6,19 @@
 
 <h2 class="l-ui-utility--mt-xl">Demo</h2>
 <ul class="l-ui-list l-ui-utility--mt-md">
-  <li><%= link_to "Posts (full CRUD)", managed_posts_path %> — index, new, create, edit, update, destroy</li>
-  <li><%= link_to "Readonly", managed_readonly_posts_path %> — index only</li>
-  <li><%= link_to "Deletable", managed_deletable_posts_path %> — index and destroy</li>
+  <li><%= link_to "All posts", managed_posts_path %> — standalone, all posts</li>
 </ul>
+
+<% demo_user = User.first %>
+<% if demo_user %>
+  <ul class="l-ui-list l-ui-utility--mt-md">
+    <li><%= link_to "User posts (full CRUD)", managed_users_posts_path(user_id: demo_user) %> — nested under user, scoped</li>
+    <li><%= link_to "Readonly", managed_users_readonly_posts_path(user_id: demo_user) %> — index only</li>
+    <li><%= link_to "Deletable", managed_users_deletable_posts_path(user_id: demo_user) %> — index and destroy</li>
+  </ul>
+<% else %>
+  <p class="l-ui-utility--mt-md">Sign up to see nested post routes.</p>
+<% end %>
 
 <h2 class="l-ui-utility--mt-xl">Requirements</h2>
 <ul class="l-ui-list l-ui-utility--mt-md">
@@ -45,6 +54,8 @@ managed_resources :posts, only: %i[index destroy]    # list + delete</code></pre
     { attribute: :created_at, label: "Created" }
   ]
 
+  # Add required: true for client-side validation (HTML required attribute).
+  # Server-side validation is handled by the model (e.g. validates :title, presence: true).
   fields [
     { attribute: :title, required: true },
     { attribute: :body, as: :text }
