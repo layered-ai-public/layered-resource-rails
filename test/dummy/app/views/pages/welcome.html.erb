@@ -7,8 +7,8 @@
 <h2 class="l-ui-utility--mt-xl">Demo</h2>
 <ul class="l-ui-list l-ui-utility--mt-md">
   <li><%= link_to "Posts (full CRUD)", managed_posts_path %> — index, new, create, edit, update, destroy</li>
-  <li><%= link_to "Readonly Posts", managed_readonly_posts_path %> — index only</li>
-  <li><%= link_to "Deletable Posts", managed_deletable_posts_path %> — index and destroy</li>
+  <li><%= link_to "Readonly", managed_readonly_posts_path %> — index only</li>
+  <li><%= link_to "Deletable", managed_deletable_posts_path %> — index and destroy</li>
 </ul>
 
 <h2 class="l-ui-utility--mt-xl">Requirements</h2>
@@ -61,49 +61,24 @@ end</code></pre>
 
 <h3 class="l-ui-utility--mt-lg">3. Model configuration</h3>
 <p class="l-ui-utility--mt-md">Override these class methods to customise behaviour:</p>
+<% config_methods = [
+  { method: "l_managed_resource_columns", purpose: "Columns displayed on the index table" },
+  { method: "l_managed_resource_fields", purpose: "Form fields for new/edit (empty = read-only, no CRUD forms)" },
+  { method: "l_managed_resource_search_fields", purpose: "Ransack search attributes" },
+  { method: "l_managed_resource_default_sort", purpose: "Default sort order for the index" },
+  { method: "l_managed_resource_permitted_params", purpose: "Strong params (derived from fields by default)" },
+  { method: "l_managed_resource_scope(controller)", purpose: "Base scope (override for tenant isolation)" },
+  { method: "l_managed_resource_build_record(controller)", purpose: "How to instantiate new records" },
+  { method: "l_managed_resource_after_save_path(controller, record)", purpose: "Redirect target after create/update/destroy" }
+] %>
+
 <div class="l-ui-utility--mt-md">
-  <table class="l-ui-table">
-    <thead>
-      <tr>
-        <th>Method</th>
-        <th>Purpose</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>l_managed_resource_columns</code></td>
-        <td>Columns displayed on the index table</td>
-      </tr>
-      <tr>
-        <td><code>l_managed_resource_fields</code></td>
-        <td>Form fields for new/edit (empty = read-only, no CRUD forms)</td>
-      </tr>
-      <tr>
-        <td><code>l_managed_resource_search_fields</code></td>
-        <td>Ransack search attributes</td>
-      </tr>
-      <tr>
-        <td><code>l_managed_resource_default_sort</code></td>
-        <td>Default sort order for the index</td>
-      </tr>
-      <tr>
-        <td><code>l_managed_resource_permitted_params</code></td>
-        <td>Strong params (derived from fields by default)</td>
-      </tr>
-      <tr>
-        <td><code>l_managed_resource_scope(controller)</code></td>
-        <td>Base scope (override for tenant isolation)</td>
-      </tr>
-      <tr>
-        <td><code>l_managed_resource_build_record(controller)</code></td>
-        <td>How to instantiate new records</td>
-      </tr>
-      <tr>
-        <td><code>l_managed_resource_after_save_path(controller, record)</code></td>
-        <td>Redirect target after create/update/destroy</td>
-      </tr>
-    </tbody>
-  </table>
+  <%= l_ui_table(config_methods,
+        columns: [
+          { attribute: :method, label: "Method", render: ->(r) { tag.code(r[:method]) } },
+          { attribute: :purpose, label: "Purpose" }
+        ],
+        caption: "Model configuration methods") %>
 </div>
 
 <h2 class="l-ui-utility--mt-xl">Authentication</h2>
