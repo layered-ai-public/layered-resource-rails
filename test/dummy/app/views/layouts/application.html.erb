@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dummy</title>
+</head>
+<body>
+  <% flash.each do |name, msg| %>
+    <% next unless %w[notice alert error].include?(name) %>
+    <% next unless msg.is_a?(String) && msg.present? %>
+    <p class="<%= case name
+      when 'notice' then 'l-ui-notice--success'
+      when 'error'  then 'l-ui-notice--error'
+      else               'l-ui-notice--warning'
+    end %>" role="alert"><%= msg %></p>
+  <% end %>
+
+  <%= yield %>
+</body>
+</html>
