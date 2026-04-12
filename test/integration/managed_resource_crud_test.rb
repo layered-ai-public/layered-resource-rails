@@ -4,7 +4,9 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
   setup do
     @user = User.create!(
       email: "author@test.com",
-      name: "Author"
+      name: "Author",
+      password: "password",
+      password_confirmation: "password"
     )
   end
 
@@ -143,12 +145,15 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "destroy without index route does not delete the record" do
-    record = Post.create!(title: "Hello", user: @user)
-    assert_no_difference "Post.count" do
-      delete "/destroy-only/posts/#{record.id}"
+  test "only: [:destroy] without :index raises at route definition" do
+    error = assert_raises(ArgumentError) do
+      Rails.application.routes.draw do
+        l_managed_resources :posts, only: [:destroy]
+      end
     end
-    assert_response :not_found
+    assert_match(/without :index/, error.message)
+  ensure
+    Rails.application.reload_routes!
   end
 
   test "only: [:new] without :index raises at route definition" do

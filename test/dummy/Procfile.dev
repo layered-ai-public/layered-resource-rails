@@ -1,0 +1,2 @@
+web: bin/rails server
+css: while true; do bin/rails tailwindcss:build 2>&1; sleep 5; done

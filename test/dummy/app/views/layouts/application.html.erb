@@ -1,19 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Dummy</title>
-</head>
-<body>
-  <% flash.each do |name, msg| %>
-    <% next unless %w[notice alert error].include?(name) %>
-    <% next unless msg.is_a?(String) && msg.present? %>
-    <p class="<%= case name
-      when 'notice' then 'l-ui-notice--success'
-      when 'error'  then 'l-ui-notice--error'
-      else               'l-ui-notice--warning'
-    end %>" role="alert"><%= msg %></p>
-  <% end %>
+<% content_for :l_ui_body_class, "l-ui-body--always-show-navigation" %>
 
-  <%= yield %>
-</body>
-</html>
+<% unless devise_controller? %>
+  <% content_for :l_ui_navigation_items do %>
+    <%= l_ui_navigation_item "Welcome", root_path %>
+    <%= l_ui_navigation_item "Posts", managed_posts_path %>
+    <%= l_ui_navigation_item "Readonly Posts", managed_readonly_posts_path %>
+    <%= l_ui_navigation_item "Deletable Posts", managed_deletable_posts_path %>
+  <% end %>
+<% end %>
+
+<%= render template: "layouts/layered_ui/application" %>

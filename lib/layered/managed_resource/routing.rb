@@ -10,6 +10,10 @@ module Layered
           @registry[route_key.to_s] = { model: model_class_name.to_s, actions: actions }
         end
 
+        def clear!
+          @registry = Concurrent::Map.new
+        end
+
         def lookup(route_key)
           @registry.fetch(route_key.to_s, {})[:model]
         end
@@ -49,6 +53,12 @@ module Layered
           raise ArgumentError,
                 "l_managed_resources :#{resource_name} includes :edit without :update. " \
                 "The edit form patches the member route; add :update to only:."
+        end
+
+        if actions.include?(:destroy) && !actions.include?(:index)
+          raise ArgumentError,
+                "l_managed_resources :#{resource_name} includes :destroy without :index. " \
+                "Destroy redirects to the collection route; add :index to only:."
         end
 
         Layered::ManagedResource::Routing.register(scoped_key, model_class_name, actions: actions)

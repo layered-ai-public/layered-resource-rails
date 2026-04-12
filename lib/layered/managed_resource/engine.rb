@@ -9,6 +9,12 @@ module Layered
         ActionDispatch::Routing::Mapper.include(Layered::ManagedResource::Routing)
       end
 
+      initializer "layered-managed-resource-rails.clear_registry" do
+        Rails.application.reloader.to_prepare do
+          Layered::ManagedResource::Routing.clear!
+        end
+      end
+
       initializer "layered-managed-resource-rails.pagy" do
         if defined?(Pagy)
           ActiveSupport.on_load(:action_controller) do
