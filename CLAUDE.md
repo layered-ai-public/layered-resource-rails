@@ -52,6 +52,10 @@ The gem is a Rails Engine isolated under `Layered::ManagedResource`. It works th
 
 Tests use a dummy Rails app at `test/dummy/` with SQLite. The dummy app has `Post` and `User` models and multiple route scopes (full CRUD, readonly, deletable, destroy-only) to exercise the `only:` option.
 
+## Design Guidelines
+
+See `GUIDELINES.md` for the design philosophy: progressive customisation (fully managed → partial override → full ejection), controller extension model, and what belongs in the DSL vs. custom code.
+
 ## Dependencies
 
 - `layered-ui-rails ~> 0.3` — UI component library (local path override in Gemfile for development)
