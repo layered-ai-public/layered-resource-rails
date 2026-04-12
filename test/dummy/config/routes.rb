@@ -16,4 +16,8 @@ Rails.application.routes.draw do
   scope "/deletable" do
     l_managed_resources :posts, only: %i[index destroy]
   end
+
+  scope "/admin" do
+    l_managed_resources :posts, only: [:index]
+  end
 end

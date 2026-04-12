@@ -32,8 +32,10 @@ module Layered
       def l_managed_resources(resource_name, model: nil, only: MANAGED_ACTIONS, **options)
         model_class_name = model || begin
           base = resource_name.to_s.classify
-          mod = @scope[:module]
-          mod ? "#{mod.to_s.camelize}::#{base}" : base
+          engine_module = if @set != Rails.application.routes
+                           @scope[:module]
+                         end
+          engine_module ? "#{engine_module.to_s.camelize}::#{base}" : base
         end
         route_key = resource_name.to_s
         singular_key = resource_name.to_s.singularize

@@ -83,6 +83,7 @@ module Layered
           proxy = Object.new
           proxy.singleton_class.include(rs.url_helpers)
           ctrl = self
+          proxy.singleton_class.remove_method(:default_url_options) if proxy.singleton_class.method_defined?(:default_url_options)
           proxy.define_singleton_method(:default_url_options) { ctrl.send(:default_url_options) }
           proxy
         end

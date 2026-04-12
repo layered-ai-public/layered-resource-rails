@@ -200,6 +200,27 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
     Rails.application.reload_routes!
   end
 
+  test "scope with path prefix infers base model not namespaced model" do
+    Post.create!(title: "Scoped", user: @user)
+    get "/admin/posts"
+    assert_response :success
+    assert_select "th", text: "Title"
+  end
+
+  test "namespace does not infer namespaced model for main app routes" do
+    assert_nothing_raised do
+      Rails.application.routes.draw do
+        namespace :admin do
+          l_managed_resources :posts, model: "Post", only: [:index]
+        end
+      end
+    end
+    entry = Layered::ManagedResource::Routing.instance_variable_get(:@registry)["admin_posts"]
+    assert_equal "Post", entry[:model]
+  ensure
+    Rails.application.reload_routes!
+  end
+
   test "destroy works without l_managed_resource_fields" do
     record = Post.create!(title: "Hello", user: @user)
     original_fields = Post.method(:l_managed_resource_fields)
