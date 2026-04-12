@@ -2,10 +2,16 @@ module Layered
   module ManagedResource
     class ResourcesController < ::ApplicationController
       helper Rails.application.routes.url_helpers
+      helper Layered::Ui::TableHelper
+      helper Layered::Ui::FormHelper
+      helper Layered::Ui::RansackHelper
+      helper Layered::Ui::PaginationHelper
 
       before_action :l_managed_resource_authenticate
       before_action :resolve_managed_resource
       before_action :require_managed_fields, only: %i[new create edit update]
+
+      helper_method :managed_routes
 
       def index
         @q = @model.l_managed_resource_scope(self).ransack(params[:q])
@@ -65,15 +71,26 @@ module Layered
       end
 
       def l_managed_resource_collection_url
-        if respond_to?(@managed_url_helper, true)
-          send(@managed_url_helper)
-        end
+        helper_name = :"managed_#{@l_managed_resource_route_key}_path"
+        managed_routes.send(helper_name) if managed_routes.respond_to?(helper_name)
       end
 
       private
 
+      def managed_routes
+        @_managed_routes ||= begin
+          rs = Layered::ManagedResource::Routing.lookup_routes(@l_managed_resource_route_key) || Rails.application.routes
+          proxy = Object.new
+          proxy.singleton_class.include(rs.url_helpers)
+          ctrl = self
+          proxy.define_singleton_method(:default_url_options) { ctrl.send(:default_url_options) }
+          proxy
+        end
+      end
+
       def resolve_managed_resource
-        route_key = request.path_parameters[:_managed_route_key]
+        route_key = request.path_parameters.delete(:_managed_route_key)
+        params.delete(:_managed_route_key)
         model_name = Layered::ManagedResource::Routing.lookup(route_key)
         raise ActionController::RoutingError, "No managed resource registered for route" unless model_name
 
@@ -84,7 +101,6 @@ module Layered
 
         @columns = @model.l_managed_resource_columns
         @l_managed_resource_route_key = route_key
-        @managed_url_helper = :"managed_#{route_key}_path"
         @fields = @model.l_managed_resource_fields
         @crud_enabled = @fields.any?
 
@@ -107,23 +123,24 @@ module Layered
       end
 
       def managed_collection_path
-        unless respond_to?(@managed_url_helper, true)
+        helper_name = :"managed_#{@l_managed_resource_route_key}_path"
+        unless managed_routes.respond_to?(helper_name)
           raise ActionController::RoutingError,
                 "No collection route registered for #{@l_managed_resource_route_key}. " \
                 "Include :index in the only: list, or override l_managed_resource_after_save_path."
         end
-        send(@managed_url_helper)
+        managed_routes.send(helper_name)
       end
 
       def managed_member_path(record)
         singular = @l_managed_resource_route_key.singularize
-        helper = :"managed_#{singular}_path"
-        unless respond_to?(helper, true)
+        helper_name = :"managed_#{singular}_path"
+        unless managed_routes.respond_to?(helper_name)
           raise ActionController::RoutingError,
                 "No member route registered for #{@l_managed_resource_route_key}. " \
                 "Include :update or :destroy in the only: list."
         end
-        send(helper, record)
+        managed_routes.send(helper_name, record)
       end
 
       def l_managed_resource_authenticate

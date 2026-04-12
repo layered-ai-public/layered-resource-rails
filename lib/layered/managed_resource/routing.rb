@@ -6,8 +6,8 @@ module Layered
       @registry = Concurrent::Map.new
 
       class << self
-        def register(route_key, model_class_name, actions: [])
-          @registry[route_key.to_s] = { model: model_class_name.to_s, actions: actions }
+        def register(route_key, model_class_name, actions: [], routes: nil)
+          @registry[route_key.to_s] = { model: model_class_name.to_s, actions: actions, routes: routes }
         end
 
         def clear!
@@ -21,12 +21,20 @@ module Layered
         def lookup_actions(route_key)
           @registry.fetch(route_key.to_s, {})[:actions] || []
         end
+
+        def lookup_routes(route_key)
+          @registry.fetch(route_key.to_s, {})[:routes]
+        end
       end
 
       MANAGED_ACTIONS = %i[index new create edit update destroy].freeze
 
       def l_managed_resources(resource_name, model: nil, only: MANAGED_ACTIONS, **options)
-        model_class_name = model || resource_name.to_s.classify
+        model_class_name = model || begin
+          base = resource_name.to_s.classify
+          mod = @scope[:module]
+          mod ? "#{mod.to_s.camelize}::#{base}" : base
+        end
         route_key = resource_name.to_s
         singular_key = resource_name.to_s.singularize
 
@@ -34,7 +42,15 @@ module Layered
         scoped_key = [prefix, route_key].compact.join("_")
         scoped_singular = [prefix, singular_key].compact.join("_")
 
-        controller = "layered/managed_resource/resources"
+        # Use a leading "/" when inside a module scope (e.g. another engine) so
+        # Rails' add_controller_module treats the path as absolute and skips
+        # prepending the engine's namespace. Without a module scope the plain
+        # path is used directly.
+        controller = if @scope[:module]
+                       "/layered/managed_resource/resources"
+                     else
+                       "layered/managed_resource/resources"
+                     end
         actions = Array(only).map(&:to_sym)
 
         if (actions & %i[new create]).any? && !actions.include?(:index)
@@ -61,7 +77,7 @@ module Layered
                 "Destroy redirects to the collection route; add :index to only:."
         end
 
-        Layered::ManagedResource::Routing.register(scoped_key, model_class_name, actions: actions)
+        Layered::ManagedResource::Routing.register(scoped_key, model_class_name, actions: actions, routes: @set)
 
         route_defaults = (options[:defaults] || {}).merge(
           _managed_route_key: scoped_key
