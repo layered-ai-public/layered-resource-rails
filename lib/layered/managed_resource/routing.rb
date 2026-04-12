@@ -6,8 +6,8 @@ module Layered
       @registry = Concurrent::Map.new
 
       class << self
-        def register(route_key, model_class_name, actions: [], routes: nil)
-          @registry[route_key.to_s] = { model: model_class_name.to_s, actions: actions, routes: routes }
+        def register(route_key, resource_class_name, actions: [], routes: nil)
+          @registry[route_key.to_s] = { resource: resource_class_name.to_s, actions: actions, routes: routes }
         end
 
         def clear!
@@ -15,7 +15,7 @@ module Layered
         end
 
         def lookup(route_key)
-          @registry.fetch(route_key.to_s, {})[:model]
+          @registry.fetch(route_key.to_s, {})[:resource]
         end
 
         def lookup_actions(route_key)
@@ -29,14 +29,8 @@ module Layered
 
       MANAGED_ACTIONS = %i[index new create edit update destroy].freeze
 
-      def l_managed_resources(resource_name, model: nil, only: MANAGED_ACTIONS, **options)
-        model_class_name = model || begin
-          base = resource_name.to_s.classify
-          engine_module = if @set != Rails.application.routes
-                           @scope[:module]
-                         end
-          engine_module ? "#{engine_module.to_s.camelize}::#{base}" : base
-        end
+      def managed_resources(resource_name, resource: nil, only: MANAGED_ACTIONS, **options)
+        resource_class_name = resource || "#{resource_name.to_s.classify}Resource"
         route_key = resource_name.to_s
         singular_key = resource_name.to_s.singularize
 
@@ -57,29 +51,29 @@ module Layered
 
         if (actions & %i[new create]).any? && !actions.include?(:index)
           raise ArgumentError,
-                "l_managed_resources :#{resource_name} includes :new or :create without :index. " \
+                "managed_resources :#{resource_name} includes :new or :create without :index. " \
                 "The form actions require a collection route; add :index to only:."
         end
 
         if actions.include?(:new) && !actions.include?(:create)
           raise ArgumentError,
-                "l_managed_resources :#{resource_name} includes :new without :create. " \
+                "managed_resources :#{resource_name} includes :new without :create. " \
                 "The new form posts to the collection route; add :create to only:."
         end
 
         if actions.include?(:edit) && !actions.include?(:update)
           raise ArgumentError,
-                "l_managed_resources :#{resource_name} includes :edit without :update. " \
+                "managed_resources :#{resource_name} includes :edit without :update. " \
                 "The edit form patches the member route; add :update to only:."
         end
 
         if actions.include?(:destroy) && !actions.include?(:index)
           raise ArgumentError,
-                "l_managed_resources :#{resource_name} includes :destroy without :index. " \
+                "managed_resources :#{resource_name} includes :destroy without :index. " \
                 "Destroy redirects to the collection route; add :index to only:."
         end
 
-        Layered::ManagedResource::Routing.register(scoped_key, model_class_name, actions: actions, routes: @set)
+        Layered::ManagedResource::Routing.register(scoped_key, resource_class_name, actions: actions, routes: @set)
 
         route_defaults = (options[:defaults] || {}).merge(
           _managed_route_key: scoped_key

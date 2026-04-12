@@ -28,48 +28,42 @@
 <h2 class="l-ui-utility--mt-xl">Setup</h2>
 
 <h3 class="l-ui-utility--mt-lg">1. Routes</h3>
-<p class="l-ui-utility--mt-md">Use <code>l_managed_resources</code> in your routes to register a model for CRUD management:</p>
+<p class="l-ui-utility--mt-md">Use <code>managed_resources</code> in your routes to register a model for CRUD management:</p>
 <pre class="l-ui-surface l-ui-utility--mt-md"><code># config/routes.rb
-l_managed_resources :posts</code></pre>
+managed_resources :posts</code></pre>
 <p class="l-ui-utility--mt-md">Restrict actions with the <code>only:</code> option:</p>
-<pre class="l-ui-surface l-ui-utility--mt-md"><code>l_managed_resources :posts, only: [:index]            # read-only
-l_managed_resources :posts, only: %i[index destroy]    # list + delete</code></pre>
+<pre class="l-ui-surface l-ui-utility--mt-md"><code>managed_resources :posts, only: [:index]            # read-only
+managed_resources :posts, only: %i[index destroy]    # list + delete</code></pre>
 
-<h3 class="l-ui-utility--mt-lg">2. Model</h3>
-<p class="l-ui-utility--mt-md">Include <code>Layered::ManagedResource::Resource</code> in your model and configure the interface:</p>
-<pre class="l-ui-surface l-ui-utility--mt-md"><code>class Post < ApplicationRecord
-  include Layered::ManagedResource::Resource
+<h3 class="l-ui-utility--mt-lg">2. Resource definition</h3>
+<p class="l-ui-utility--mt-md">Create a resource class in <code>app/managed_resources/</code> that inherits from <code>Layered::ManagedResource::Base</code>:</p>
+<pre class="l-ui-surface l-ui-utility--mt-md"><code>class PostResource < Layered::ManagedResource::Base
+  model Post
 
-  def self.l_managed_resource_columns
-    [
-      { attribute: :title, primary: true },
-      { attribute: :created_at, label: "Created" }
-    ]
-  end
+  columns [
+    { attribute: :title, primary: true },
+    { attribute: :created_at, label: "Created" }
+  ]
 
-  def self.l_managed_resource_fields
-    [
-      { attribute: :title, required: true },
-      { attribute: :body, as: :text }
-    ]
-  end
+  fields [
+    { attribute: :title, required: true },
+    { attribute: :body, as: :text }
+  ]
 
-  def self.l_managed_resource_search_fields
-    [:title, :body]
-  end
+  search_fields [:title, :body]
 end</code></pre>
 
-<h3 class="l-ui-utility--mt-lg">3. Model configuration</h3>
-<p class="l-ui-utility--mt-md">Override these class methods to customise behaviour:</p>
+<h3 class="l-ui-utility--mt-lg">3. Resource configuration</h3>
+<p class="l-ui-utility--mt-md">Override these class methods on your resource to customise behaviour:</p>
 <% config_methods = [
-  { method: "l_managed_resource_columns", purpose: "Columns displayed on the index table" },
-  { method: "l_managed_resource_fields", purpose: "Form fields for new/edit (empty = read-only, no CRUD forms)" },
-  { method: "l_managed_resource_search_fields", purpose: "Ransack search attributes" },
-  { method: "l_managed_resource_default_sort", purpose: "Default sort order for the index" },
-  { method: "l_managed_resource_permitted_params", purpose: "Strong params (derived from fields by default)" },
-  { method: "l_managed_resource_scope(controller)", purpose: "Base scope (override for tenant isolation)" },
-  { method: "l_managed_resource_build_record(controller)", purpose: "How to instantiate new records" },
-  { method: "l_managed_resource_after_save_path(controller, record)", purpose: "Redirect target after create/update/destroy" }
+  { method: "columns", purpose: "Columns displayed on the index table" },
+  { method: "fields", purpose: "Form fields for new/edit (empty = read-only, no CRUD forms)" },
+  { method: "search_fields", purpose: "Ransack search attributes" },
+  { method: "default_sort", purpose: "Default sort order for the index" },
+  { method: "permitted_params", purpose: "Strong params (derived from fields by default)" },
+  { method: "scope(controller)", purpose: "Base scope (override for tenant isolation)" },
+  { method: "build_record(controller)", purpose: "How to instantiate new records" },
+  { method: "after_save_path(controller, record)", purpose: "Redirect target after create/update/destroy" }
 ] %>
 
 <div class="l-ui-utility--mt-md">
@@ -78,13 +72,13 @@ end</code></pre>
           { attribute: :method, label: "Method", render: ->(r) { tag.code(r[:method]) } },
           { attribute: :purpose, label: "Purpose" }
         ],
-        caption: "Model configuration methods") %>
+        caption: "Resource configuration methods") %>
 </div>
 
 <h2 class="l-ui-utility--mt-xl">Authentication</h2>
 <p class="l-ui-utility--mt-md">Protect managed resources with a before_action by setting:</p>
 <pre class="l-ui-surface l-ui-utility--mt-md"><code># config/initializers/managed_resource.rb
-Layered::ManagedResource.l_managed_resource_before_action = :authenticate_user!</code></pre>
+Layered::ManagedResource.managed_resource_before_action = :authenticate_user!</code></pre>
 
 <h2 class="l-ui-utility--mt-xl">License</h2>
 <p class="l-ui-utility--mt-md">

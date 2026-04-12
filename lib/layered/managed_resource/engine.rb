@@ -3,7 +3,9 @@ module Layered
     class Engine < ::Rails::Engine
       isolate_namespace Layered::ManagedResource
 
-      config.autoload_paths << File.expand_path("../../../app/models/concerns", __dir__)
+      initializer "layered-managed-resource-rails.autoload", before: :set_autoload_paths do |app|
+        app.config.autoload_paths += [Rails.root.join("app/managed_resources").to_s]
+      end
 
       initializer "layered-managed-resource-rails.routing", before: :add_routing_paths do
         ActionDispatch::Routing::Mapper.include(Layered::ManagedResource::Routing)

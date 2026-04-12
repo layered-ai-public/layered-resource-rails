@@ -25,14 +25,20 @@ These should feel like configuration, not programming:
 
 Example:
 
-managed_resource :posts do
-  field :title, :string
-  field :published_at, :datetime
-  field :author, :belongs_to
+class PostResource < Layered::ManagedResource::Base
+  model Post
 
-  index do
-    columns :title, :author, :published_at
-  end
+  columns [
+    { attribute: :title, primary: true },
+    { attribute: :author },
+    { attribute: :published_at }
+  ]
+
+  fields [
+    { attribute: :title },
+    { attribute: :published_at, as: :datetime },
+    { attribute: :author_id, as: :belongs_to }
+  ]
 end
 
 
@@ -55,7 +61,7 @@ These should trigger ejection or override, not more DSL.
 
 Stage 1 - Fully Managed
 
-managed_resource :posts
+managed_resources :posts
 
 	•	No generated files
 	•	Uses gem-provided views
@@ -65,7 +71,7 @@ managed_resource :posts
 
 Stage 2 - Partial Override
 
-managed_resource :posts do
+managed_resources :posts do
   override :form
   override :index_row
 end
@@ -151,7 +157,7 @@ class ManagedResources::BaseController < ApplicationController
   end
 
   def permitted_params
-    params.require(resource_name).permit(@resource.permitted_fields)
+    params.require(resource_name).permit(@resource.permitted_params)
   end
 end
 

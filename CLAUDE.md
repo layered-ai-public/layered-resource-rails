@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A Rails Engine gem (`layered-managed-resource-rails`) that provides convention-over-configuration CRUD scaffolding for Rails 8+. It auto-generates index, new/create, edit/update, and destroy interfaces using a single routing DSL method (`l_managed_resources`) and model-level configuration via the `Layered::ManagedResource::Resource` concern. Built on top of `layered-ui-rails` for UI components, Ransack for search, and Pagy for pagination.
+A Rails Engine gem (`layered-managed-resource-rails`) that provides convention-over-configuration CRUD scaffolding for Rails 8+. It auto-generates index, new/create, edit/update, and destroy interfaces using a single routing DSL method (`managed_resources`) and separate resource definition classes that inherit from `Layered::ManagedResource::Base`. Built on top of `layered-ui-rails` for UI components, Ransack for search, and Pagy for pagination.
 
 ## Commands
 
@@ -28,29 +28,31 @@ bundle exec ruby -Itest test/integration/managed_resource_crud_test.rb -n "test_
 
 The gem is a Rails Engine isolated under `Layered::ManagedResource`. It works through three cooperating layers:
 
-1. **Routing DSL** (`lib/layered/managed_resource/routing.rb`) — `l_managed_resources :resource_name` is mixed into `ActionDispatch::Routing::Mapper`. It registers route-to-model mappings in a thread-safe `Concurrent::Map` registry and generates named routes with a `managed_` prefix. Supports `only:` to restrict actions, `model:` to override the inferred class, and scope-aware route key generation.
+1. **Routing DSL** (`lib/layered/managed_resource/routing.rb`) — `managed_resources :resource_name` is mixed into `ActionDispatch::Routing::Mapper`. It registers route-to-resource mappings in a thread-safe `Concurrent::Map` registry and generates named routes with a `managed_` prefix. Supports `only:` to restrict actions, `resource:` to override the inferred resource class, and scope-aware route key generation.
 
-2. **Generic Controller** (`app/controllers/layered/managed_resource/resources_controller.rb`) — A single `ResourcesController` handles all managed resources. It resolves which model to use at runtime via the `_managed_route_key` route default, then delegates to model-level class methods for scoping, column definitions, field definitions, and permitted params.
+2. **Generic Controller** (`app/controllers/layered/managed_resource/resources_controller.rb`) — A single `ResourcesController` handles all managed resources. It resolves which resource class to use at runtime via the `_managed_route_key` route default, then delegates to the resource class for scoping, column definitions, field definitions, and permitted params.
 
-3. **Model Concern** (`app/models/concerns/layered/managed_resource/resource.rb`) — `Layered::ManagedResource::Resource` is included in ActiveRecord models. It provides overridable class methods that the controller calls:
-   - `l_managed_resource_columns` — columns displayed on the index table
-   - `l_managed_resource_fields` — form fields for new/edit (empty = read-only, no CRUD forms)
-   - `l_managed_resource_search_fields` — Ransack search attributes
-   - `l_managed_resource_permitted_params` — derived from fields by default
-   - `l_managed_resource_scope(controller)` — default scope (override for tenant isolation)
-   - `l_managed_resource_build_record(controller)` — how to instantiate new records
-   - `l_managed_resource_after_save_path(controller, record)` — redirect target after create/update/destroy
+3. **Resource Definition** (`lib/layered/managed_resource/base.rb`) — `Layered::ManagedResource::Base` is the base class for resource definitions. Users create subclasses in `app/managed_resources/` (e.g., `PostResource`) that configure:
+   - `model` — the ActiveRecord model class (inferred from resource class name by default)
+   - `columns` — columns displayed on the index table
+   - `fields` — form fields for new/edit (empty = read-only, no CRUD forms)
+   - `search_fields` — Ransack search attributes
+   - `permitted_params` — derived from fields by default
+   - `scope(controller)` — default scope (override for tenant isolation)
+   - `build_record(controller)` — how to instantiate new records
+   - `after_save_path(controller, record)` — redirect target after create/update/destroy
 
 ### Key Design Decisions
 
 - The routing layer validates action combinations at route-definition time (e.g., `:new` requires `:index` and `:create`).
-- `l_managed_resource_fields` returning empty disables all CRUD forms; `:destroy` still works independently.
+- `fields` returning empty disables all CRUD forms; `:destroy` still works independently.
 - Views use `layered-ui-rails` helpers (`l_ui_table`, `l_ui_form`, `l_ui_search_form`, `l_ui_pagy`) — not standard Rails form builders.
-- Authentication is pluggable via `Layered::ManagedResource.l_managed_resource_before_action`, which names a controller method to call as a before_action.
+- Authentication is pluggable via `Layered::ManagedResource.managed_resource_before_action`, which names a controller method to call as a before_action.
+- Resource classes live in `app/managed_resources/` (autoloaded by the engine) and keep models clean of admin/UI concerns.
 
 ### Test Setup
 
-Tests use a dummy Rails app at `test/dummy/` with SQLite. The dummy app has `Post` and `User` models and multiple route scopes (full CRUD, readonly, deletable, destroy-only) to exercise the `only:` option.
+Tests use a dummy Rails app at `test/dummy/` with SQLite. The dummy app has `Post` and `User` models, a `PostResource` definition, and multiple route scopes (full CRUD, readonly, deletable, destroy-only) to exercise the `only:` option.
 
 ## Design Guidelines
 

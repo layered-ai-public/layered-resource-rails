@@ -148,7 +148,7 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
   test "only: [:destroy] without :index raises at route definition" do
     error = assert_raises(ArgumentError) do
       Rails.application.routes.draw do
-        l_managed_resources :posts, only: [:destroy]
+        managed_resources :posts, only: [:destroy]
       end
     end
     assert_match(/without :index/, error.message)
@@ -159,7 +159,7 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
   test "only: [:new] without :index raises at route definition" do
     error = assert_raises(ArgumentError) do
       Rails.application.routes.draw do
-        l_managed_resources :posts, only: [:new]
+        managed_resources :posts, only: [:new]
       end
     end
     assert_match(/without :index/, error.message)
@@ -170,7 +170,7 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
   test "only: [:create] without :index raises at route definition" do
     error = assert_raises(ArgumentError) do
       Rails.application.routes.draw do
-        l_managed_resources :posts, only: [:create]
+        managed_resources :posts, only: [:create]
       end
     end
     assert_match(/without :index/, error.message)
@@ -181,7 +181,7 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
   test "only: [:index, :new] without :create raises at route definition" do
     error = assert_raises(ArgumentError) do
       Rails.application.routes.draw do
-        l_managed_resources :posts, only: %i[index new]
+        managed_resources :posts, only: %i[index new]
       end
     end
     assert_match(/without :create/, error.message)
@@ -192,7 +192,7 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
   test "only: [:index, :edit] without :update raises at route definition" do
     error = assert_raises(ArgumentError) do
       Rails.application.routes.draw do
-        l_managed_resources :posts, only: %i[index edit]
+        managed_resources :posts, only: %i[index edit]
       end
     end
     assert_match(/without :update/, error.message)
@@ -211,27 +211,27 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
     assert_nothing_raised do
       Rails.application.routes.draw do
         namespace :admin do
-          l_managed_resources :posts, model: "Post", only: [:index]
+          managed_resources :posts, resource: "PostResource", only: [:index]
         end
       end
     end
     entry = Layered::ManagedResource::Routing.instance_variable_get(:@registry)["admin_posts"]
-    assert_equal "Post", entry[:model]
+    assert_equal "PostResource", entry[:resource]
   ensure
     Rails.application.reload_routes!
   end
 
-  test "destroy works without l_managed_resource_fields" do
+  test "destroy works without fields" do
     record = Post.create!(title: "Hello", user: @user)
-    original_fields = Post.method(:l_managed_resource_fields)
-    Post.define_singleton_method(:l_managed_resource_fields) { [] }
+    original_fields = PostResource.instance_variable_get(:@fields)
+    PostResource.instance_variable_set(:@fields, [])
     begin
       assert_difference "Post.count", -1 do
         delete "/deletable/posts/#{record.id}"
       end
       assert_redirected_to "/deletable/posts"
     ensure
-      Post.define_singleton_method(:l_managed_resource_fields, original_fields)
+      PostResource.instance_variable_set(:@fields, original_fields)
     end
   end
 end

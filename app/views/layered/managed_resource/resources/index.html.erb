@@ -1,9 +1,9 @@
-<% turbo_frame_name = "managed_#{@l_managed_resource_route_key}" %>
-<% singular_key = @l_managed_resource_route_key.singularize %>
+<% turbo_frame_name = "managed_#{@managed_route_key}" %>
+<% singular_key = @managed_route_key.singularize %>
 
 <div class="l-ui-container--spread">
   <h1 class="l-ui-heading">
-    <%= @l_managed_resource_route_key.humanize %>
+    <%= @managed_route_key.humanize %>
   </h1>
 
   <% if @can_create %>
@@ -14,10 +14,10 @@
 </div>
 
 <%= turbo_frame_tag turbo_frame_name, data: { turbo_action: "advance" } do %>
-  <% if @model.l_managed_resource_search_fields.any? %>
+  <% if @resource.search_fields.any? %>
     <%= l_ui_search_form(@q,
-          url: managed_routes.send(:"managed_#{@l_managed_resource_route_key}_path"),
-          fields: @model.l_managed_resource_search_fields,
+          url: managed_routes.send(:"managed_#{@managed_route_key}_path"),
+          fields: @resource.search_fields,
           clear: true,
           turbo_frame: turbo_frame_name) %>
   <% end %>
@@ -42,9 +42,9 @@
 
   <%= l_ui_table(@records,
         columns: @columns,
-        caption: @l_managed_resource_route_key.humanize,
+        caption: @managed_route_key.humanize,
         query: @q,
-        url: managed_routes.send(:"managed_#{@l_managed_resource_route_key}_path"),
+        url: managed_routes.send(:"managed_#{@managed_route_key}_path"),
         actions: actions_proc,
         turbo_frame: turbo_frame_name) %>
 

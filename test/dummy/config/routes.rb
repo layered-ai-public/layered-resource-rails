@@ -7,17 +7,17 @@ Rails.application.routes.draw do
 
   get "welcome", to: "pages#welcome"
 
-  l_managed_resources :posts
+  managed_resources :posts
 
   scope "/readonly" do
-    l_managed_resources :posts, only: [:index]
+    managed_resources :posts, only: [:index]
   end
 
   scope "/deletable" do
-    l_managed_resources :posts, only: %i[index destroy]
+    managed_resources :posts, only: %i[index destroy]
   end
 
   scope "/admin" do
-    l_managed_resources :posts, only: [:index]
+    managed_resources :posts, only: [:index]
   end
 end
