@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_10_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_13_000000) do
   create_table "posts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -34,6 +34,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_000000) do
     t.string "last_sign_in_ip"
     t.datetime "locked_at"
     t.string "name", default: "", null: false
+    t.integer "posts_count", default: 0, null: false
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
     t.string "reset_password_token"

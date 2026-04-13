@@ -7,6 +7,9 @@ Rails.application.routes.draw do
 
   get "welcome", to: "pages#welcome"
 
+  # Users (read-only index)
+  managed_resources :users, only: [:index]
+
   # Standalone posts (all posts, no user scoping)
   managed_resources :posts
 

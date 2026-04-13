@@ -20,19 +20,7 @@ module Layered
         end
 
         def lookup(route_key)
-          @registry.fetch(route_key.to_s, {})[:resource]
-        end
-
-        def lookup_actions(route_key)
-          @registry.fetch(route_key.to_s, {})[:actions] || []
-        end
-
-        def lookup_routes(route_key)
-          @registry.fetch(route_key.to_s, {})[:routes]
-        end
-
-        def lookup_parent_params(route_key)
-          @registry.fetch(route_key.to_s, {})[:parent_params] || []
+          @registry.fetch(route_key.to_s, nil)
         end
       end
 

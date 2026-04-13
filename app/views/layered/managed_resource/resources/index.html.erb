@@ -2,9 +2,18 @@
 <% singular_key = @managed_route_key.singularize %>
 
 <div class="l-ui-container--spread">
-  <h1 class="l-ui-heading">
-    <%= @managed_route_key.humanize %>
-  </h1>
+  <div>
+    <%= l_ui_breadcrumbs do %>
+      <%= l_ui_breadcrumb_item "Home", root_path %>
+      <% managed_breadcrumbs.each do |crumb| %>
+        <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
+      <% end %>
+    <% end %>
+
+    <h1 class="l-ui-heading">
+      <%= @model.model_name.human.pluralize %>
+    </h1>
+  </div>
 
   <% if @can_create %>
     <%= link_to "New",

@@ -18,4 +18,6 @@ end
   end
 end
 
+User.find_each { |u| User.reset_counters(u.id, :posts) }
+
 puts "Seeded #{User.count} user(s) and #{Post.count} post(s)."
