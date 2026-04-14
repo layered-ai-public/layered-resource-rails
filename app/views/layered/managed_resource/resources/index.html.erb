@@ -42,7 +42,7 @@
       if @can_destroy
         parts << button_to("Delete", managed_routes.send(:"managed_#{singular_key}_path", record),
                     method: :delete,
-                    class: "l-ui-button l-ui-button--outline-danger",
+                    class: "l-ui-table__action--danger",
                     data: { turbo_confirm: "Are you sure?", turbo_frame: "_top" })
       end
       safe_join(parts, " ")
