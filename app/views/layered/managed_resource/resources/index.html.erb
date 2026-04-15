@@ -49,13 +49,15 @@
     end
   end %>
 
-  <%= l_ui_table(@records,
-        columns: @columns,
-        caption: @managed_route_key.humanize,
-        query: @q,
-        url: managed_routes.send(:"managed_#{@managed_route_key}_path"),
-        actions: actions_proc,
-        turbo_frame: turbo_frame_name) %>
+  <div class="l-ui-utility--mt-lg">
+    <%= l_ui_table(@records,
+          columns: @columns,
+          caption: @managed_route_key.humanize,
+          query: @q,
+          url: managed_routes.send(:"managed_#{@managed_route_key}_path"),
+          actions: actions_proc,
+          turbo_frame: turbo_frame_name) %>
 
-  <%= l_ui_pagy(@pagy) %>
+    <%= l_ui_pagy(@pagy) %>
+  </div>
 <% end %>
