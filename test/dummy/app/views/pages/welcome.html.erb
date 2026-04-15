@@ -55,10 +55,9 @@ managed_resources :posts, only: %i[index destroy]    # list + delete</code></pre
     { attribute: :created_at, label: "Created" }
   ]
 
-  # Add required: true for client-side validation (HTML required attribute).
-  # Server-side validation is handled by the model (e.g. validates :title, presence: true).
+  # Fields with a presence validation on the model are automatically marked as required.
   fields [
-    { attribute: :title, required: true },
+    { attribute: :title },
     { attribute: :body, as: :text }
   ]
 
@@ -82,7 +81,7 @@ end</code></pre>
   <%= l_ui_table(config_methods,
         columns: [
           { attribute: :method, label: "Method", render: ->(r) { tag.code(r[:method]) } },
-          { attribute: :purpose, label: "Purpose" }
+          { attribute: :purpose, label: "Purpose", render: ->(r) { r[:purpose] } }
         ],
         caption: "Resource configuration methods") %>
 </div>

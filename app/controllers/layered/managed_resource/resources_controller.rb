@@ -103,7 +103,7 @@ module Layered
         @model = @resource.model
         @columns = @resource.columns
         @managed_route_key = route_key
-        @fields = @resource.fields
+        @fields = @resource.resolved_fields
         @crud_enabled = @fields.any?
 
         managed_actions = @_route_entry[:actions]

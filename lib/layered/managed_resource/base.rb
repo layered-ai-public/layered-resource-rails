@@ -50,6 +50,16 @@ module Layered
           end
         end
 
+        def resolved_fields
+          fields.map do |field|
+            if field.key?(:required)
+              field
+            else
+              field.merge(required: attribute_required?(field[:attribute]))
+            end
+          end
+        end
+
         def permitted_params
           fields.map { |f| f[:attribute] }
         end
@@ -112,6 +122,14 @@ module Layered
           end
 
           @ransack_configured = true
+        end
+
+        private
+
+        def attribute_required?(attribute)
+          model.validators_on(attribute).any? { |v|
+            v.is_a?(ActiveRecord::Validations::PresenceValidator) && v.options.except(:message).empty?
+          }
         end
       end
     end
