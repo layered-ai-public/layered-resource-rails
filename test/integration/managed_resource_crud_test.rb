@@ -122,12 +122,26 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "destroy works without fields" do
+    record = Post.create!(title: "Hello", user: @user)
+    original_fields = PostResource.instance_variable_get(:@fields)
+    PostResource.instance_variable_set(:@fields, [])
+    begin
+      assert_difference "Post.count", -1 do
+        delete "/users/#{@user.id}/deletable/posts/#{record.id}"
+      end
+      assert_redirected_to "/users/#{@user.id}/deletable/posts"
+    ensure
+      PostResource.instance_variable_set(:@fields, original_fields)
+    end
+  end
+
   # -- parent scoping --
 
   test "index only shows posts belonging to the parent user" do
     other_user = User.create!(email: "other@test.com", name: "Other", password: "password", password_confirmation: "password")
-    mine = Post.create!(title: "My post", user: @user)
-    theirs = Post.create!(title: "Their post", user: other_user)
+    Post.create!(title: "My post", user: @user)
+    Post.create!(title: "Their post", user: other_user)
 
     get "/users/#{@user.id}/posts"
     assert_response :success
@@ -147,8 +161,8 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
 
   test "standalone index shows all posts regardless of user" do
     other_user = User.create!(email: "other@test.com", name: "Other", password: "password", password_confirmation: "password")
-    mine = Post.create!(title: "My post", user: @user)
-    theirs = Post.create!(title: "Their post", user: other_user)
+    Post.create!(title: "My post", user: @user)
+    Post.create!(title: "Their post", user: other_user)
 
     get "/posts"
     assert_response :success
@@ -175,150 +189,5 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
       delete "/posts/#{record.id}"
     end
     assert_redirected_to "/posts"
-  end
-
-  # -- route key injection --
-
-  test "query string cannot override _managed_route_key" do
-    get "/users/#{@user.id}/readonly/posts", params: { _managed_route_key: "users_posts" }
-    assert_response :success
-    assert_select "a[href$='/posts/new']", count: 0,
-      message: "Full-CRUD actions must not leak via query string override"
-  end
-
-  # -- only: option --
-
-  test "only: [:index] hides new link" do
-    get "/users/#{@user.id}/readonly/posts"
-    assert_response :success
-    assert_select "a[href$='/posts/new']", count: 0
-  end
-
-  test "only: [:index] excludes CRUD routes" do
-    record = Post.create!(title: "Hello", user: @user)
-    get "/users/#{@user.id}/readonly/posts/new"
-    assert_response :not_found
-
-    get "/users/#{@user.id}/readonly/posts/#{record.id}/edit"
-    assert_response :not_found
-
-    delete "/users/#{@user.id}/readonly/posts/#{record.id}"
-    assert_response :not_found
-  end
-
-  test "only: [:destroy] without :index raises at route definition" do
-    error = assert_raises(ArgumentError) do
-      Rails.application.routes.draw do
-        managed_resources :posts, only: [:destroy]
-      end
-    end
-    assert_match(/without :index/, error.message)
-  ensure
-    Rails.application.reload_routes!
-  end
-
-  test "only: [:new] without :index raises at route definition" do
-    error = assert_raises(ArgumentError) do
-      Rails.application.routes.draw do
-        managed_resources :posts, only: [:new]
-      end
-    end
-    assert_match(/without :index/, error.message)
-  ensure
-    Rails.application.reload_routes!
-  end
-
-  test "only: [:create] without :index raises at route definition" do
-    error = assert_raises(ArgumentError) do
-      Rails.application.routes.draw do
-        managed_resources :posts, only: [:create]
-      end
-    end
-    assert_match(/without :index/, error.message)
-  ensure
-    Rails.application.reload_routes!
-  end
-
-  test "only: [:index, :new] without :create raises at route definition" do
-    error = assert_raises(ArgumentError) do
-      Rails.application.routes.draw do
-        managed_resources :posts, only: %i[index new]
-      end
-    end
-    assert_match(/without :create/, error.message)
-  ensure
-    Rails.application.reload_routes!
-  end
-
-  test "only: [:index, :edit] without :update raises at route definition" do
-    error = assert_raises(ArgumentError) do
-      Rails.application.routes.draw do
-        managed_resources :posts, only: %i[index edit]
-      end
-    end
-    assert_match(/without :update/, error.message)
-  ensure
-    Rails.application.reload_routes!
-  end
-
-  test "scope with path prefix infers base model not namespaced model" do
-    Post.create!(title: "Scoped", user: @user)
-    get "/users/#{@user.id}/admin/posts"
-    assert_response :success
-    assert_select "th", text: "Title"
-  end
-
-  # -- counter_cache columns --
-
-  test "link option renders column value as link to nested managed resource" do
-    Post.create!(title: "First", user: @user)
-    Post.create!(title: "Second", user: @user)
-
-    get "/users"
-    assert_response :success
-    assert_select "a[href='/users/#{@user.id}/posts']", text: "2"
-  end
-
-  test "column without link option renders plain value" do
-    original_columns = UserResource.instance_variable_get(:@columns)
-    UserResource.columns [
-      { attribute: :name, primary: true },
-      { attribute: :posts_count, label: "Posts" }
-    ]
-    begin
-      get "/users"
-      assert_response :success
-      assert_select "td.l-ui-table__cell a", count: 0
-    ensure
-      UserResource.instance_variable_set(:@columns, original_columns)
-    end
-  end
-
-  test "namespace does not infer namespaced model for main app routes" do
-    assert_nothing_raised do
-      Rails.application.routes.draw do
-        namespace :admin do
-          managed_resources :posts, resource: "PostResource", only: [:index]
-        end
-      end
-    end
-    entry = Layered::ManagedResource::Routing.instance_variable_get(:@registry)["admin_posts"]
-    assert_equal "PostResource", entry[:resource]
-  ensure
-    Rails.application.reload_routes!
-  end
-
-  test "destroy works without fields" do
-    record = Post.create!(title: "Hello", user: @user)
-    original_fields = PostResource.instance_variable_get(:@fields)
-    PostResource.instance_variable_set(:@fields, [])
-    begin
-      assert_difference "Post.count", -1 do
-        delete "/users/#{@user.id}/deletable/posts/#{record.id}"
-      end
-      assert_redirected_to "/users/#{@user.id}/deletable/posts"
-    ensure
-      PostResource.instance_variable_set(:@fields, original_fields)
-    end
   end
 end

@@ -6,12 +6,13 @@ module Layered
       @registry = Concurrent::Map.new
 
       class << self
-        def register(route_key, resource_class_name, actions: [], routes: nil, parent_params: [])
+        def register(route_key, resource_class_name, actions: [], routes: nil, parent_params: [], parent_collection_keys: {})
           @registry[route_key.to_s] = {
             resource: resource_class_name.to_s,
             actions: actions,
             routes: routes,
-            parent_params: parent_params
+            parent_params: parent_params,
+            parent_collection_keys: parent_collection_keys
           }
         end
 
@@ -33,6 +34,24 @@ module Layered
 
         raw_scope_path = @scope[:path].to_s
         parent_params = raw_scope_path.scan(/:([a-zA-Z_]\w*)/).flatten.map(&:to_sym)
+
+        # For each parent param, compute the route key its collection
+        # would have been registered under. e.g. in scope
+        # "orgs/:org_id/users/:user_id", :user_id maps to "orgs_users".
+        segments = raw_scope_path.split("/")
+        parent_collection_keys = {}
+        segments.each_with_index do |seg, i|
+          next unless seg.start_with?(":")
+          param = seg.delete_prefix(":").to_sym
+          next if i == 0
+
+          resource_seg = segments[i - 1]
+          scope_before = segments[0...[i - 1, 0].max].join("/")
+          static_before = scope_before.gsub(%r{/?:[a-zA-Z_]\w*}, "")
+          pfx = static_before.delete_prefix("/").tr("/", "_").gsub(/[^a-zA-Z0-9_]/, "_").squeeze("_").presence
+          parent_collection_keys[param] = [pfx, resource_seg].compact.join("_")
+        end
+
         static_path = raw_scope_path.gsub(%r{/?:[a-zA-Z_]\w*}, "")
         prefix = static_path.delete_prefix("/").tr("/", "_").gsub(/[^a-zA-Z0-9_]/, "_").squeeze("_").presence
         scoped_key = [prefix, route_key].compact.join("_")
@@ -73,7 +92,7 @@ module Layered
                 "Destroy redirects to the collection route; add :index to only:."
         end
 
-        Layered::ManagedResource::Routing.register(scoped_key, resource_class_name, actions: actions, routes: @set, parent_params: parent_params)
+        Layered::ManagedResource::Routing.register(scoped_key, resource_class_name, actions: actions, routes: @set, parent_params: parent_params, parent_collection_keys: parent_collection_keys)
 
         route_defaults = (options[:defaults] || {}).merge(
           _managed_route_key: scoped_key
