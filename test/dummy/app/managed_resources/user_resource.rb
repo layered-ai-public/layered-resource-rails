@@ -7,5 +7,10 @@ class UserResource < Layered::ManagedResource::Base
     { attribute: :posts_count, label: "Posts", link: :users_posts }
   ]
 
+  fields [
+    { attribute: :name },
+    { attribute: :email }
+  ]
+
   search_fields [:name, :email]
 end
