@@ -16,11 +16,30 @@ module Layered
         # with a render proc that wraps the value in a badge link. Silently
         # skips columns whose route can't be resolved.
         def resolve_linked_columns
+          resolve_column_renders
+          resolve_column_links
+        end
+
+        def resolve_column_renders
+          @columns = @columns.map do |col|
+            next col if col[:render]
+
+            attr = col[:attribute]
+            col.merge(
+              render: ->(record) {
+                raw = record.public_send(attr)
+                raw.respond_to?(:strftime) ? raw.strftime("%-d %b %Y %H:%M") : raw
+              }
+            )
+          end
+        end
+
+        def resolve_column_links
           view = view_context
           opts = default_url_options
 
           @columns = @columns.map do |col|
-            next col if col[:render] || !col[:link]
+            next col unless col[:link]
 
             linked_key = col[:link].to_s
             linked_entry = Routing.lookup(linked_key)
