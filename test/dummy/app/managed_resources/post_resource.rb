@@ -14,7 +14,8 @@ class PostResource < Layered::ManagedResource::Base
 
   fields [
     { attribute: :title },
-    { attribute: :body, as: :text }
+    { attribute: :body, as: :text },
+    { attribute: :created_at, as: :datetime }
   ]
 
   def self.scope(controller)

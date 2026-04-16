@@ -909,7 +909,7 @@ pre.l-ui-surface {
 /* Form */
 
 .l-ui-form {
-  @apply w-full mt-4;
+  @apply w-full;
 }
 
 .l-ui-form__errors-list {
@@ -921,6 +921,15 @@ pre.l-ui-surface {
 
 .l-ui-form__group {
   @apply mt-4;
+}
+
+.l-ui-form__actions {
+  @apply flex flex-col gap-2 justify-end
+         mt-8;
+
+  @media (min-width: 768px) {
+    @apply flex-row;
+  }
 }
 
 .l-ui-form__group--large-gap {

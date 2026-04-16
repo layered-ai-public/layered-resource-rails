@@ -24,11 +24,13 @@
 
 <%= turbo_frame_tag turbo_frame_name, data: { turbo_action: "advance" } do %>
   <% if @resource.search_fields.any? %>
-    <%= l_ui_search_form(@q,
-          url: managed_routes.send(:"managed_#{@managed_route_key}_path"),
-          fields: @resource.search_fields,
-          clear: true,
-          turbo_frame: turbo_frame_name) %>
+    <div class="l-ui-utility--mt-lg">
+      <%= l_ui_search_form(@q,
+            url: managed_routes.send(:"managed_#{@managed_route_key}_path"),
+            fields: @resource.search_fields,
+            clear: true,
+            turbo_frame: turbo_frame_name) %>
+    </div>
   <% end %>
 
   <% actions_proc = if @can_update || @can_destroy
@@ -36,7 +38,6 @@
       parts = []
       if @can_update
         parts << link_to("Edit", managed_routes.send(:"edit_managed_#{singular_key}_path", record),
-                  class: "l-ui-button l-ui-button--outline",
                   data: { turbo_frame: "_top" })
       end
       if @can_destroy
