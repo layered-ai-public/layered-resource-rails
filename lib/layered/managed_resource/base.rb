@@ -38,7 +38,7 @@ module Layered
           if value
             @per_page = value
           else
-            @per_page || 20
+            @per_page || 15
           end
         end
 
