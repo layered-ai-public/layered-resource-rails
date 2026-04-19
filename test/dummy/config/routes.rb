@@ -3,9 +3,9 @@ Rails.application.routes.draw do
 
   devise_for :users, path: "", path_names: { sign_in: "login", sign_up: "register", sign_out: "logout" }
 
-  root "pages#welcome"
+  root "pages#home"
 
-  get "welcome", to: "pages#welcome"
+  get "home", to: "pages#home"
   get "examples", to: "pages#examples"
 
   # Users (index, edit, destroy)

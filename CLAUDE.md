@@ -28,25 +28,25 @@ bundle exec ruby -Itest test/integration/managed_resource_crud_test.rb -n "test_
 
 The gem is a Rails Engine isolated under `Layered::ManagedResource`. It works through three cooperating layers:
 
-1. **Routing DSL** (`lib/layered/managed_resource/routing.rb`) — `managed_resources :resource_name` is mixed into `ActionDispatch::Routing::Mapper`. It registers route-to-resource mappings in a thread-safe `Concurrent::Map` registry and generates named routes with a `managed_` prefix. Supports `only:` to restrict actions, `resource:` to override the inferred resource class, and scope-aware route key generation.
+1. **Routing DSL** (`lib/layered/managed_resource/routing.rb`) - `managed_resources :resource_name` is mixed into `ActionDispatch::Routing::Mapper`. It registers route-to-resource mappings in a thread-safe `Concurrent::Map` registry and generates named routes with a `managed_` prefix. Supports `only:` to restrict actions, `resource:` to override the inferred resource class, and scope-aware route key generation.
 
-2. **Generic Controller** (`app/controllers/layered/managed_resource/resources_controller.rb`) — A single `ResourcesController` handles all managed resources. It resolves which resource class to use at runtime via the `_managed_route_key` route default, then delegates to the resource class for scoping, column definitions, field definitions, and permitted params.
+2. **Generic Controller** (`app/controllers/layered/managed_resource/resources_controller.rb`) - A single `ResourcesController` handles all managed resources. It resolves which resource class to use at runtime via the `_managed_route_key` route default, then delegates to the resource class for scoping, column definitions, field definitions, and permitted params.
 
-3. **Resource Definition** (`lib/layered/managed_resource/base.rb`) — `Layered::ManagedResource::Base` is the base class for resource definitions. Users create subclasses in `app/managed_resources/` (e.g., `PostResource`) that configure:
-   - `model` — the ActiveRecord model class (inferred from resource class name by default)
-   - `columns` — columns displayed on the index table
-   - `fields` — form fields for new/edit (empty = read-only, no CRUD forms)
-   - `search_fields` — Ransack search attributes
-   - `permitted_params` — derived from fields by default
-   - `scope(controller)` — default scope (override for tenant isolation)
-   - `build_record(controller)` — how to instantiate new records
-   - `after_save_path(controller, record)` — redirect target after create/update/destroy
+3. **Resource Definition** (`lib/layered/managed_resource/base.rb`) - `Layered::ManagedResource::Base` is the base class for resource definitions. Users create subclasses in `app/managed_resources/` (e.g., `PostResource`) that configure:
+   - `model` - the ActiveRecord model class (inferred from resource class name by default)
+   - `columns` - columns displayed on the index table
+   - `fields` - form fields for new/edit (empty = read-only, no CRUD forms)
+   - `search_fields` - Ransack search attributes
+   - `permitted_params` - derived from fields by default
+   - `scope(controller)` - default scope (override for tenant isolation)
+   - `build_record(controller)` - how to instantiate new records
+   - `after_save_path(controller, record)` - redirect target after create/update/destroy
 
 ### Key Design Decisions
 
 - The routing layer validates action combinations at route-definition time (e.g., `:new` requires `:index` and `:create`).
 - `fields` returning empty disables all CRUD forms; `:destroy` still works independently.
-- Views use `layered-ui-rails` helpers (`l_ui_table`, `l_ui_form`, `l_ui_search_form`, `l_ui_pagy`) — not standard Rails form builders.
+- Views use `layered-ui-rails` helpers (`l_ui_table`, `l_ui_form`, `l_ui_search_form`, `l_ui_pagy`) - not standard Rails form builders.
 - Authentication is pluggable via `Layered::ManagedResource.managed_resource_before_action`, which names a controller method to call as a before_action.
 - Resource classes live in `app/managed_resources/` (autoloaded by the engine) and keep models clean of admin/UI concerns.
 
@@ -60,7 +60,7 @@ See `GUIDELINES.md` for the design philosophy: progressive customisation (fully 
 
 ## Dependencies
 
-- `layered-ui-rails ~> 0.3` — UI component library (local path override in Gemfile for development)
-- `ransack ~> 4.0` — search/filtering
-- `pagy ~> 43.2` — pagination
+- `layered-ui-rails ~> 0.3` - UI component library (local path override in Gemfile for development)
+- `ransack ~> 4.0` - search/filtering
+- `pagy ~> 43.2` - pagination
 - `rails ~> 8.0`

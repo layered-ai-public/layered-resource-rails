@@ -1,25 +1,17 @@
-<h1><%= gem_spec.name %> (v<%= gem_spec.version.to_s %>)</h1>
+<%= l_ui_breadcrumbs do %>
+  <%= l_ui_breadcrumb_item "#{gem_spec.name} (v#{gem_spec.version.to_s})" %>
+<% end %>
+<h1>Home</h1>
 
 <p class="l-ui-utility--mt-md">
   <%= gem_spec.description %>
 </p>
 
-<h2 class="l-ui-utility--mt-xl">Demo</h2>
+<h2 class="l-ui-utility--mt-xl">Examples</h2>
 <ul class="l-ui-list l-ui-utility--mt-md">
-  <li><%= link_to "Users", managed_users_path %> — index with posts count linking to nested posts</li>
-  <li><%= link_to "All posts", managed_posts_path %> — standalone, all posts</li>
+  <li><%= link_to "Posts", managed_posts_path %> - standalone, all posts</li>
+  <li><%= link_to "Users", managed_users_path %> - index with posts count linking to nested posts</li>
 </ul>
-
-<% demo_user = User.first %>
-<% if demo_user %>
-  <ul class="l-ui-list l-ui-utility--mt-md">
-    <li><%= link_to "User posts (full CRUD)", managed_users_posts_path(user_id: demo_user) %> — nested under user, scoped</li>
-    <li><%= link_to "Readonly", managed_users_readonly_posts_path(user_id: demo_user) %> — index only</li>
-    <li><%= link_to "Deletable", managed_users_deletable_posts_path(user_id: demo_user) %> — index and destroy</li>
-  </ul>
-<% else %>
-  <p class="l-ui-utility--mt-md">Sign up to see nested post routes.</p>
-<% end %>
 
 <h2 class="l-ui-utility--mt-xl">Requirements</h2>
 <ul class="l-ui-list l-ui-utility--mt-md">
