@@ -116,4 +116,16 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   ensure
     Rails.application.reload_routes!
   end
+
+  # -- controller: option --
+
+  test "controller: option routes to a custom controller" do
+    Rails.application.routes.draw do
+      layered_resources :posts, controller: "custom_posts", only: [:index]
+    end
+    route = Rails.application.routes.routes.find { |r| r.path.spec.to_s == "/posts(.:format)" }
+    assert_equal "custom_posts", route.defaults[:controller]
+  ensure
+    Rails.application.reload_routes!
+  end
 end

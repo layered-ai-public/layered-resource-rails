@@ -47,7 +47,7 @@ The gem is a Rails Engine isolated under `Layered::Resource`. It works through t
 - The routing layer validates action combinations at route-definition time (e.g., `:new` requires `:index` and `:create`).
 - `fields` returning empty disables all CRUD forms; `:destroy` still works independently.
 - Views use `layered-ui-rails` helpers (`l_ui_table`, `l_ui_form`, `l_ui_search_form`, `l_ui_pagy`) - not standard Rails form builders.
-- Authentication is pluggable via `Layered::Resource.before_action`, which names a controller method to call as a before_action.
+- Authentication is pluggable via `Layered::Resource.authentication_method`, which names a controller method to call as a before_action.
 - Resource classes live in `app/layered_resources/` (autoloaded by the engine) and keep models clean of admin/UI concerns.
 
 ### Test Setup

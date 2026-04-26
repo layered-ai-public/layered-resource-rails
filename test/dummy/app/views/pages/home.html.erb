@@ -81,7 +81,7 @@ end</code></pre>
 <h2 class="l-ui-utility--mt-xl">Authentication</h2>
 <p class="l-ui-utility--mt-md">Protect layered resources with a before_action by setting:</p>
 <pre class="l-ui-surface l-ui-utility--mt-md"><code># config/initializers/layered_resource.rb
-Layered::Resource.before_action = :authenticate_user!</code></pre>
+Layered::Resource.authentication_method = :authenticate_user!</code></pre>
 
 <h2 class="l-ui-utility--mt-xl">License</h2>
 <p class="l-ui-utility--mt-md">

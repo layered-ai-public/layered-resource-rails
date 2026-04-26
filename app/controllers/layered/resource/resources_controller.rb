@@ -1,9 +1,9 @@
 module Layered
   module Resource
     class ResourcesController < ::ApplicationController
-      include Concerns::Routing
-      include Concerns::Breadcrumbs
-      include Concerns::Columns
+      include Internal::Routing
+      include Internal::Breadcrumbs
+      include Internal::Columns
 
       helper Rails.application.routes.url_helpers
       helper Layered::Ui::TableHelper
@@ -13,22 +13,22 @@ module Layered
       helper Layered::Ui::BreadcrumbsHelper
 
       before_action :layered_resource_authenticate
-      before_action :resolve_layered_resource
+      before_action :load_layered_resource
       before_action :require_layered_fields, only: %i[new create edit update]
 
       helper_method :layered_routes
       helper_method :layered_breadcrumbs
 
       def index
-        @q = @resource.scope(self).ransack(params[:q])
-        scope = @q.result(distinct: @resource.distinct?)
+        @q = @resource.scope(self).ransack(params[:q], auth_object: @resource)
+        scope = @q.result(distinct: @resource.requires_distinct?)
         if @q.sorts.empty?
           ds = @resource.default_sort
           scope = scope.order(ds[:attribute] => ds[:direction])
         end
 
         @pagy, @records = pagy(scope, limit: @resource.per_page)
-        resolve_linked_columns
+        decorate_columns
       end
 
       def new
@@ -86,8 +86,8 @@ module Layered
 
       # Looks up the resource class from the route registry and sets all
       # the instance variables the views need (@resource, @model, @columns,
-      # @fields, and the @can_* permission flags).
-      def resolve_layered_resource
+      # @fields, and the @can_* action flags).
+      def load_layered_resource
         route_key = request.path_parameters.delete(:_layered_resource_route_key)
         params.delete(:_layered_resource_route_key)
         @_route_entry = Layered::Resource::Routing.lookup(route_key)
@@ -95,10 +95,11 @@ module Layered
 
         @resource = @_route_entry[:resource].safe_constantize
         unless @resource && @resource < Layered::Resource::Base
-          raise ActionController::RoutingError, "#{resource_name} is not a layered resource (must inherit from Layered::Resource::Base)"
+          raise ActionController::RoutingError,
+                "#{@_route_entry[:resource]} is not a layered resource (must inherit from Layered::Resource::Base)"
         end
 
-        @resource.configure_ransack!
+        @resource.configure_ransack if Layered::Resource.auto_configure_ransack
 
         @model = @resource.model
         @columns = @resource.columns
@@ -125,7 +126,7 @@ module Layered
       end
 
       def layered_resource_authenticate
-        method = Layered::Resource.before_action
+        method = Layered::Resource.authentication_method
         send(method) if method
       end
 

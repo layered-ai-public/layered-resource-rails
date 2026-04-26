@@ -64,8 +64,8 @@ module Layered
           fields.map { |f| f[:attribute] }
         end
 
-        def distinct?
-          model.ransackable_associations.any?
+        def requires_distinct?
+          model.ransackable_associations(self).any?
         end
 
         def scope(_controller)
@@ -99,36 +99,55 @@ module Layered
           end
         end
 
-        def configure_ransack!
-          return if @ransack_configured
-
-          resource = self
+        def configure_ransack
           m = model
+          return if m.instance_variable_get(:@_layered_resource_ransack_configured)
 
-          m.define_singleton_method(:ransackable_attributes) do |_auth_object = nil|
-            db_columns = column_names
-            attrs = resource.columns.map { |c| c[:attribute].to_s }.select { |a| db_columns.include?(a) }
-            attrs |= resource.search_fields.map(&:to_s)
-            attrs
+          # Capture the model's existing ransack methods (whether user-defined
+          # or the framework default) before redefining them, and delegate
+          # back for any caller that isn't this resource asking about its own
+          # model. This preserves any allowlist the host app has set up, and
+          # leaves cross-model association walks (e.g. Post.ransack walking to
+          # User) to whatever the associated model has configured directly.
+          original_attributes = m.method(:ransackable_attributes)
+          original_associations = m.method(:ransackable_associations)
+
+          m.define_singleton_method(:ransackable_attributes) do |auth_object = nil|
+            if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
+              db_columns = column_names
+              attrs = auth_object.columns.map { |c| c[:attribute].to_s }.select { |a| db_columns.include?(a) }
+              attrs | auth_object.search_fields.map(&:to_s)
+            else
+              original_attributes.call(auth_object)
+            end
           end
 
-          m.define_singleton_method(:ransackable_associations) do |_auth_object = nil|
-            db_columns = column_names
-            virtual_attrs = resource.columns.map { |c| c[:attribute].to_s }.reject { |a| db_columns.include?(a) }
-            assoc_names = reflect_on_all_associations(:belongs_to).map { |a| a.name.to_s }
-            virtual_attrs.filter_map { |attr|
-              assoc_names.find { |assoc| attr.start_with?("#{assoc}_") }
-            }.uniq
+          m.define_singleton_method(:ransackable_associations) do |auth_object = nil|
+            if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
+              db_columns = column_names
+              virtual_attrs = auth_object.columns.map { |c| c[:attribute].to_s }.reject { |a| db_columns.include?(a) }
+              assoc_names = reflect_on_all_associations(:belongs_to).map { |a| a.name.to_s }
+              virtual_attrs.filter_map { |attr|
+                assoc_names.find { |assoc| attr.start_with?("#{assoc}_") }
+              }.uniq
+            else
+              original_associations.call(auth_object)
+            end
           end
 
-          @ransack_configured = true
+          m.instance_variable_set(:@_layered_resource_ransack_configured, true)
         end
 
         private
 
+        # An attribute is treated as required when it has a presence validator
+        # that runs unconditionally on every save. Conditional (:if/:unless),
+        # context-scoped (:on), and "skip when blank/nil" validators don't
+        # qualify because they may not fire for the form being rendered.
         def attribute_required?(attribute)
           model.validators_on(attribute).any? { |v|
-            v.is_a?(ActiveRecord::Validations::PresenceValidator) && v.options.except(:message).empty?
+            v.is_a?(ActiveRecord::Validations::PresenceValidator) &&
+              v.options.slice(:if, :unless, :on, :allow_nil, :allow_blank).empty?
           }
         end
       end

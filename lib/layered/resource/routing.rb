@@ -27,7 +27,7 @@ module Layered
 
       RESOURCE_ACTIONS = %i[index new create edit update destroy].freeze
 
-      def layered_resources(resource_name, resource: nil, only: RESOURCE_ACTIONS, **options)
+      def layered_resources(resource_name, resource: nil, controller: nil, only: RESOURCE_ACTIONS, **options)
         resource_class_name = resource || "#{resource_name.to_s.classify}Resource"
         route_key = resource_name.to_s
         singular_key = resource_name.to_s.singularize
@@ -60,8 +60,11 @@ module Layered
         # Use a leading "/" when inside a module scope (e.g. another engine) so
         # Rails' add_controller_module treats the path as absolute and skips
         # prepending the engine's namespace. Without a module scope the plain
-        # path is used directly.
-        controller = if @scope[:module]
+        # path is used directly. The caller can override with controller: to
+        # route to a custom subclass of Layered::Resource::ResourcesController.
+        controller = if controller
+                       controller.to_s
+                     elsif @scope[:module]
                        "/layered/resource/resources"
                      else
                        "layered/resource/resources"
@@ -84,6 +87,12 @@ module Layered
           raise ArgumentError,
                 "layered_resources :#{resource_name} includes :edit without :update. " \
                 "The edit form patches the member route; add :update to only:."
+        end
+
+        if actions.include?(:update) && !actions.include?(:index)
+          raise ArgumentError,
+                "layered_resources :#{resource_name} includes :update without :index. " \
+                "Update redirects to the collection route; add :index to only:."
         end
 
         if actions.include?(:destroy) && !actions.include?(:index)

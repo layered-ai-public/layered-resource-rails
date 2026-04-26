@@ -10,4 +10,4 @@ Initial release.
 - `Layered::Resource::Base` for declaring `model`, `columns`, `fields`, `search_fields`, and `scope`
 - Generic `ResourcesController` with index, new, create, edit, update, destroy
 - Ransack search and sorting; Pagy pagination
-- Pluggable authentication via `Layered::Resource.before_action`
+- Pluggable authentication via `Layered::Resource.authentication_method`

@@ -94,7 +94,7 @@ Protect all layered resources with a single initializer setting. Point it at any
 
 ```ruby
 # config/initializers/layered_resource.rb
-Layered::Resource.before_action = :authenticate_user!
+Layered::Resource.authentication_method = :authenticate_user!
 ```
 
 This runs as a `before_action` on every layered resource request. No per-resource configuration needed.

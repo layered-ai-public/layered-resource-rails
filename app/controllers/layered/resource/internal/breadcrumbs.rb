@@ -1,9 +1,9 @@
 module Layered
   module Resource
-    module Concerns
+    module Internal
       # Builds breadcrumb entries from parent route params.
       # Depends on @_route_entry being set by the controller's
-      # resolve_layered_resource before_action.
+      # load_layered_resource before_action.
       module Breadcrumbs
         extend ActiveSupport::Concern
 

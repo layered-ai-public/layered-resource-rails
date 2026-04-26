@@ -1,9 +1,9 @@
 module Layered
   module Resource
-    module Concerns
+    module Internal
       # Route helper proxy and path generation for layered resources.
       # Depends on @_route_entry and @layered_route_key being set by
-      # the controller's resolve_layered_resource before_action.
+      # the controller's load_layered_resource before_action.
       module Routing
         extend ActiveSupport::Concern
 
