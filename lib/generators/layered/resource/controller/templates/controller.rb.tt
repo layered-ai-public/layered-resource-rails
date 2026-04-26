@@ -1,8 +1,8 @@
 <% module_namespacing do -%>
 class <%= class_name %>Controller < Layered::Resource::ResourcesController
-  # Override any of the standard CRUD actions (#index, #new, #create,
-  # #edit, #update, #destroy) and call `super` when you only want to
-  # tweak behaviour. Drop the inheritance and write a plain Rails
-  # controller if you outgrow the gem entirely.
+  # Override any of the standard CRUD actions (#index, #show, #new,
+  # #create, #edit, #update, #destroy) and call `super` when you only
+  # want to tweak behaviour. Drop the inheritance and write a plain
+  # Rails controller if you outgrow the gem entirely.
 end
 <% end -%>

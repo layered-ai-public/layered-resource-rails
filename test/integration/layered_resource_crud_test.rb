@@ -26,6 +26,52 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
     assert_select "form[action='/users/#{@user.id}/posts/#{post.id}'] button", text: "Delete"
   end
 
+  # -- show --
+
+  test "show renders record details" do
+    record = Post.create!(title: "Showcase", body: "Body text", user: @user)
+    get "/posts/#{record.id}"
+    assert_response :success
+    assert_select "h1", text: "Showcase"
+    assert_select "h4", text: /Title/
+    assert_select "h4", text: /Body/
+    assert_select "p", text: /Body text/
+  end
+
+  test "show renders edit and delete buttons when crud enabled" do
+    record = Post.create!(title: "Showcase", user: @user)
+    get "/posts/#{record.id}"
+    assert_response :success
+    assert_select "a[href='/posts/#{record.id}/edit']", text: "Edit"
+    assert_select "form[action='/posts/#{record.id}'] button", text: "Delete"
+  end
+
+  test "show for missing record returns 404" do
+    get "/posts/999999"
+    assert_response :not_found
+  end
+
+  test "show renders without an index route registered" do
+    record = Post.create!(title: "Standalone", user: @user)
+    get "/showonly/posts/#{record.id}"
+    assert_response :success
+    assert_select "h1", text: "Standalone"
+  end
+
+  test "index links primary column to show when show is enabled" do
+    record = Post.create!(title: "Linked", user: @user)
+    get "/posts"
+    assert_response :success
+    assert_select "th[scope='row'] a[href='/posts/#{record.id}']", text: "Linked"
+  end
+
+  test "index does not link primary column when show is not enabled" do
+    get "/users"
+    assert_response :success
+    # users route does not include :show, so the name cell should not link
+    assert_select "th[scope='row'] a", text: "Author", count: 0
+  end
+
   # -- new --
 
   test "new renders form" do

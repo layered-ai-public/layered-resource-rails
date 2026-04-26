@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. This project follows [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- `:show` action: `GET /:id` renders a record detail page using the resource's columns
+- Index tables auto-link the primary column to the show page when `:show` is enabled
+
 ## [0.1.0] - 2026-04-19
 
 Initial release.

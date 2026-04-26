@@ -31,6 +31,11 @@ module Layered
         decorate_columns
       end
 
+      def show
+        @record = @resource.scope(self).find(params[:id])
+        decorate_columns
+      end
+
       def new
         @record = @resource.build_record(self)
         @form_url = layered_collection_path
@@ -111,6 +116,7 @@ module Layered
         @can_create = @crud_enabled && resource_actions.include?(:new)
         @can_update = @crud_enabled && resource_actions.include?(:edit)
         @can_destroy = resource_actions.include?(:destroy)
+        @can_show = resource_actions.include?(:show)
       end
 
       def require_layered_fields

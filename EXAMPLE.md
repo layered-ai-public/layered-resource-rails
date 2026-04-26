@@ -40,14 +40,17 @@ That's it. You now have a full CRUD interface with search and pagination for `Ar
 
 ## What you get
 
-| Route                      | Action  | Description        |
-|----------------------------|---------|--------------------|
-| `GET /articles`            | index   | Paginated table    |
-| `GET /articles/new`        | new     | New article form   |
-| `POST /articles`           | create  | Create article     |
-| `GET /articles/:id/edit`   | edit    | Edit article form  |
-| `PATCH /articles/:id`      | update  | Update article     |
-| `DELETE /articles/:id`     | destroy | Delete article     |
+| Route                      | Action  | Description         |
+|----------------------------|---------|---------------------|
+| `GET /articles`            | index   | Paginated table     |
+| `GET /articles/:id`        | show    | Article detail page |
+| `GET /articles/new`        | new     | New article form    |
+| `POST /articles`           | create  | Create article      |
+| `GET /articles/:id/edit`   | edit    | Edit article form   |
+| `PATCH /articles/:id`      | update  | Update article      |
+| `DELETE /articles/:id`     | destroy | Delete article      |
+
+When `:show` is enabled, the index table's primary column (`primary: true`, or the first column) is automatically linked to the show page.
 
 ## Options
 
@@ -71,7 +74,7 @@ layered_resources :articles, only: [:index]
 **Restrict actions:**
 
 ```ruby
-layered_resources :articles, only: [:index, :edit, :update]
+layered_resources :articles, only: [:index, :show, :edit, :update]
 ```
 
 **Custom scope (e.g. tenant isolation):**

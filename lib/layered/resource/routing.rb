@@ -25,7 +25,7 @@ module Layered
         end
       end
 
-      RESOURCE_ACTIONS = %i[index new create edit update destroy].freeze
+      RESOURCE_ACTIONS = %i[index show new create edit update destroy].freeze
 
       def layered_resources(resource_name, resource: nil, controller: nil, only: RESOURCE_ACTIONS, **options)
         resource_class_name = resource || "#{resource_name.to_s.classify}Resource"
@@ -133,16 +133,23 @@ module Layered
         end
 
         member_named = false
+        if actions.include?(:show)
+          get "#{route_key}/:id", to: "#{controller}#show",
+                                  as: :"layered_#{scoped_singular}",
+                                  defaults: route_defaults, **options
+          member_named = true
+        end
+
         if actions.include?(:update)
-          patch "#{route_key}/:id", to: "#{controller}#update",
-                                    as: :"layered_#{scoped_singular}",
-                                    defaults: route_defaults, **options
+          update_opts = { to: "#{controller}#update", defaults: route_defaults, **options }
+          update_opts[:as] = member_named ? nil : :"layered_#{scoped_singular}"
+          patch "#{route_key}/:id", **update_opts
           member_named = true
         end
 
         if actions.include?(:destroy)
           destroy_opts = { to: "#{controller}#destroy", defaults: route_defaults, **options }
-          destroy_opts[:as] = :"layered_#{scoped_singular}" unless member_named
+          destroy_opts[:as] = member_named ? nil : :"layered_#{scoped_singular}"
           delete "#{route_key}/:id", **destroy_opts
         end
       end

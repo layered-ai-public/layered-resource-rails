@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A Rails Engine gem (`layered-resource-rails`) that provides convention-over-configuration CRUD scaffolding for Rails 8+. It auto-generates index, new/create, edit/update, and destroy interfaces using a single routing DSL method (`layered_resources`) and separate resource definition classes that inherit from `Layered::Resource::Base`. Built on top of `layered-ui-rails` for UI components, Ransack for search, and Pagy for pagination.
+A Rails Engine gem (`layered-resource-rails`) that provides convention-over-configuration CRUD scaffolding for Rails 8+. It auto-generates index, show, new/create, edit/update, and destroy interfaces using a single routing DSL method (`layered_resources`) and separate resource definition classes that inherit from `Layered::Resource::Base`. Built on top of `layered-ui-rails` for UI components, Ransack for search, and Pagy for pagination.
 
 ## Commands
 
@@ -44,8 +44,9 @@ The gem is a Rails Engine isolated under `Layered::Resource`. It works through t
 
 ### Key Design Decisions
 
-- The routing layer validates action combinations at route-definition time (e.g., `:new` requires `:index` and `:create`).
-- `fields` returning empty disables all CRUD forms; `:destroy` still works independently.
+- The routing layer validates action combinations at route-definition time (e.g., `:new` requires `:index` and `:create`). `:show` has no dependencies and can stand alone.
+- `fields` returning empty disables all CRUD forms; `:show` and `:destroy` still work independently.
+- When `:show` is enabled, the index table's primary column (the one with `primary: true`, or the first column) is auto-linked to the show page. Columns that already declare a custom `link:` are left alone.
 - Views use `layered-ui-rails` helpers (`l_ui_table`, `l_ui_form`, `l_ui_search_form`, `l_ui_pagy`) - not standard Rails form builders.
 - Authentication is pluggable via `Layered::Resource.authentication_method`, which names a controller method to call as a before_action.
 - Resource classes live in `app/layered_resources/` (autoloaded by the engine) and keep models clean of admin/UI concerns.

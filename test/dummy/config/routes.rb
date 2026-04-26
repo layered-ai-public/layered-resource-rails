@@ -38,4 +38,8 @@ Rails.application.routes.draw do
   scope "users/:user_id/admin" do
     layered_resources :posts, only: [:index]
   end
+
+  scope "showonly" do
+    layered_resources :posts, only: [:show]
+  end
 end

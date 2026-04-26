@@ -1,0 +1,44 @@
+<% primary_column = @columns.find { |c| c[:primary] } || @columns.first %>
+<% record_label = primary_column[:render].call(@record) if primary_column %>
+<% index_helper = :"layered_#{@layered_route_key}_path" %>
+<% index_path = layered_routes.respond_to?(index_helper) ? layered_routes.send(index_helper) : nil %>
+
+<div class="l-ui-container--spread">
+  <div>
+    <%= l_ui_breadcrumbs do %>
+      <%= l_ui_breadcrumb_item "Home", root_path %>
+      <% layered_breadcrumbs.each do |crumb| %>
+        <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
+      <% end %>
+      <% if index_path %>
+        <%= l_ui_breadcrumb_item @model.model_name.human.pluralize, index_path %>
+      <% end %>
+    <% end %>
+
+    <h1 class="l-ui-heading"><%= record_label %></h1>
+  </div>
+
+  <div class="l-ui-container--spread">
+    <% if @can_update %>
+      <%= link_to "Edit",
+            layered_routes.send(:"edit_layered_#{@layered_route_key.singularize}_path", @record),
+            class: "l-ui-button l-ui-button--primary" %>
+    <% end %>
+    <% if @can_destroy %>
+      <%= button_to "Delete",
+            layered_routes.send(:"layered_#{@layered_route_key.singularize}_path", @record),
+            method: :delete,
+            class: "l-ui-button l-ui-button--outline-danger",
+            data: { turbo_confirm: "Are you sure?" } %>
+    <% end %>
+  </div>
+</div>
+
+<% @columns.each do |col| %>
+  <h4 class="l-ui-heading l-ui-utility--mt-lg">
+    <%= col[:label] || col[:attribute].to_s.humanize %>
+  </h4>
+  <p>
+    <%= col[:render].call(@record) %>
+  </p>
+<% end %>

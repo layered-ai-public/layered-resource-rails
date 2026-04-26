@@ -16,6 +16,7 @@ module Layered
           apply_column_sortability
           apply_column_renderers
           apply_column_links
+          apply_primary_column_show_link if action_name == "index"
         end
 
         # Marks columns sortable: false unless they map to a real DB column.
@@ -44,6 +45,35 @@ module Layered
               render: ->(record) {
                 raw = record.public_send(attr)
                 raw.respond_to?(:strftime) ? raw.strftime("%-d %b %Y %H:%M") : raw
+              }
+            )
+          end
+        end
+
+        # When :show is enabled, wraps the primary column's render proc to
+        # link the cell to the show path. The "primary" column is the one
+        # marked primary: true (or the first column if none is). Columns
+        # that already declare a custom link: are left alone.
+        def apply_primary_column_show_link
+          return unless @can_show
+
+          routes_proxy = layered_routes
+          singular = @layered_route_key.singularize
+          helper = :"layered_#{singular}_path"
+          return unless routes_proxy.respond_to?(helper)
+
+          primary_index = @columns.index { |c| c[:primary] } || 0
+          view = view_context
+
+          @columns = @columns.each_with_index.map do |col, i|
+            next col unless i == primary_index
+            next col if col[:link]
+
+            inner_render = col[:render]
+            col.merge(
+              render: ->(record) {
+                value = inner_render.call(record)
+                view.link_to value, routes_proxy.send(helper, record), data: { turbo_frame: "_top" }
               }
             )
           end
