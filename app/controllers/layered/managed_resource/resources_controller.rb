@@ -9,7 +9,7 @@ module Layered
       helper Layered::Ui::TableHelper
       helper Layered::Ui::FormHelper
       helper Layered::Ui::RansackHelper
-      helper Layered::Ui::PaginationHelper
+      helper Layered::Ui::PagyHelper
       helper Layered::Ui::BreadcrumbsHelper
 
       before_action :managed_resource_authenticate

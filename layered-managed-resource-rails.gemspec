@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
 
   # Dependencies
   spec.add_dependency "concurrent-ruby", ">= 1.0"
-  spec.add_dependency "layered-ui-rails", "~> 0.4"
+  spec.add_dependency "layered-ui-rails", "~> 0.8"
   spec.add_dependency "pagy", "~> 43.2"
   spec.add_dependency "rails", "~> 8.0"
   spec.add_dependency "ransack", "~> 4.0"

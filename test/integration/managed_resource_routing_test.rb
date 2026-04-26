@@ -5,8 +5,8 @@ class ManagedResourceRoutingTest < ActionDispatch::IntegrationTest
     @user = User.create!(
       email: "author@test.com",
       name: "Author",
-      password: "password",
-      password_confirmation: "password"
+      password: "password1234",
+      password_confirmation: "password1234"
     )
   end
 

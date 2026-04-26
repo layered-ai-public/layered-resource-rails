@@ -14,7 +14,7 @@ Devise.setup do |config|
   # confirmation, reset password and unlock tokens in the database.
   # Devise will use the `secret_key_base` as its `secret_key`
   # by default. You can change it below and use your own secret key.
-  # config.secret_key = '2d291d13fc37501c37a3f999ebf841b92c3c107bd0ad38b88d1945a40a7852a3366f2a5785e53c2e02ff6359f7a26acec6c9701cc46723f584378a2f804121f3'
+  # config.secret_key = '4bec58816d7c337b43a6d6f10b39d231f7a507beab5f7ecf625a727f49d3c4af7977df68b8161e5b492359736ab68c454f2a38ae66bef1b26f836067faed87fb'
 
   # ==> Controller configuration
   # Configure the parent class to the devise controllers.
@@ -24,7 +24,7 @@ Devise.setup do |config|
   # Configure the e-mail address which will be shown in Devise::Mailer,
   # note that it will be overwritten if you use your own mailer class
   # with default "from" parameter.
-  config.mailer_sender = 'please-change-me-at-config-initializers-devise@example.com'
+  config.mailer_sender = 'no-reply@layered.ai'
 
   # Configure the class responsible to send e-mails.
   # config.mailer = 'Devise::Mailer'
@@ -126,7 +126,7 @@ Devise.setup do |config|
   config.stretches = Rails.env.test? ? 1 : 12
 
   # Set up a pepper to generate the hashed password.
-  # config.pepper = '9d78d85f640860d7a4ae008e677110bb41c23bb925f347e35cd0b79bf7138fb06a28da6ea659f5bfc913f0cdaf0436f3179922ea3fcbc5a0fb2464be17f3d4bc'
+  # config.pepper = '34a7bfda955d8b322bff82a6e6814914f5b04c635f7e7927881bbbed9dc1ede87343eeb96f4041743c5f62eba51b28898e4d85b53ce5b4b265f76d1ded297b73'
 
   # Send a notification to the original email when the user's email is changed.
   # config.send_email_changed_notification = false
@@ -143,7 +143,7 @@ Devise.setup do |config|
   # without confirming their account.
   # Default is 0.days, meaning the user cannot access the website without
   # confirming their account.
-  config.allow_unconfirmed_access_for = 1.year
+  # config.allow_unconfirmed_access_for = 2.days
 
   # A period that the user is allowed to confirm their account before their
   # token becomes invalid. For example, if set to 3.days, the user can confirm
@@ -181,7 +181,7 @@ Devise.setup do |config|
 
   # ==> Configuration for :validatable
   # Range for password length.
-  config.password_length = 6..128
+  config.password_length = 12..128
 
   # Email regex used to validate email formats. It simply asserts that
   # one (and only one) @ exists in the given string. This is mainly

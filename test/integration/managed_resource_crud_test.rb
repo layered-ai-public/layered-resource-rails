@@ -5,8 +5,8 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
     @user = User.create!(
       email: "author@test.com",
       name: "Author",
-      password: "password",
-      password_confirmation: "password"
+      password: "password1234",
+      password_confirmation: "password1234"
     )
   end
 
@@ -139,7 +139,7 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
   # -- parent scoping --
 
   test "index only shows posts belonging to the parent user" do
-    other_user = User.create!(email: "other@test.com", name: "Other", password: "password", password_confirmation: "password")
+    other_user = User.create!(email: "other@test.com", name: "Other", password: "password1234", password_confirmation: "password1234")
     Post.create!(title: "My post", user: @user)
     Post.create!(title: "Their post", user: other_user)
 
@@ -150,7 +150,7 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "edit for post belonging to different user returns 404" do
-    other_user = User.create!(email: "other@test.com", name: "Other", password: "password", password_confirmation: "password")
+    other_user = User.create!(email: "other@test.com", name: "Other", password: "password1234", password_confirmation: "password1234")
     theirs = Post.create!(title: "Their post", user: other_user)
 
     get "/users/#{@user.id}/posts/#{theirs.id}/edit"
@@ -160,7 +160,7 @@ class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
   # -- standalone posts (no user scoping) --
 
   test "standalone index shows all posts regardless of user" do
-    other_user = User.create!(email: "other@test.com", name: "Other", password: "password", password_confirmation: "password")
+    other_user = User.create!(email: "other@test.com", name: "Other", password: "password1234", password_confirmation: "password1234")
     Post.create!(title: "My post", user: @user)
     Post.create!(title: "Their post", user: other_user)
 
