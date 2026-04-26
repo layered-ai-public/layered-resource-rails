@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.authors     = [ "layered.ai" ]
   spec.email       = [ "support@layered.ai" ]
   spec.homepage    = "https://www.layered.ai"
-  spec.description = "A convention-over-configuration CRUD engine for Rails 8+, built on the layered-ui-rails gem. Declare a resource class, mount it in routes.rb, and get index, new/create, edit/update, and destroy actions with clean default views, Ransack-powered search and sorting, and Pagy pagination. Override any controller or view when you need full control — generators are included to get you started."
+  spec.description = "A convention-over-configuration CRUD engine for Rails 8+, built on the layered-ui-rails gem. Declare a resource class, mount it in routes.rb, and get index, new/create, edit/update, and destroy actions with clean default views, Ransack-powered search and sorting, and Pagy pagination. Override any controller or view when you need full control — generators are included to help you create custom controllers and views."
   spec.summary     = "Convention-over-configuration CRUD for Rails 8+ with Ransack and Pagy built in."
   spec.license     = "Apache-2.0"
 

@@ -101,7 +101,7 @@ This runs as a `before_action` on every layered resource request. No per-resourc
 
 ## Escape hatching
 
-The gem is designed so you can start fully managed and progressively take over control when you outgrow the defaults.
+The gem is designed so you can start fully managed and progressively take over control if you outgrow the defaults.
 
 **Override the scope or redirect target** directly in the resource class:
 
@@ -136,7 +136,7 @@ This generates standard ERB templates into `app/views/layered/articles/` that yo
 **Override the controller.** Use the generator to create one in the right place:
 
 ```
-rails g layered_resource:controller articles
+rails g layered:resource:controller articles
 ```
 
 This gives you a controller that inherits from the base -- override just what you need:
@@ -155,7 +155,7 @@ class ArticlesController < Layered::Resource::ResourcesController
 end
 ```
 
-When you outgrow the gem entirely, drop the inheritance and write a plain Rails controller:
+If you outgrow the gem entirely, drop the inheritance and write a plain Rails controller:
 
 ```ruby
 class ArticlesController < ApplicationController
