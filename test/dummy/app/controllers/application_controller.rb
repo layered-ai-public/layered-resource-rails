@@ -1,6 +1,6 @@
 class ApplicationController < ActionController::Base
   GEM_SPEC = Gem.loaded_specs.values.find { |s|
-    s.full_gem_path == Layered::ManagedResource::Engine.root.to_s
+    s.full_gem_path == Layered::Resource::Engine.root.to_s
   }.freeze
 
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.

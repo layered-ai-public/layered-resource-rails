@@ -1,6 +1,6 @@
 require "test_helper"
 
-class ManagedResourceColumnsTest < ActionDispatch::IntegrationTest
+class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
   setup do
     @user = User.create!(
       email: "author@test.com",
@@ -10,7 +10,7 @@ class ManagedResourceColumnsTest < ActionDispatch::IntegrationTest
     )
   end
 
-  test "link option renders column value as badge link to nested managed resource" do
+  test "link option renders column value as badge link to nested layered resource" do
     Post.create!(title: "First", user: @user)
     Post.create!(title: "Second", user: @user)
 

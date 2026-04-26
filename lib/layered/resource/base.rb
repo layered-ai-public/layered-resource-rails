@@ -1,5 +1,5 @@
 module Layered
-  module ManagedResource
+  module Resource
     class Base
       class << self
         def model(klass = nil)
@@ -77,7 +77,7 @@ module Layered
         end
 
         def after_save_path(controller, _record)
-          url = controller.managed_resource_collection_url
+          url = controller.layered_resource_collection_url
           return url if url
 
           raise ActionController::RoutingError,

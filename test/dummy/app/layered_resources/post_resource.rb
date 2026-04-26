@@ -1,4 +1,4 @@
-class PostResource < Layered::ManagedResource::Base
+class PostResource < Layered::Resource::Base
   model Post
 
   columns [

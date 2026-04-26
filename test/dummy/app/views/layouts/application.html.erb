@@ -4,10 +4,10 @@
   <% content_for :l_ui_navigation_items do %>
     <%= l_ui_navigation_item "Home", root_path %>
     <%= l_ui_navigation_item "Examples", examples_path do %>
-      <%= l_ui_navigation_item "Posts", managed_posts_path %>
-      <%= l_ui_navigation_item "Users", managed_users_path do %>
-        <%= l_ui_navigation_item "Read Only", managed_readonly_users_path %>
-        <%= l_ui_navigation_item "Deletable", managed_deletable_users_path %>
+      <%= l_ui_navigation_item "Posts", layered_posts_path %>
+      <%= l_ui_navigation_item "Users", layered_users_path do %>
+        <%= l_ui_navigation_item "Read Only", layered_readonly_users_path %>
+        <%= l_ui_navigation_item "Deletable", layered_deletable_users_path %>
       <% end %>
     <% end %>
   <% end %>

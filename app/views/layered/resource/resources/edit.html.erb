@@ -2,17 +2,17 @@
   <div>
     <%= l_ui_breadcrumbs do %>
       <%= l_ui_breadcrumb_item "Home", root_path %>
-      <% managed_breadcrumbs.each do |crumb| %>
+      <% layered_breadcrumbs.each do |crumb| %>
         <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
       <% end %>
-      <%= l_ui_breadcrumb_item @model.model_name.human.pluralize, managed_routes.send(:"managed_#{@managed_route_key}_path") %>
+      <%= l_ui_breadcrumb_item @model.model_name.human.pluralize, layered_routes.send(:"layered_#{@layered_route_key}_path") %>
     <% end %>
 
     <h1 class="l-ui-heading">Edit <%= @model.model_name.human.downcase %></h1>
   </div>
 
   <%= link_to "Cancel",
-        managed_routes.send(:"managed_#{@managed_route_key}_path"),
+        layered_routes.send(:"layered_#{@layered_route_key}_path"),
         class: "l-ui-button l-ui-button--danger" %>
 </div>
 

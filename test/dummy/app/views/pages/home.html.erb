@@ -9,37 +9,37 @@
 
 <h2 class="l-ui-utility--mt-xl">Examples</h2>
 <ul class="l-ui-list l-ui-utility--mt-md">
-  <li><%= link_to "Posts", managed_posts_path %> - standalone, all posts</li>
-  <li><%= link_to "Users", managed_users_path %> - index with posts count linking to nested posts</li>
+  <li><%= link_to "Posts", layered_posts_path %> - standalone, all posts</li>
+  <li><%= link_to "Users", layered_users_path %> - index with posts count linking to nested posts</li>
 </ul>
 
 <h2 class="l-ui-utility--mt-xl">Requirements</h2>
 <ul class="l-ui-list l-ui-utility--mt-md">
   <li>Ruby on Rails >= 8.0</li>
-  <li><a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> ~> 0.3</li>
+  <li><a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> ~> 0.8</li>
   <li><a href="https://github.com/activerecord-hackery/ransack">Ransack</a> ~> 4.0</li>
   <li><a href="https://github.com/ddnexus/pagy">Pagy</a> ~> 43.2</li>
 </ul>
 
 <h2 class="l-ui-utility--mt-xl">Installation</h2>
 <p class="l-ui-utility--mt-md">Add to your Gemfile:</p>
-<pre class="l-ui-surface l-ui-utility--mt-md"><code>gem "layered-managed-resource-rails"</code></pre>
+<pre class="l-ui-surface l-ui-utility--mt-md"><code>gem "layered-resource-rails"</code></pre>
 <p class="l-ui-utility--mt-lg">Then run:</p>
 <pre class="l-ui-surface l-ui-utility--mt-md"><code>bundle install</code></pre>
 
 <h2 class="l-ui-utility--mt-xl">Setup</h2>
 
 <h3 class="l-ui-utility--mt-lg">1. Routes</h3>
-<p class="l-ui-utility--mt-md">Use <code>managed_resources</code> in your routes to register a model for CRUD management:</p>
+<p class="l-ui-utility--mt-md">Use <code>layered_resources</code> in your routes to register a model for CRUD management:</p>
 <pre class="l-ui-surface l-ui-utility--mt-md"><code># config/routes.rb
-managed_resources :posts</code></pre>
+layered_resources :posts</code></pre>
 <p class="l-ui-utility--mt-md">Restrict actions with the <code>only:</code> option:</p>
-<pre class="l-ui-surface l-ui-utility--mt-md"><code>managed_resources :posts, only: [:index]            # read-only
-managed_resources :posts, only: %i[index destroy]    # list + delete</code></pre>
+<pre class="l-ui-surface l-ui-utility--mt-md"><code>layered_resources :posts, only: [:index]            # read-only
+layered_resources :posts, only: %i[index destroy]    # list + delete</code></pre>
 
 <h3 class="l-ui-utility--mt-lg">2. Resource definition</h3>
-<p class="l-ui-utility--mt-md">Create a resource class in <code>app/managed_resources/</code> that inherits from <code>Layered::ManagedResource::Base</code>:</p>
-<pre class="l-ui-surface l-ui-utility--mt-md"><code>class PostResource < Layered::ManagedResource::Base
+<p class="l-ui-utility--mt-md">Create a resource class in <code>app/layered_resources/</code> that inherits from <code>Layered::Resource::Base</code>:</p>
+<pre class="l-ui-surface l-ui-utility--mt-md"><code>class PostResource < Layered::Resource::Base
   model Post
 
   columns [
@@ -79,13 +79,13 @@ end</code></pre>
 </div>
 
 <h2 class="l-ui-utility--mt-xl">Authentication</h2>
-<p class="l-ui-utility--mt-md">Protect managed resources with a before_action by setting:</p>
-<pre class="l-ui-surface l-ui-utility--mt-md"><code># config/initializers/managed_resource.rb
-Layered::ManagedResource.managed_resource_before_action = :authenticate_user!</code></pre>
+<p class="l-ui-utility--mt-md">Protect layered resources with a before_action by setting:</p>
+<pre class="l-ui-surface l-ui-utility--mt-md"><code># config/initializers/layered_resource.rb
+Layered::Resource.before_action = :authenticate_user!</code></pre>
 
 <h2 class="l-ui-utility--mt-xl">License</h2>
 <p class="l-ui-utility--mt-md">
-  Released under the <a href="https://github.com/layered-ai-public/layered-managed-resource-rails/blob/main/LICENSE">Apache 2.0 License</a>.
+  Released under the <a href="https://github.com/layered-ai-public/layered-resource-rails/blob/main/LICENSE">Apache 2.0 License</a>.
 </p>
 <p class="l-ui-utility--mt-md">
   Copyright 2026 LAYERED AI LIMITED (UK company number: 17056830).

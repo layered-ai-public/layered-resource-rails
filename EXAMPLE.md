@@ -2,10 +2,10 @@
 
 ## 1. Define a resource
 
-Create a file at `app/managed_resources/article_resource.rb`:
+Create a file at `app/layered_resources/article_resource.rb`:
 
 ```ruby
-class ArticleResource < Layered::ManagedResource::Base
+class ArticleResource < Layered::Resource::Base
   model Article
 
   columns [
@@ -32,7 +32,7 @@ In `config/routes.rb`:
 
 ```ruby
 Rails.application.routes.draw do
-  managed_resources :articles
+  layered_resources :articles
 end
 ```
 
@@ -54,7 +54,7 @@ That's it. You now have a full CRUD interface with search and pagination for `Ar
 **Read-only (no forms):** omit `fields` and restrict routes:
 
 ```ruby
-class ArticleResource < Layered::ManagedResource::Base
+class ArticleResource < Layered::Resource::Base
   model Article
 
   columns [
@@ -65,19 +65,19 @@ end
 ```
 
 ```ruby
-managed_resources :articles, only: [:index]
+layered_resources :articles, only: [:index]
 ```
 
 **Restrict actions:**
 
 ```ruby
-managed_resources :articles, only: [:index, :edit, :update]
+layered_resources :articles, only: [:index, :edit, :update]
 ```
 
 **Custom scope (e.g. tenant isolation):**
 
 ```ruby
-class ArticleResource < Layered::ManagedResource::Base
+class ArticleResource < Layered::Resource::Base
   model Article
 
   # ...columns, fields, etc.
@@ -90,14 +90,14 @@ end
 
 ## Authentication
 
-Protect all managed resources with a single initializer setting. Point it at any controller method (e.g. Devise's `authenticate_user!`):
+Protect all layered resources with a single initializer setting. Point it at any controller method (e.g. Devise's `authenticate_user!`):
 
 ```ruby
-# config/initializers/managed_resource.rb
-Layered::ManagedResource.managed_resource_before_action = :authenticate_user!
+# config/initializers/layered_resource.rb
+Layered::Resource.before_action = :authenticate_user!
 ```
 
-This runs as a `before_action` on every managed resource request. No per-resource configuration needed.
+This runs as a `before_action` on every layered resource request. No per-resource configuration needed.
 
 ## Escape hatching
 
@@ -106,7 +106,7 @@ The gem is designed so you can start fully managed and progressively take over c
 **Override the scope or redirect target** directly in the resource class:
 
 ```ruby
-class ArticleResource < Layered::ManagedResource::Base
+class ArticleResource < Layered::Resource::Base
   model Article
 
   # ...columns, fields, etc.
@@ -128,21 +128,21 @@ end
 **Eject views** when you need full control over presentation:
 
 ```
-rails g managed_resource:views articles
+rails g layered_resource:views articles
 ```
 
-This generates standard ERB templates into `app/views/managed/articles/` that you own entirely. The gem falls back to its defaults for any view you haven't overridden.
+This generates standard ERB templates into `app/views/layered/articles/` that you own entirely. The gem falls back to its defaults for any view you haven't overridden.
 
 **Override the controller.** Use the generator to create one in the right place:
 
 ```
-rails g managed_resource:controller articles
+rails g layered_resource:controller articles
 ```
 
 This gives you a controller that inherits from the base -- override just what you need:
 
 ```ruby
-class ArticlesController < Layered::ManagedResource::ResourcesController
+class ArticlesController < Layered::Resource::ResourcesController
   private
 
   def scope

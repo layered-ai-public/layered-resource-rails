@@ -1,6 +1,6 @@
 require "test_helper"
 
-class ManagedResourceCrudTest < ActionDispatch::IntegrationTest
+class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   setup do
     @user = User.create!(
       email: "author@test.com",

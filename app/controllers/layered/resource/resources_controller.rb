@@ -1,9 +1,9 @@
 module Layered
-  module ManagedResource
+  module Resource
     class ResourcesController < ::ApplicationController
-      include Concerns::ManagedRouting
-      include Concerns::ManagedBreadcrumbs
-      include Concerns::ManagedColumns
+      include Concerns::Routing
+      include Concerns::Breadcrumbs
+      include Concerns::Columns
 
       helper Rails.application.routes.url_helpers
       helper Layered::Ui::TableHelper
@@ -12,12 +12,12 @@ module Layered
       helper Layered::Ui::PagyHelper
       helper Layered::Ui::BreadcrumbsHelper
 
-      before_action :managed_resource_authenticate
-      before_action :resolve_managed_resource
-      before_action :require_managed_fields, only: %i[new create edit update]
+      before_action :layered_resource_authenticate
+      before_action :resolve_layered_resource
+      before_action :require_layered_fields, only: %i[new create edit update]
 
-      helper_method :managed_routes
-      helper_method :managed_breadcrumbs
+      helper_method :layered_routes
+      helper_method :layered_breadcrumbs
 
       def index
         @q = @resource.scope(self).ransack(params[:q])
@@ -33,34 +33,34 @@ module Layered
 
       def new
         @record = @resource.build_record(self)
-        @form_url = managed_collection_path
+        @form_url = layered_collection_path
       end
 
       def create
         @record = @resource.build_record(self)
-        @record.assign_attributes(managed_resource_params)
+        @record.assign_attributes(layered_resource_params)
 
         if @record.save
           redirect_to @resource.after_save_path(self, @record),
                       notice: "#{@resource.model.model_name.human} created"
         else
-          @form_url = managed_collection_path
+          @form_url = layered_collection_path
           render :new, status: :unprocessable_entity
         end
       end
 
       def edit
         @record = @resource.scope(self).find(params[:id])
-        @form_url = managed_member_path(@record)
+        @form_url = layered_member_path(@record)
       end
 
       def update
         @record = @resource.scope(self).find(params[:id])
-        if @record.update(managed_resource_params)
+        if @record.update(layered_resource_params)
           redirect_to @resource.after_save_path(self, @record),
                       notice: "#{@resource.model.model_name.human} updated"
         else
-          @form_url = managed_member_path(@record)
+          @form_url = layered_member_path(@record)
           render :edit, status: :unprocessable_entity
         end
       end
@@ -77,9 +77,9 @@ module Layered
         end
       end
 
-      def managed_resource_collection_url
-        helper_name = :"managed_#{@managed_route_key}_path"
-        managed_routes.send(helper_name) if managed_routes.respond_to?(helper_name)
+      def layered_resource_collection_url
+        helper_name = :"layered_#{@layered_route_key}_path"
+        layered_routes.send(helper_name) if layered_routes.respond_to?(helper_name)
       end
 
       private
@@ -87,45 +87,45 @@ module Layered
       # Looks up the resource class from the route registry and sets all
       # the instance variables the views need (@resource, @model, @columns,
       # @fields, and the @can_* permission flags).
-      def resolve_managed_resource
-        route_key = request.path_parameters.delete(:_managed_route_key)
-        params.delete(:_managed_route_key)
-        @_route_entry = Layered::ManagedResource::Routing.lookup(route_key)
-        raise ActionController::RoutingError, "No managed resource registered for route" unless @_route_entry
+      def resolve_layered_resource
+        route_key = request.path_parameters.delete(:_layered_resource_route_key)
+        params.delete(:_layered_resource_route_key)
+        @_route_entry = Layered::Resource::Routing.lookup(route_key)
+        raise ActionController::RoutingError, "No layered resource registered for route" unless @_route_entry
 
         @resource = @_route_entry[:resource].safe_constantize
-        unless @resource && @resource < Layered::ManagedResource::Base
-          raise ActionController::RoutingError, "#{resource_name} is not a managed resource (must inherit from Layered::ManagedResource::Base)"
+        unless @resource && @resource < Layered::Resource::Base
+          raise ActionController::RoutingError, "#{resource_name} is not a layered resource (must inherit from Layered::Resource::Base)"
         end
 
         @resource.configure_ransack!
 
         @model = @resource.model
         @columns = @resource.columns
-        @managed_route_key = route_key
+        @layered_route_key = route_key
         @fields = @resource.resolved_fields
         @crud_enabled = @fields.any?
 
-        managed_actions = @_route_entry[:actions]
-        @can_create = @crud_enabled && managed_actions.include?(:new)
-        @can_update = @crud_enabled && managed_actions.include?(:edit)
-        @can_destroy = managed_actions.include?(:destroy)
+        resource_actions = @_route_entry[:actions]
+        @can_create = @crud_enabled && resource_actions.include?(:new)
+        @can_update = @crud_enabled && resource_actions.include?(:edit)
+        @can_destroy = resource_actions.include?(:destroy)
       end
 
-      def require_managed_fields
+      def require_layered_fields
         return if @crud_enabled
 
         raise ActionController::RoutingError,
               "Define fields on #{@resource.name} to enable CRUD actions"
       end
 
-      def managed_resource_params
+      def layered_resource_params
         params.require(@resource.model.model_name.param_key)
               .permit(*@resource.permitted_params)
       end
 
-      def managed_resource_authenticate
-        method = Layered::ManagedResource.managed_resource_before_action
+      def layered_resource_authenticate
+        method = Layered::Resource.before_action
         send(method) if method
       end
 

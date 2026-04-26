@@ -1,6 +1,6 @@
 # Users
 users = [
-  { name: "Test User", email: "test.user@example.com" }
+  { name: "Test User", email: "test.user@example.com" },
   { name: "Alice", email: "alice@example.com" },
   { name: "Bob", email: "bob@example.com" },
   { name: "Charlie", email: "charlie@example.com" }

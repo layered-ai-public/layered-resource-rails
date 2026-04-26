@@ -1,4 +1,4 @@
-Managed Resource Rails Gem - Design Guidelines
+Layered Resource Rails Gem - Design Guidelines
 
 Overview
 
@@ -25,7 +25,7 @@ These should feel like configuration, not programming:
 
 Example:
 
-class PostResource < Layered::ManagedResource::Base
+class PostResource < Layered::Resource::Base
   model Post
 
   columns [
@@ -61,7 +61,7 @@ These should trigger ejection or override, not more DSL.
 
 Stage 1 - Fully Managed
 
-managed_resources :posts
+layered_resources :posts
 
 	•	No generated files
 	•	Uses gem-provided views
@@ -71,14 +71,14 @@ managed_resources :posts
 
 Stage 2 - Partial Override
 
-managed_resources :posts do
+layered_resources :posts do
   override :form
   override :index_row
 end
 
 Convention:
 
-app/views/managed/posts/_form.html.erb
+app/views/layered/posts/_form.html.erb
 
 Fallback to gem defaults if not present.
 
@@ -86,11 +86,11 @@ Fallback to gem defaults if not present.
 
 Stage 3 - Full Ejection (Generator)
 
-rails g managed_resource:install posts
+rails g layered_resource:install posts
 
 Generates:
 
-app/views/managed/posts/
+app/views/layered/posts/
   index.html.erb
   show.html.erb
   _form.html.erb
@@ -121,7 +121,7 @@ Base Controller (Gem)
 
 A single generic controller handles all resources:
 
-ManagedResources::BaseController
+Layered::Resource::ResourcesController
 
 Responsibilities:
 	•	CRUD actions
@@ -133,7 +133,7 @@ Responsibilities:
 
 Example:
 
-class ManagedResources::BaseController < ApplicationController
+class Layered::Resource::ResourcesController < ApplicationController
   before_action :load_resource_definition
   before_action :set_record, only: %i[show edit update destroy]
 
@@ -184,7 +184,7 @@ Do NOT Support
 
 Stage 1 - Fully Managed
 
-managed_resources :posts
+layered_resources :posts
 
 Uses base controller internally.
 
@@ -192,7 +192,7 @@ Uses base controller internally.
 
 Stage 2 - Extend via Inheritance (Recommended)
 
-class PostsController < ManagedResources::BaseController
+class PostsController < Layered::Resource::ResourcesController
   private
 
   def scope
@@ -206,14 +206,14 @@ end
 
 Routes:
 
-managed_resources :posts, controller: "posts"
+layered_resources :posts, controller: "posts"
 
 
 ⸻
 
 Stage 3 - Full Ejection
 
-rails g managed_resource:controller posts
+rails g layered_resource:controller posts
 
 Generates:
 
@@ -233,13 +233,13 @@ No dependency on the gem remains.
 
 5. Routing Strategy
 
-managed_resources :posts
+layered_resources :posts
 
 Internally routes to base controller.
 
 Optional override:
 
-managed_resources :posts, controller: "posts"
+layered_resources :posts, controller: "posts"
 
 Implicit behaviour:
 	•	If custom controller exists -> use it
@@ -260,8 +260,8 @@ Avoid Half Magic
 
 Make behaviour explicit:
 
-[ManagedResources] Using PostsController (custom)
-[ManagedResources] Using managed view: posts/form
+[Layered::Resource] Using PostsController (custom)
+[Layered::Resource] Using layered view: posts/form
 
 
 ⸻

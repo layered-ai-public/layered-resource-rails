@@ -1,10 +1,10 @@
 module Layered
-  module ManagedResource
+  module Resource
     module Concerns
       # Processes columns with a `link:` option for the index table.
       # Depends on @columns being set by the controller's
-      # resolve_managed_resource before_action.
-      module ManagedColumns
+      # resolve_layered_resource before_action.
+      module Columns
         extend ActiveSupport::Concern
 
         private
@@ -42,12 +42,12 @@ module Layered
             next col unless col[:link]
 
             linked_key = col[:link].to_s
-            linked_entry = Routing.lookup(linked_key)
+            linked_entry = Layered::Resource::Routing.lookup(linked_key)
             next col unless linked_entry
 
             rs = linked_entry[:routes] || Rails.application.routes
             parent_param = linked_entry[:parent_params].last
-            path_helper = :"managed_#{linked_key}_path"
+            path_helper = :"layered_#{linked_key}_path"
             next col unless parent_param && rs.url_helpers.method_defined?(path_helper)
 
             attr = col[:attribute]

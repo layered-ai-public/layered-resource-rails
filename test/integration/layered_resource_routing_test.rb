@@ -1,6 +1,6 @@
 require "test_helper"
 
-class ManagedResourceRoutingTest < ActionDispatch::IntegrationTest
+class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   setup do
     @user = User.create!(
       email: "author@test.com",
@@ -33,7 +33,7 @@ class ManagedResourceRoutingTest < ActionDispatch::IntegrationTest
   test "only: [:destroy] without :index raises at route definition" do
     error = assert_raises(ArgumentError) do
       Rails.application.routes.draw do
-        managed_resources :posts, only: [:destroy]
+        layered_resources :posts, only: [:destroy]
       end
     end
     assert_match(/without :index/, error.message)
@@ -44,7 +44,7 @@ class ManagedResourceRoutingTest < ActionDispatch::IntegrationTest
   test "only: [:new] without :index raises at route definition" do
     error = assert_raises(ArgumentError) do
       Rails.application.routes.draw do
-        managed_resources :posts, only: [:new]
+        layered_resources :posts, only: [:new]
       end
     end
     assert_match(/without :index/, error.message)
@@ -55,7 +55,7 @@ class ManagedResourceRoutingTest < ActionDispatch::IntegrationTest
   test "only: [:create] without :index raises at route definition" do
     error = assert_raises(ArgumentError) do
       Rails.application.routes.draw do
-        managed_resources :posts, only: [:create]
+        layered_resources :posts, only: [:create]
       end
     end
     assert_match(/without :index/, error.message)
@@ -66,7 +66,7 @@ class ManagedResourceRoutingTest < ActionDispatch::IntegrationTest
   test "only: [:index, :new] without :create raises at route definition" do
     error = assert_raises(ArgumentError) do
       Rails.application.routes.draw do
-        managed_resources :posts, only: %i[index new]
+        layered_resources :posts, only: %i[index new]
       end
     end
     assert_match(/without :create/, error.message)
@@ -77,7 +77,7 @@ class ManagedResourceRoutingTest < ActionDispatch::IntegrationTest
   test "only: [:index, :edit] without :update raises at route definition" do
     error = assert_raises(ArgumentError) do
       Rails.application.routes.draw do
-        managed_resources :posts, only: %i[index edit]
+        layered_resources :posts, only: %i[index edit]
       end
     end
     assert_match(/without :update/, error.message)
@@ -87,8 +87,8 @@ class ManagedResourceRoutingTest < ActionDispatch::IntegrationTest
 
   # -- route key injection --
 
-  test "query string cannot override _managed_route_key" do
-    get "/users/#{@user.id}/readonly/posts", params: { _managed_route_key: "users_posts" }
+  test "query string cannot override _layered_resource_route_key" do
+    get "/users/#{@user.id}/readonly/posts", params: { _layered_resource_route_key: "users_posts" }
     assert_response :success
     assert_select "a[href$='/posts/new']", count: 0,
       message: "Full-CRUD actions must not leak via query string override"
@@ -107,11 +107,11 @@ class ManagedResourceRoutingTest < ActionDispatch::IntegrationTest
     assert_nothing_raised do
       Rails.application.routes.draw do
         namespace :admin do
-          managed_resources :posts, resource: "PostResource", only: [:index]
+          layered_resources :posts, resource: "PostResource", only: [:index]
         end
       end
     end
-    entry = Layered::ManagedResource::Routing.instance_variable_get(:@registry)["admin_posts"]
+    entry = Layered::Resource::Routing.instance_variable_get(:@registry)["admin_posts"]
     assert_equal "PostResource", entry[:resource]
   ensure
     Rails.application.reload_routes!

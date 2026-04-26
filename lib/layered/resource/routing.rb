@@ -1,7 +1,7 @@
 require "concurrent/map"
 
 module Layered
-  module ManagedResource
+  module Resource
     module Routing
       @registry = Concurrent::Map.new
 
@@ -25,9 +25,9 @@ module Layered
         end
       end
 
-      MANAGED_ACTIONS = %i[index new create edit update destroy].freeze
+      RESOURCE_ACTIONS = %i[index new create edit update destroy].freeze
 
-      def managed_resources(resource_name, resource: nil, only: MANAGED_ACTIONS, **options)
+      def layered_resources(resource_name, resource: nil, only: RESOURCE_ACTIONS, **options)
         resource_class_name = resource || "#{resource_name.to_s.classify}Resource"
         route_key = resource_name.to_s
         singular_key = resource_name.to_s.singularize
@@ -62,52 +62,52 @@ module Layered
         # prepending the engine's namespace. Without a module scope the plain
         # path is used directly.
         controller = if @scope[:module]
-                       "/layered/managed_resource/resources"
+                       "/layered/resource/resources"
                      else
-                       "layered/managed_resource/resources"
+                       "layered/resource/resources"
                      end
         actions = Array(only).map(&:to_sym)
 
         if (actions & %i[new create]).any? && !actions.include?(:index)
           raise ArgumentError,
-                "managed_resources :#{resource_name} includes :new or :create without :index. " \
+                "layered_resources :#{resource_name} includes :new or :create without :index. " \
                 "The form actions require a collection route; add :index to only:."
         end
 
         if actions.include?(:new) && !actions.include?(:create)
           raise ArgumentError,
-                "managed_resources :#{resource_name} includes :new without :create. " \
+                "layered_resources :#{resource_name} includes :new without :create. " \
                 "The new form posts to the collection route; add :create to only:."
         end
 
         if actions.include?(:edit) && !actions.include?(:update)
           raise ArgumentError,
-                "managed_resources :#{resource_name} includes :edit without :update. " \
+                "layered_resources :#{resource_name} includes :edit without :update. " \
                 "The edit form patches the member route; add :update to only:."
         end
 
         if actions.include?(:destroy) && !actions.include?(:index)
           raise ArgumentError,
-                "managed_resources :#{resource_name} includes :destroy without :index. " \
+                "layered_resources :#{resource_name} includes :destroy without :index. " \
                 "Destroy redirects to the collection route; add :index to only:."
         end
 
-        Layered::ManagedResource::Routing.register(scoped_key, resource_class_name, actions: actions, routes: @set, parent_params: parent_params, parent_collection_keys: parent_collection_keys)
+        Layered::Resource::Routing.register(scoped_key, resource_class_name, actions: actions, routes: @set, parent_params: parent_params, parent_collection_keys: parent_collection_keys)
 
         route_defaults = (options[:defaults] || {}).merge(
-          _managed_route_key: scoped_key
+          _layered_resource_route_key: scoped_key
         )
         options = options.except(:defaults)
 
         if actions.include?(:index)
           get route_key, to: "#{controller}#index",
-                         as: :"managed_#{scoped_key}",
+                         as: :"layered_#{scoped_key}",
                          defaults: route_defaults, **options
         end
 
         if actions.include?(:new)
           get "#{route_key}/new", to: "#{controller}#new",
-                                 as: :"new_managed_#{scoped_singular}",
+                                 as: :"new_layered_#{scoped_singular}",
                                  defaults: route_defaults, **options
         end
 
@@ -119,21 +119,21 @@ module Layered
 
         if actions.include?(:edit)
           get "#{route_key}/:id/edit", to: "#{controller}#edit",
-                                       as: :"edit_managed_#{scoped_singular}",
+                                       as: :"edit_layered_#{scoped_singular}",
                                        defaults: route_defaults, **options
         end
 
         member_named = false
         if actions.include?(:update)
           patch "#{route_key}/:id", to: "#{controller}#update",
-                                    as: :"managed_#{scoped_singular}",
+                                    as: :"layered_#{scoped_singular}",
                                     defaults: route_defaults, **options
           member_named = true
         end
 
         if actions.include?(:destroy)
           destroy_opts = { to: "#{controller}#destroy", defaults: route_defaults, **options }
-          destroy_opts[:as] = :"managed_#{scoped_singular}" unless member_named
+          destroy_opts[:as] = :"layered_#{scoped_singular}" unless member_named
           delete "#{route_key}/:id", **destroy_opts
         end
       end

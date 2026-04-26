@@ -1,4 +1,4 @@
-class UserResource < Layered::ManagedResource::Base
+class UserResource < Layered::Resource::Base
   model User
 
   columns [

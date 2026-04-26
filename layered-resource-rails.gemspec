@@ -1,8 +1,8 @@
-require_relative "lib/layered/managed_resource/version"
+require_relative "lib/layered/resource/version"
 
 Gem::Specification.new do |spec|
-  spec.name        = "layered-managed-resource-rails"
-  spec.version     = Layered::ManagedResource::VERSION
+  spec.name        = "layered-resource-rails"
+  spec.version     = Layered::Resource::VERSION
   spec.authors     = [ "layered.ai" ]
   spec.email       = [ "support@layered.ai" ]
   spec.homepage    = "https://www.layered.ai"
@@ -14,8 +14,8 @@ Gem::Specification.new do |spec|
 
   # Metadata
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/layered-ai-public/layered-managed-resource-rails"
-  spec.metadata["bug_tracker_uri"] = "https://github.com/layered-ai-public/layered-managed-resource-rails/issues"
+  spec.metadata["source_code_uri"] = "https://github.com/layered-ai-public/layered-resource-rails"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/layered-ai-public/layered-resource-rails/issues"
   spec.metadata["rubygems_mfa_required"] = "true"
 
   # Files
