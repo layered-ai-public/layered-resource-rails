@@ -1,26 +1,15 @@
-<h1>Examples</h1>
+<%= l_ui_title_bar(title: "Examples") %>
 
 <p class="l-ui-utility--mt-md">
-  Browse the examples in the navigation to see <code>layered-resource-rails</code> in action.
+  Two examples, each demonstrating a distinct capability of the gem.
 </p>
 
-<h2 class="l-ui-utility--mt-xl">Posts</h2>
+<h2 class="l-ui-utility--mt-xl"><%= link_to "Users", users_path %></h2>
 <p class="l-ui-utility--mt-md">
-  A standalone resource with full CRUD - create, read, update, and delete.
+  Restricted actions via <code>only: %i[index edit update destroy]</code> - no show, no create. The <code>posts_count</code> column links to posts scoped to that user, demonstrating nested resources via <code>scope "users/:user_id"</code> and a <code>PostResource.scope</code> override.
 </p>
 
-<h2 class="l-ui-utility--mt-xl">Users</h2>
+<h2 class="l-ui-utility--mt-xl"><%= link_to "Posts", posts_path %></h2>
 <p class="l-ui-utility--mt-md">
-  A read-only index with a posts count column that links to user-scoped posts.
-  Also demonstrates restricted action sets:
-</p>
-<ul class="l-ui-list l-ui-utility--mt-md">
-  <li><strong>Read Only</strong> - index only, no mutations</li>
-  <li><strong>Deletable</strong> - index with destroy, no create or edit</li>
-</ul>
-
-<h2 class="l-ui-utility--mt-xl">Admin Posts</h2>
-<p class="l-ui-utility--mt-md">
-  A subclass (<code>AdminPostResource &lt; PostResource</code>) that inherits <code>model</code> and <code>search_fields</code>
-  while overriding <code>columns</code> and <code>fields</code> - the inheritance pattern for variants like a separate admin area.
+  The baseline: <code>layered_resources :posts</code> plus a <code>PostResource</code> declaring columns, fields, and search fields. You get index, show, new, edit, and destroy - with search, sort, pagination, and forms styled out of the box.
 </p>

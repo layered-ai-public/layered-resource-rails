@@ -42,6 +42,4 @@ Rails.application.routes.draw do
   scope "showonly" do
     layered_resources :posts, only: [:show]
   end
-
-  layered_resources :admin_posts, resource: "AdminPostResource"
 end

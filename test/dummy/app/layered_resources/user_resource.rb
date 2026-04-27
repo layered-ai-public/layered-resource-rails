@@ -7,6 +7,8 @@ class UserResource < Layered::Resource::Base
     { attribute: :posts_count, label: "Posts", link: :users_posts }
   ]
 
+  default_sort attribute: :name, direction: :asc
+
   fields [
     { attribute: :name },
     { attribute: :email }

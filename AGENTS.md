@@ -26,6 +26,6 @@ Engine (`lib/layered/resource/engine.rb`) autoloads `app/layered_resources`, mix
 
 ## Notes
 
-- Tests in `test/integration/` run against `test/dummy/` (a real Rails app with `Post`, `User`, `AdminPostResource`). Integration tests are the contract for controller/routing/DSL changes.
+- Tests in `test/integration/` run against `test/dummy/` (a real Rails app with `Post` and `User` models, plus `PostResource` and `UserResource`). Integration tests are the contract for controller/routing/DSL changes.
 - `attribute_required?` treats a field as required only when the presence validator is unconditional - don't tighten without considering conditional-validation forms.
 - `concurrent-ruby` is depended on solely for the routing registry's `Concurrent::Map`.
