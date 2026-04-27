@@ -20,11 +20,11 @@ module Layered
 
       def index
         @q = @resource.scope(self).ransack(params[:q], auth_object: @resource)
-        scope = @q.result(distinct: @resource.requires_distinct?)
         if @q.sorts.empty?
           ds = @resource.default_sort
-          scope = scope.order(ds[:attribute] => ds[:direction])
+          @q.sorts = "#{ds[:attribute]} #{ds[:direction]}"
         end
+        scope = @q.result(distinct: @resource.requires_distinct?)
 
         @pagy, @records = pagy(scope, limit: @resource.per_page)
         decorate_columns
