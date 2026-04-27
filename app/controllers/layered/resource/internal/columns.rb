@@ -59,7 +59,7 @@ module Layered
 
           routes_proxy = layered_routes
           singular = @layered_route_key.singularize
-          helper = :"layered_#{singular}_path"
+          helper = :"#{singular}_path"
           return unless routes_proxy.respond_to?(helper)
 
           primary_index = @columns.index { |c| c[:primary] } || 0
@@ -105,7 +105,7 @@ module Layered
                     "but that route has no parent params - link: only works for nested layered_resources"
             end
 
-            path_helper = :"layered_#{linked_key}_path"
+            path_helper = :"#{linked_key}_path"
             unless rs.url_helpers.method_defined?(path_helper)
               raise ArgumentError,
                     "Column #{col[:attribute].inspect} on #{@resource.name} links to #{col[:link].inspect}, " \

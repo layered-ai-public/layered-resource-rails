@@ -111,13 +111,13 @@ module Layered
 
         if actions.include?(:index)
           get route_key, to: "#{controller}#index",
-                         as: :"layered_#{scoped_key}",
+                         as: scoped_key.to_sym,
                          defaults: route_defaults, **options
         end
 
         if actions.include?(:new)
           get "#{route_key}/new", to: "#{controller}#new",
-                                 as: :"new_layered_#{scoped_singular}",
+                                 as: :"new_#{scoped_singular}",
                                  defaults: route_defaults, **options
         end
 
@@ -129,28 +129,28 @@ module Layered
 
         if actions.include?(:edit)
           get "#{route_key}/:id/edit", to: "#{controller}#edit",
-                                       as: :"edit_layered_#{scoped_singular}",
+                                       as: :"edit_#{scoped_singular}",
                                        defaults: route_defaults, **options
         end
 
         member_named = false
         if actions.include?(:show)
           get "#{route_key}/:id", to: "#{controller}#show",
-                                  as: :"layered_#{scoped_singular}",
+                                  as: scoped_singular.to_sym,
                                   defaults: route_defaults, **options
           member_named = true
         end
 
         if actions.include?(:update)
           update_opts = { to: "#{controller}#update", defaults: route_defaults, **options }
-          update_opts[:as] = member_named ? nil : :"layered_#{scoped_singular}"
+          update_opts[:as] = member_named ? nil : scoped_singular.to_sym
           patch "#{route_key}/:id", **update_opts
           member_named = true
         end
 
         if actions.include?(:destroy)
           destroy_opts = { to: "#{controller}#destroy", defaults: route_defaults, **options }
-          destroy_opts[:as] = member_named ? nil : :"layered_#{scoped_singular}"
+          destroy_opts[:as] = member_named ? nil : scoped_singular.to_sym
           delete "#{route_key}/:id", **destroy_opts
         end
       end

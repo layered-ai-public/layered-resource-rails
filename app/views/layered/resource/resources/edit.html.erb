@@ -5,7 +5,7 @@
       <% layered_breadcrumbs.each do |crumb| %>
         <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
       <% end %>
-      <%= l_ui_breadcrumb_item @model.model_name.human.pluralize, layered_routes.send(:"layered_#{@layered_route_key}_path") %>
+      <%= l_ui_breadcrumb_item @model.model_name.human.pluralize, layered_routes.send(:"#{@layered_route_key}_path") %>
     <% end %>
 
     <h1 class="l-ui-heading">Edit <%= @model.model_name.human.downcase %></h1>

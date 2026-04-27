@@ -22,9 +22,9 @@ Most Rails apps need an admin area, an internal dashboard, or a "list and edit s
 ## Requirements
 
 - Ruby on Rails >= 8.0
-- [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) >= 0.9
-- Ransack >= 4.0
-- Pagy >= 43.2
+- [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) ~> 0.9
+- Ransack ~> 4.0
+- Pagy ~> 43.2
 
 ## Getting started
 

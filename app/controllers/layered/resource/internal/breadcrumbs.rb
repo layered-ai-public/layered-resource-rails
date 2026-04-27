@@ -33,7 +33,7 @@ module Layered
                 collection_entry = Layered::Resource::Routing.lookup(collection_key)
                 if collection_entry
                   rs = collection_entry[:routes] || Rails.application.routes
-                  helper = :"layered_#{collection_key}_path"
+                  helper = :"#{collection_key}_path"
                   if rs.url_helpers.method_defined?(helper)
                     path = rs.url_helpers.send(helper, default_url_options)
                     crumbs << { label: model_class.model_name.human.pluralize, path: path }

@@ -88,7 +88,7 @@ module Layered
       end
 
       def layered_resource_collection_url
-        helper_name = :"layered_#{@layered_route_key}_path"
+        helper_name = :"#{@layered_route_key}_path"
         layered_routes.send(helper_name) if layered_routes.respond_to?(helper_name)
       end
 

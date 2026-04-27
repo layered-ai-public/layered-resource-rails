@@ -17,7 +17,7 @@
 
   <% if @can_create %>
     <%= link_to "New",
-          layered_routes.send(:"new_layered_#{singular_key}_path"),
+          layered_routes.send(:"new_#{singular_key}_path"),
           class: "l-ui-button l-ui-button--primary" %>
   <% end %>
 </div>
@@ -26,7 +26,7 @@
   <% if @resource.search_fields.any? %>
     <div class="l-ui-utility--mt-lg">
       <%= l_ui_search_form(@q,
-            url: layered_routes.send(:"layered_#{@layered_route_key}_path"),
+            url: layered_routes.send(:"#{@layered_route_key}_path"),
             fields: @resource.search_fields,
             clear: true,
             turbo_frame: turbo_frame_name) %>
@@ -37,11 +37,11 @@
     ->(record) do
       parts = []
       if @can_update
-        parts << link_to("Edit", layered_routes.send(:"edit_layered_#{singular_key}_path", record),
+        parts << link_to("Edit", layered_routes.send(:"edit_#{singular_key}_path", record),
                   data: { turbo_frame: "_top" })
       end
       if @can_destroy
-        parts << button_to("Delete", layered_routes.send(:"layered_#{singular_key}_path", record),
+        parts << button_to("Delete", layered_routes.send(:"#{singular_key}_path", record),
                     method: :delete,
                     class: "l-ui-table__action--danger",
                     data: { turbo_confirm: "Are you sure?", turbo_frame: "_top" })
@@ -55,7 +55,7 @@
           columns: @columns,
           caption: @layered_route_key.humanize,
           query: @q,
-          url: layered_routes.send(:"layered_#{@layered_route_key}_path"),
+          url: layered_routes.send(:"#{@layered_route_key}_path"),
           actions: actions_proc,
           turbo_frame: turbo_frame_name) %>
 

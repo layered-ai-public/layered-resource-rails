@@ -9,9 +9,9 @@ module Layered
 
         private
 
-        # Returns an object that responds to layered route helpers (e.g.
-        # layered_users_posts_path) with parent params already filled in
-        # from the current request. Used by views to generate links without
+        # Returns an object that responds to the route helpers (e.g.
+        # users_posts_path) with parent params already filled in from
+        # the current request. Used by views to generate links without
         # needing to know the scope or parent context.
         def layered_routes
           @_layered_routes ||= begin
@@ -27,7 +27,7 @@ module Layered
         end
 
         def layered_collection_path
-          helper_name = :"layered_#{@layered_route_key}_path"
+          helper_name = :"#{@layered_route_key}_path"
           unless layered_routes.respond_to?(helper_name)
             raise ActionController::RoutingError,
                   "No collection route registered for #{@layered_route_key}. " \
@@ -38,7 +38,7 @@ module Layered
 
         def layered_member_path(record)
           singular = @layered_route_key.singularize
-          helper_name = :"layered_#{singular}_path"
+          helper_name = :"#{singular}_path"
           unless layered_routes.respond_to?(helper_name)
             raise ActionController::RoutingError,
                   "No member route registered for #{@layered_route_key}. " \
