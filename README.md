@@ -14,9 +14,9 @@ An open source, Rails 8+ engine that provides convention-over-configuration CRUD
 
 Most Rails apps need an admin area, an internal dashboard, or a "list and edit some records" screen long before they need anything bespoke. `layered-resource-rails` gets you there in a few lines, then stays out of your way as your needs grow:
 
-- **Skip the boilerplate.** Declare your columns, fields, and search — get index, show, forms, search, sort, and pagination for free. No scaffold to maintain, no half-finished admin gem to fight.
+- **Skip the boilerplate.** Declare your columns, fields, and search - get index, show, forms, search, sort, and pagination for free. No scaffold to maintain, no half-finished admin gem to fight.
 - **Looks right out of the box.** Tables, forms, and pagination come pre-styled via [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) with WCAG 2.2 AA compliance and dark mode included.
-- **Override only what you need.** Swap a single view partial, subclass the controller for a custom scope or redirect, or generate plain ERB to take full control — without rewriting the rest.
+- **Override only what you need.** Swap a single view partial, subclass the controller for a custom scope or redirect, or generate plain ERB to take full control - without rewriting the rest.
 - **Eject cleanly when you outgrow it.** Generate a standard Rails controller and views, drop the gem, and you're left with idiomatic Rails. No lock-in, no hidden coupling.
 
 ## Requirements
@@ -135,7 +135,7 @@ end
 
 ## Associations
 
-Resources are independent — each model gets its own resource class. To surface association data on an index, add a virtual column whose `attribute:` is a method on the model. For `Post belongs_to :user`, expose `user.name` by delegating on the model:
+Resources are independent - each model gets its own resource class. To surface association data on an index, add a virtual column whose `attribute:` is a method on the model. For `Post belongs_to :user`, expose `user.name` by delegating on the model:
 
 ```ruby
 class Post < ApplicationRecord
@@ -204,7 +204,7 @@ The `posts_count` cell on each user row renders as a badge linked to `/users/:id
 
 ## Variants via inheritance
 
-For variants that warrant their own URL — typically a separate admin area — declare a subclass and register it on its own route. The subclass inherits `model`, `columns`, `fields`, `search_fields`, `default_sort`, and `per_page` from the parent and overrides only what differs:
+For variants that warrant their own URL - typically a separate admin area - declare a subclass and register it on its own route. The subclass inherits `model`, `columns`, `fields`, `search_fields`, `default_sort`, and `per_page` from the parent and overrides only what differs:
 
 ```ruby
 # app/layered_resources/admin/post_resource.rb
@@ -233,7 +233,7 @@ namespace :admin do
 end
 ```
 
-`search_fields` and `model` aren't redeclared — they're inherited from `PostResource`.
+`search_fields` and `model` aren't redeclared - they're inherited from `PostResource`.
 
 ## Authentication
 
@@ -271,7 +271,7 @@ end
 rails g layered:resource:views posts
 ```
 
-This copies the gem's actual `index`, `show`, `new`, and `edit` templates into `app/views/layered/posts/` — fully populated, working ERB you can edit immediately. Delete any of them to fall back to the gem default; keep the rest to override only what you need.
+This copies the gem's actual `index`, `show`, `new`, and `edit` templates into `app/views/layered/posts/` - fully populated, working ERB you can edit immediately. Delete any of them to fall back to the gem default; keep the rest to override only what you need.
 
 **Override the controller.** Use the generator to create one in the right place:
 
@@ -279,7 +279,7 @@ This copies the gem's actual `index`, `show`, `new`, and `edit` templates into `
 rails g layered:resource:controller posts
 ```
 
-This gives you a controller that inherits from the base — override any of the standard CRUD actions and call `super` when you only want to tweak behaviour.
+This gives you a controller that inherits from the base - override any of the standard CRUD actions and call `super` when you only want to tweak behaviour.
 
 If you outgrow the gem entirely, drop the inheritance and write a plain Rails controller:
 
@@ -311,7 +311,7 @@ cd test/dummy && bin/rails db:setup && bin/dev
 
 ## Contributing
 
-This project is still in its early days. We welcome issues, feedback, and ideas — they genuinely help shape the direction of the project. That said, we're holding off on accepting pull requests for now to stay focused on getting the foundations right. Thank you for your patience and interest. See [CLA.md](CLA.md) for the full policy.
+This project is still in its early days. We welcome issues, feedback, and ideas - they genuinely help shape the direction of the project. That said, we're holding off on accepting pull requests for now to stay focused on getting the foundations right. Thank you for your patience and interest. See [CLA.md](CLA.md) for the full policy.
 
 ## License
 

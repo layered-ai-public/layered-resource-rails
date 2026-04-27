@@ -7,18 +7,41 @@
   <%= gem_spec.description %>
 </p>
 
+<%= render "socials" %>
+
+<h2 class="l-ui-utility--mt-xl">Features</h2>
+<div class="l-ui-container--grid l-ui-utility--mt-lg">
+  <div class="l-ui-surface">
+    <h3>Skip the boilerplate</h3>
+    <p class="l-ui-utility--mt-sm">Declare your columns, fields, and search - get index, show, forms, search, sort, and pagination for free. No scaffold to maintain, no half-finished admin gem to fight.</p>
+  </div>
+  <div class="l-ui-surface">
+    <h3>Looks right out of the box</h3>
+    <p class="l-ui-utility--mt-sm">Tables, forms, and pagination come pre-styled via <a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> with WCAG 2.2 AA compliance and dark mode included.</p>
+  </div>
+  <div class="l-ui-surface">
+    <h3>Override only what you need</h3>
+    <p class="l-ui-utility--mt-sm">Swap a single view partial, subclass the controller for a custom scope or redirect, or generate plain ERB to take full control - without rewriting the rest.</p>
+  </div>
+  <div class="l-ui-surface">
+    <h3>Eject cleanly when you outgrow it</h3>
+    <p class="l-ui-utility--mt-sm">Generate a standard Rails controller and views, drop the gem, and you're left with idiomatic Rails. No lock-in, no hidden coupling.</p>
+  </div>
+</div>
+
 <h2 class="l-ui-utility--mt-xl">Examples</h2>
 <ul class="l-ui-list l-ui-utility--mt-md">
   <li><%= link_to "Posts", layered_posts_path %> - standalone, all posts</li>
   <li><%= link_to "Users", layered_users_path %> - index with posts count linking to nested posts</li>
+  <li><%= link_to "Admin Posts", layered_admin_posts_path %> - subclass that inherits and overrides columns/fields</li>
 </ul>
 
 <h2 class="l-ui-utility--mt-xl">Requirements</h2>
 <ul class="l-ui-list l-ui-utility--mt-md">
   <li>Ruby on Rails >= 8.0</li>
-  <li><a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> ~> 0.8</li>
-  <li><a href="https://github.com/activerecord-hackery/ransack">Ransack</a> ~> 4.0</li>
-  <li><a href="https://github.com/ddnexus/pagy">Pagy</a> ~> 43.2</li>
+  <li><a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> >= 0.9</li>
+  <li><a href="https://github.com/activerecord-hackery/ransack">Ransack</a> >= 4.0</li>
+  <li><a href="https://github.com/ddnexus/pagy">Pagy</a> >= 43.2</li>
 </ul>
 
 <h2 class="l-ui-utility--mt-xl">Installation</h2>
@@ -63,7 +86,7 @@ end</code></pre>
   { method: "fields", purpose: "Form fields for new/edit (empty = read-only, no CRUD forms)" },
   { method: "search_fields", purpose: "Ransack search attributes" },
   { method: "default_sort", purpose: "Default sort order for the index" },
-  { method: "permitted_params", purpose: "Strong params (derived from fields by default)" },
+  { method: "per_page", purpose: "Pagination size (default 15)" },
   { method: "scope(controller)", purpose: "Base scope (override for tenant isolation)" },
   { method: "build_record(controller)", purpose: "How to instantiate new records" },
   { method: "after_save_path(controller, record)", purpose: "Redirect target after create/update/destroy" }

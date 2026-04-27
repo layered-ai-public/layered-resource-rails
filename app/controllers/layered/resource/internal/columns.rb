@@ -102,14 +102,14 @@ module Layered
             unless parent_param
               raise ArgumentError,
                     "Column #{col[:attribute].inspect} on #{@resource.name} links to #{col[:link].inspect}, " \
-                    "but that route has no parent params — link: only works for nested layered_resources"
+                    "but that route has no parent params - link: only works for nested layered_resources"
             end
 
             path_helper = :"layered_#{linked_key}_path"
             unless rs.url_helpers.method_defined?(path_helper)
               raise ArgumentError,
                     "Column #{col[:attribute].inspect} on #{@resource.name} links to #{col[:link].inspect}, " \
-                    "but #{path_helper} is not defined — does the route include :index?"
+                    "but #{path_helper} is not defined - does the route include :index?"
             end
 
             attr = col[:attribute]

@@ -5,7 +5,7 @@ module Layered
     module Generators
       # Copies the gem's view templates into the host app so they can be
       # edited freely. The controller's view-resolution escape hatch picks
-      # them up automatically — no further wiring needed.
+      # them up automatically - no further wiring needed.
       #
       #   rails g layered:resource:views articles
       #
@@ -25,7 +25,7 @@ module Layered
 
         def show_next_steps
           say ""
-          say "Edit any of the templates in app/views/layered/#{resource_directory}/ — the gem will use them in place of its defaults."
+          say "Edit any of the templates in app/views/layered/#{resource_directory}/ - the gem will use them in place of its defaults."
           say ""
         end
 
