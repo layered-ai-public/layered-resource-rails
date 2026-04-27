@@ -5,8 +5,12 @@ module Layered
         def model(klass = nil)
           if klass
             @model = klass
+          elsif instance_variable_defined?(:@model)
+            @model
+          elsif superclass < Layered::Resource::Base
+            superclass.model
           else
-            @model ||= name.delete_suffix("Resource").constantize
+            @model = name.delete_suffix("Resource").constantize
           end
         end
 
@@ -14,7 +18,7 @@ module Layered
           if value
             @columns = value
           else
-            @columns || [{ attribute: :id }]
+            inherited_attribute(:@columns) || [{ attribute: :id }]
           end
         end
 
@@ -22,7 +26,7 @@ module Layered
           if value
             @search_fields = value
           else
-            @search_fields || []
+            inherited_attribute(:@search_fields) || []
           end
         end
 
@@ -30,7 +34,7 @@ module Layered
           if value.is_a?(Hash)
             @default_sort = value
           else
-            @default_sort || { attribute: :id, direction: :desc }
+            inherited_attribute(:@default_sort) || { attribute: :id, direction: :desc }
           end
         end
 
@@ -38,7 +42,7 @@ module Layered
           if value
             @per_page = value
           else
-            @per_page || 15
+            inherited_attribute(:@per_page) || 15
           end
         end
 
@@ -46,7 +50,7 @@ module Layered
           if value
             @fields = value
           else
-            @fields || []
+            inherited_attribute(:@fields) || []
           end
         end
 
@@ -139,6 +143,20 @@ module Layered
         end
 
         private
+
+        # Walks the resource class ancestry to find the first ancestor that
+        # has the given ivar set. Class-level ivars are not inherited in Ruby,
+        # so we explicitly walk to give subclasses access to a parent's
+        # declared columns/fields/etc. without redeclaring them.
+        def inherited_attribute(ivar)
+          klass = self
+          while klass && klass <= Layered::Resource::Base
+            return klass.instance_variable_get(ivar) if klass.instance_variable_defined?(ivar)
+
+            klass = klass.superclass
+          end
+          nil
+        end
 
         # An attribute is treated as required when it has a presence validator
         # that runs unconditionally on every save. Conditional (:if/:unless),

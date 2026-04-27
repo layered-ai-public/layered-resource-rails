@@ -91,6 +91,39 @@ class ArticleResource < Layered::Resource::Base
 end
 ```
 
+## Variants via inheritance
+
+For variants that warrant their own URL — typically a separate admin area — declare a subclass and register it on its own route. The subclass inherits `model`, `columns`, `fields`, `search_fields`, `default_sort`, and `per_page` from the parent and overrides only what differs:
+
+```ruby
+# app/layered_resources/admin/article_resource.rb
+class Admin::ArticleResource < ArticleResource
+  columns [
+    { attribute: :title, primary: true },
+    { attribute: :status },
+    { attribute: :author_name, label: "Author" },
+    { attribute: :created_at, label: "Published" }
+  ]
+
+  fields [
+    { attribute: :title },
+    { attribute: :body, as: :text },
+    { attribute: :status },
+    { attribute: :pinned, as: :checkbox }
+  ]
+end
+```
+
+```ruby
+# config/routes.rb
+layered_resources :articles
+namespace :admin do
+  layered_resources :articles, resource: "Admin::ArticleResource"
+end
+```
+
+`search_fields` and `model` aren't redeclared — they're inherited from `ArticleResource`.
+
 ## Authentication
 
 Protect all layered resources with a single initializer setting. Point it at any controller method (e.g. Devise's `authenticate_user!`):
