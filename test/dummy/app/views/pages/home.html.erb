@@ -79,9 +79,9 @@ end</code></pre>
 </div>
 
 <h2 class="l-ui-utility--mt-xl">Authentication</h2>
-<p class="l-ui-utility--mt-md">Protect layered resources with a before_action by setting:</p>
-<pre class="l-ui-surface l-ui-utility--mt-md"><code># config/initializers/layered_resource.rb
-Layered::Resource.authentication_method = :authenticate_user!</code></pre>
+<p class="l-ui-utility--mt-md">
+  <code>Layered::Resource::ResourcesController</code> inherits from your app's <code>ApplicationController</code>, so any <code>before_action</code> declared there (e.g. Devise's <code>authenticate_user!</code>) already protects every layered resource request.
+</p>
 
 <h2 class="l-ui-utility--mt-xl">License</h2>
 <p class="l-ui-utility--mt-md">

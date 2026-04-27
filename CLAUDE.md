@@ -48,7 +48,7 @@ The gem is a Rails Engine isolated under `Layered::Resource`. It works through t
 - `fields` returning empty disables all CRUD forms; `:show` and `:destroy` still work independently.
 - When `:show` is enabled, the index table's primary column (the one with `primary: true`, or the first column) is auto-linked to the show page. Columns that already declare a custom `link:` are left alone.
 - Views use `layered-ui-rails` helpers (`l_ui_table`, `l_ui_form`, `l_ui_search_form`, `l_ui_pagy`) - not standard Rails form builders.
-- Authentication is pluggable via `Layered::Resource.authentication_method`, which names a controller method to call as a before_action.
+- Authentication piggybacks on the host app's `ApplicationController` — `ResourcesController` inherits from it, so any `before_action` declared there already runs.
 - Resource classes live in `app/layered_resources/` (autoloaded by the engine) and keep models clean of admin/UI concerns.
 
 ### Test Setup

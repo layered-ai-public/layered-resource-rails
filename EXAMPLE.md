@@ -126,14 +126,7 @@ end
 
 ## Authentication
 
-Protect all layered resources with a single initializer setting. Point it at any controller method (e.g. Devise's `authenticate_user!`):
-
-```ruby
-# config/initializers/layered_resource.rb
-Layered::Resource.authentication_method = :authenticate_user!
-```
-
-This runs as a `before_action` on every layered resource request. No per-resource configuration needed.
+`Layered::Resource::ResourcesController` inherits from your app's `ApplicationController`, so any `before_action` you've declared there (e.g. Devise's `authenticate_user!`) already protects every layered resource request.
 
 ## Escape hatching
 

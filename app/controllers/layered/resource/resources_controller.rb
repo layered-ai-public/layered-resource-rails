@@ -12,7 +12,6 @@ module Layered
       helper Layered::Ui::PagyHelper
       helper Layered::Ui::BreadcrumbsHelper
 
-      before_action :layered_resource_authenticate
       before_action :load_layered_resource
       before_action :require_layered_fields, only: %i[new create edit update]
 
@@ -136,11 +135,6 @@ module Layered
       def layered_resource_params
         params.require(@resource.model.model_name.param_key)
               .permit(*@resource.permitted_params)
-      end
-
-      def layered_resource_authenticate
-        method = Layered::Resource.authentication_method
-        send(method) if method
       end
 
       def default_url_options
