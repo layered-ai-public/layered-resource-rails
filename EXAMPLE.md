@@ -164,10 +164,10 @@ end
 **Eject views** when you need full control over presentation:
 
 ```
-rails g layered_resource:views articles
+rails g layered:resource:views articles
 ```
 
-This generates standard ERB templates into `app/views/layered/articles/` that you own entirely. The gem falls back to its defaults for any view you haven't overridden.
+This generates standard ERB templates into `app/views/layered/articles/` that you own entirely. Delete any of them to fall back to the gem default; keep the rest to override only what you need.
 
 **Override the controller.** Use the generator to create one in the right place:
 

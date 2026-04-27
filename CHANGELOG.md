@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file. This projec
 
 - `:show` action: `GET /:id` renders a record detail page using the resource's columns
 - Index tables auto-link the primary column to the show page when `:show` is enabled
+- View escape hatch: drop a template at `app/views/layered/<resource_name>/<action>.html.erb` (or partial like `_form`) to override the gem default for that resource
+- `rails g layered:resource:views <name>` generator copies the gem's view templates into `app/views/layered/<name>/` for full customisation
 
 ## [0.1.0] - 2026-04-19
 

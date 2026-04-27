@@ -82,6 +82,12 @@ module Layered
         end
       end
 
+      def _prefixes
+        return super unless @layered_resource_name
+
+        ["layered/#{@layered_resource_name}", *super]
+      end
+
       def layered_resource_collection_url
         helper_name = :"layered_#{@layered_route_key}_path"
         layered_routes.send(helper_name) if layered_routes.respond_to?(helper_name)
@@ -109,6 +115,7 @@ module Layered
         @model = @resource.model
         @columns = @resource.columns
         @layered_route_key = route_key
+        @layered_resource_name = @_route_entry[:resource_name].presence || route_key
         @fields = @resource.resolved_fields
         @crud_enabled = @fields.any?
 

@@ -6,13 +6,14 @@ module Layered
       @registry = Concurrent::Map.new
 
       class << self
-        def register(route_key, resource_class_name, actions: [], routes: nil, parent_params: [], parent_collection_keys: {})
+        def register(route_key, resource_class_name, actions: [], routes: nil, parent_params: [], parent_collection_keys: {}, resource_name: nil)
           @registry[route_key.to_s] = {
             resource: resource_class_name.to_s,
             actions: actions,
             routes: routes,
             parent_params: parent_params,
-            parent_collection_keys: parent_collection_keys
+            parent_collection_keys: parent_collection_keys,
+            resource_name: resource_name.to_s
           }
         end
 
@@ -101,7 +102,7 @@ module Layered
                 "Destroy redirects to the collection route; add :index to only:."
         end
 
-        Layered::Resource::Routing.register(scoped_key, resource_class_name, actions: actions, routes: @set, parent_params: parent_params, parent_collection_keys: parent_collection_keys)
+        Layered::Resource::Routing.register(scoped_key, resource_class_name, actions: actions, routes: @set, parent_params: parent_params, parent_collection_keys: parent_collection_keys, resource_name: route_key)
 
         route_defaults = (options[:defaults] || {}).merge(
           _layered_resource_route_key: scoped_key
