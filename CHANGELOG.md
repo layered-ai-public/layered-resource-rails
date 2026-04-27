@@ -2,20 +2,13 @@
 
 All notable changes to this project will be documented in this file. This project follows [Semantic Versioning](https://semver.org/).
 
-## Unreleased
-
-- `:show` action: `GET /:id` renders a record detail page using the resource's columns
-- Index tables auto-link the primary column to the show page when `:show` is enabled
-- View escape hatch: drop a template at `app/views/layered/<resource_name>/<action>.html.erb` (or partial like `_form`) to override the gem default for that resource
-- `rails g layered:resource:views <name>` generator copies the gem's view templates into `app/views/layered/<name>/` for full customisation
-- **Removed** `Layered::Resource.authentication_method`. Declare your `before_action` on `ApplicationController` (or a parent of it) instead — `ResourcesController` inherits from it.
-
-## [0.1.0] - 2026-04-19
+## [0.1.0] - 2026-04-27
 
 Initial release.
 
-- `layered_resources` routing DSL with `only:` action restriction and scope-aware nesting
-- `Layered::Resource::Base` for declaring `model`, `columns`, `fields`, `search_fields`, and `scope`
-- Generic `ResourcesController` with index, new, create, edit, update, destroy
-- Ransack search and sorting; Pagy pagination
-- Pluggable authentication via `Layered::Resource.authentication_method`
+- `Layered::Resource::Base` DSL: `model`, `columns`, `fields`, `search_fields`, `default_sort`, `per_page`.
+- `layered_resources` route helper with full CRUD, plus `only:`/`except:` to restrict actions.
+- Index search, sort, and pagination via Ransack and Pagy.
+- Resource inheritance for namespaced variants (e.g. `Admin::PostResource`).
+- Escape hatches: `scope`, `build_record`, `after_save_path`, plus `layered:resource:views` and `layered:resource:controller` generators.
+- Auth inherited from the host app's `ApplicationController`.
