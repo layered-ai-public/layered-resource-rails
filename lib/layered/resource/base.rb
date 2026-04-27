@@ -120,6 +120,8 @@ module Layered
             if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
               db_columns = column_names
               attrs = auth_object.columns.map { |c| c[:attribute].to_s }.select { |a| db_columns.include?(a) }
+              sort_attr = auth_object.default_sort[:attribute].to_s
+              attrs |= [sort_attr] if db_columns.include?(sort_attr)
               attrs | auth_object.search_fields.map(&:to_s)
             else
               original_attributes.call(auth_object)

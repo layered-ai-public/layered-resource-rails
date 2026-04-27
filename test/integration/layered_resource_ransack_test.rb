@@ -38,7 +38,7 @@ class LayeredResourceRansackTest < ActiveSupport::TestCase
     r = build_resource(m, columns: [{ attribute: :title }], search: [:body])
     r.configure_ransack
 
-    assert_equal ["title", "body"], m.ransackable_attributes(r)
+    assert_equal ["title", "id", "body"], m.ransackable_attributes(r)
   end
 
   test "falls back to the original method when called by a different resource (cross-model walk)" do
@@ -60,7 +60,7 @@ class LayeredResourceRansackTest < ActiveSupport::TestCase
     r1.configure_ransack
     r2.configure_ransack
 
-    assert_equal ["title"], m.ransackable_attributes(r1)
-    assert_equal ["title", "extra"], m.ransackable_attributes(r2)
+    assert_equal ["title", "id"], m.ransackable_attributes(r1)
+    assert_equal ["title", "id", "extra"], m.ransackable_attributes(r2)
   end
 end
