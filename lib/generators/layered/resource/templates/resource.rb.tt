@@ -1,0 +1,19 @@
+class <%= resource_class_name %>Resource < Layered::Resource::Base
+  model <%= resource_class_name %>
+<% if column_attributes.any? -%>
+
+  columns [
+<% column_attributes.each_with_index do |attr, i| -%>
+    { attribute: :<%= attr.name %><%= ", primary: true" if i.zero? %> }<%= "," unless i == column_attributes.length - 1 %>
+<% end -%>
+  ]
+<% end -%>
+<% if field_attributes.any? -%>
+
+  fields [
+<% field_attributes.each_with_index do |attr, i| -%>
+    { attribute: :<%= attr.name %><%= field_as(attr) %> }<%= "," unless i == field_attributes.length - 1 %>
+<% end -%>
+  ]
+<% end -%>
+end
