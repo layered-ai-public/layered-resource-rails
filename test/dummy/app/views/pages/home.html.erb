@@ -55,9 +55,10 @@
 <p class="l-ui-utility--mt-md">Use <code>layered_resources</code> in your routes to register a model for CRUD management:</p>
 <pre class="l-ui-surface l-ui-utility--mt-md"><code># config/routes.rb
 layered_resources :posts</code></pre>
-<p class="l-ui-utility--mt-md">Restrict actions with the <code>only:</code> option:</p>
-<pre class="l-ui-surface l-ui-utility--mt-md"><code>layered_resources :posts, only: [:index]            # read-only
-layered_resources :posts, only: %i[index destroy]    # list + delete</code></pre>
+<p class="l-ui-utility--mt-md">Restrict actions with <code>only:</code> or <code>except:</code>:</p>
+<pre class="l-ui-surface l-ui-utility--mt-md"><code>layered_resources :posts, only: [:index]             # read-only
+layered_resources :posts, only: %i[index destroy]    # list + delete
+layered_resources :posts, except: [:destroy]         # everything but delete</code></pre>
 
 <h3 class="l-ui-utility--mt-lg">2. Resource definition</h3>
 <p class="l-ui-utility--mt-md">Create a resource class in <code>app/layered_resources/</code> that inherits from <code>Layered::Resource::Base</code>:</p>

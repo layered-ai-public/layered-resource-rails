@@ -113,10 +113,11 @@ end
 layered_resources :posts, only: [:index]
 ```
 
-**Restrict actions:**
+**Restrict actions** with `only:` or `except:`:
 
 ```ruby
 layered_resources :posts, only: [:index, :show, :edit, :update]
+layered_resources :posts, except: [:destroy]
 ```
 
 **Custom scope (e.g. tenant isolation):**

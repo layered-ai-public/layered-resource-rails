@@ -85,6 +85,33 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
     Rails.application.reload_routes!
   end
 
+  # -- except: option --
+
+  test "except: removes actions from the registered resource" do
+    Rails.application.routes.draw do
+      layered_resources :posts, except: %i[new create edit update destroy]
+    end
+
+    entry = Layered::Resource::Routing.lookup("posts")
+    assert_equal %i[index show], entry[:actions]
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "except: excludes generated routes" do
+    Rails.application.routes.draw do
+      layered_resources :posts, except: %i[new create edit update destroy]
+    end
+
+    paths = Rails.application.routes.routes.map { |route| route.path.spec.to_s }
+    assert_includes paths, "/posts(.:format)"
+    assert_includes paths, "/posts/:id(.:format)"
+    assert_not_includes paths, "/posts/new(.:format)"
+    assert_not_includes paths, "/posts/:id/edit(.:format)"
+  ensure
+    Rails.application.reload_routes!
+  end
+
   # -- route key injection --
 
   test "query string cannot override _layered_resource_route_key" do

@@ -28,7 +28,7 @@ module Layered
 
       RESOURCE_ACTIONS = %i[index show new create edit update destroy].freeze
 
-      def layered_resources(resource_name, resource: nil, controller: nil, only: RESOURCE_ACTIONS, **options)
+      def layered_resources(resource_name, resource: nil, controller: nil, only: RESOURCE_ACTIONS, except: nil, **options)
         resource_class_name = resource || "#{resource_name.to_s.classify}Resource"
         route_key = resource_name.to_s
         singular_key = resource_name.to_s.singularize
@@ -71,6 +71,7 @@ module Layered
                        "layered/resource/resources"
                      end
         actions = Array(only).map(&:to_sym)
+        actions -= Array(except).map(&:to_sym) if except
 
         if (actions & %i[new create]).any? && !actions.include?(:index)
           raise ArgumentError,
