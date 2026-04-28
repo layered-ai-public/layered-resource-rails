@@ -19,6 +19,24 @@ Most Rails apps need an admin area, an internal dashboard, or a "list and edit s
 - **Override only what you need.** Swap a single view partial, subclass the controller for a custom scope or redirect, or generate plain ERB to take full control - without rewriting the rest.
 - **Eject cleanly when you outgrow it.** Generate a standard Rails controller and views, drop the gem, and you're left with idiomatic Rails. No lock-in, no hidden coupling.
 
+## Agent skill
+
+An [agent skill](https://agentskills.io) is included so AI coding agents can work with `layered-resource-rails` in your project. Once installed, the agent can handle the full setup - just ask it to add `layered-resource-rails` to your app and it will install the gem, scaffold resources, and wire up routes.
+
+**Project install** - scoped to a single repo, available to all contributors:
+
+```bash
+bin/rails generate layered:resource:install_agent_skill
+```
+
+**Global install** - available across all your projects:
+
+```bash
+./install-skill.sh
+# or install remotely without cloning the repo:
+curl -fsSL https://raw.githubusercontent.com/layered-ai-public/layered-resource-rails/main/install-skill.sh | sh
+```
+
 ## Requirements
 
 - Ruby on Rails >= 8.0
