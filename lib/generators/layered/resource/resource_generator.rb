@@ -3,11 +3,10 @@ require "rails/generators/named_base"
 module Layered
   module Resource
     module Generators
-      # One-shot scaffolder: generates the migration + model (via Rails'
-      # built-in model generator), an `app/layered_resources/<name>_resource.rb`,
-      # and appends a `layered_resources :name` route. Views are intentionally
-      # left to the gem's defaults - run `rails g layered:resource:views <name>`
-      # to eject them.
+      # Generates an `app/layered_resources/<name>_resource.rb` file and
+      # appends a `layered_resources :name` route. Use
+      # `rails g layered:resource:scaffold` for the full one-shot that also
+      # creates the model and migration.
       #
       #   rails g layered:resource article title:string body:text
       class ResourceGenerator < ::Rails::Generators::NamedBase
@@ -15,68 +14,23 @@ module Layered
 
         argument :attributes, type: :array, default: [], banner: "field[:type][:index] field[:type][:index]"
 
-        class_option :skip_model, type: :boolean, default: false,
-                                  desc: "Skip generating the migration and model (use when they already exist)"
-        class_option :actions, type: :array, default: nil, banner: "index show new create edit update destroy",
-                               desc: "Restrict the generated route to these actions (passed to layered_resources only:)"
-        class_option :except, type: :array, default: nil, banner: "destroy",
-                              desc: "Exclude these actions from the generated route (passed to layered_resources except:)"
-        class_option :controller, type: :boolean, default: false,
-                                  desc: "Also eject a controller (invokes layered:resource:controller) and wire it into the route"
-        class_option :views, type: :boolean, default: false,
-                             desc: "Also eject the view templates (invokes layered:resource:views)"
+        class_option :skip_route, type: :boolean, default: false,
+                                  desc: "Skip appending a layered_resources route"
 
-        desc "Generate a model, migration, resource class, and route in one shot."
-
-        def create_model
-          return if options[:skip_model]
-
-          invoke "model", [singular_name, *attributes.map(&:to_s)]
-        end
+        desc "Generate an app/layered_resources/<name>_resource.rb file and a route."
 
         def create_resource_file
           template "resource.rb.tt",
                    File.join("app/layered_resources", "#{singular_name}_resource.rb")
         end
 
-        def eject_controller
-          invoke "layered:resource:controller", [plural_name] if options[:controller]
-        end
-
-        def eject_views
-          invoke "layered:resource:views", [plural_name] if options[:views]
-        end
-
         def add_route
-          route "layered_resources :#{plural_name}#{route_controller_option}#{route_action_filter}"
-        end
+          return if options[:skip_route]
 
-        def show_next_steps
-          say ""
-          say "Next steps for app/layered_resources/#{singular_name}_resource.rb:"
-          say "  - Add `validates` calls to #{resource_class_name} for any required fields - the form marks fields required based on unconditional presence validators."
-          say "  - Consider `default_sort attribute: :created_at, direction: :desc` (or another column) so the index has a stable order."
-          say "  - Consider `search_fields [...]` listing the columns the index search box should match against."
-          say ""
+          route "layered_resources :#{plural_name}"
         end
 
         private
-
-        def route_controller_option
-          ", controller: \"#{plural_name}\"" if options[:controller]
-        end
-
-        def route_action_filter
-          if options[:actions].present?
-            ", only: #{action_list(options[:actions])}"
-          elsif options[:except].present?
-            ", except: #{action_list(options[:except])}"
-          end
-        end
-
-        def action_list(actions)
-          "[#{actions.map { |a| ":#{a}" }.join(', ')}]"
-        end
 
         def singular_name
           file_name.singularize

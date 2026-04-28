@@ -63,12 +63,14 @@ bin/rails generate layered:ui:install
 The fastest path: scaffold the model, migration, resource, and route in one shot.
 
 ```
-rails g layered:resource post title:string body:text
+rails g layered:resource:scaffold post title:string body:text
 ```
 
 This invokes Rails' built-in `model` generator (so you get the migration and model), writes `app/layered_resources/post_resource.rb` with `columns` and `fields` derived from the attributes, and appends `layered_resources :posts` to `config/routes.rb`. Views are intentionally not generated - the gem's defaults render until you eject them with `rails g layered:resource:views posts`.
 
 Pass `--skip-model` if the model already exists. Restrict which CRUD actions get routed with `--actions index show` (emits `only:`) or `--except destroy` (emits `except:`). Pass `--controller` to also eject a controller and wire it into the route, or `--views` to eject the templates upfront.
+
+If the model already exists and you just want the resource class plus its route, use `rails g layered:resource post title:string body:text` instead. It writes `app/layered_resources/post_resource.rb` and appends `layered_resources :posts` - pass `--skip-route` to skip the route line.
 
 The rest of this section walks through what the generator produces.
 

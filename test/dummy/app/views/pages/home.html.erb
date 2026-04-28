@@ -60,6 +60,13 @@ curl -fsSL https://raw.githubusercontent.com/layered-ai-public/layered-resource-
 <p class="l-ui-utility--mt-lg">Then run:</p>
 <pre class="l-ui-surface l-ui-utility--mt-md"><code>bundle install</code></pre>
 
+<h2 class="l-ui-utility--mt-xl">Quick start</h2>
+<p class="l-ui-utility--mt-md">The fastest path - scaffold the model, migration, resource, and route in one shot:</p>
+<pre class="l-ui-surface l-ui-utility--mt-md"><code>rails g layered:resource:scaffold post title:string body:text</code></pre>
+<p class="l-ui-utility--mt-md">This invokes Rails' built-in <code>model</code> generator, writes <code>app/layered_resources/post_resource.rb</code> with <code>columns</code> and <code>fields</code> derived from the attributes, and appends <code>layered_resources :posts</code> to <code>config/routes.rb</code>. Views are intentionally not generated - the gem's defaults render until you eject them with <code>rails g layered:resource:views posts</code>.</p>
+<p class="l-ui-utility--mt-md">Pass <code>--skip-model</code> if the model already exists. Restrict which CRUD actions get routed with <code>--actions index show</code> (emits <code>only:</code>) or <code>--except destroy</code> (emits <code>except:</code>). Pass <code>--controller</code> to also eject a controller and wire it into the route, or <code>--views</code> to eject the templates upfront.</p>
+<p class="l-ui-utility--mt-md">If the model already exists and you just want the resource class plus its route, use <code>rails g layered:resource post title:string body:text</code> instead. It writes <code>app/layered_resources/post_resource.rb</code> and appends <code>layered_resources :posts</code> - pass <code>--skip-route</code> to skip the route line.</p>
+
 <h2 class="l-ui-utility--mt-xl">Setup</h2>
 
 <h3 class="l-ui-utility--mt-lg">1. Routes</h3>
