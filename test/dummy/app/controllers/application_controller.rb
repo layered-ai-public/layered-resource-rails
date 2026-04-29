@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::Base
+  include Pundit::Authorization
+
   GEM_SPEC = Gem.loaded_specs.values.find { |s|
     s.full_gem_path == Layered::Resource::Engine.root.to_s
   }.freeze

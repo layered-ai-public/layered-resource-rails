@@ -8,6 +8,12 @@ Items parked for layered-ui (not in this gem's scope):
 
 - Skill/docs examples for hand-rolled forms with `l-ui-form__group` etc.
 - `l_ui_form_group(form, :body, as: :text)` companion helper.
+- Expose a public `l_ui_table_row(record, columns:, actions: nil, row_id: nil)`
+  helper, extracted from `l_ui_table`'s inline row loop. Prerequisite for #10:
+  without it, a `_record.html.erb` partial here would have to duplicate
+  layered-ui's `<tr>` / `table_cell` markup (drift hazard). Rows are already
+  auto-`dom_id`'d, so the turbo-stream target exists — only the single-row
+  render primitive is missing.
 - Section-header / collapsible nav group helper.
 
 ---

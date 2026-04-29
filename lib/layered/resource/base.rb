@@ -84,12 +84,70 @@ module Layered
           model.ransackable_associations(self).any?
         end
 
-        def scope(_controller)
-          model.all
+        def scope(controller)
+          if pundit_enabled?
+            Pundit.policy_scope(controller.current_user, model)
+          else
+            model.all
+          end
         end
 
         def build_record(controller)
           scope(controller).build
+        end
+
+        # Declares an ownership relationship between the resource's model and
+        # an object the controller can produce (typically the signed-in user
+        # or the current tenant).
+        #
+        #   owned_by :user                 # via :current_user
+        #   owned_by :account, via: :current_account
+        #
+        # Behavioural shorthand for two override patterns at once:
+        #   - `scope`        scopes records to the owner.
+        #   - `build_record` assigns the owner on new records.
+        #
+        # When the controller's `via` accessor returns nil, `scope` returns
+        # `model.none` so unauthenticated requests don't accidentally see the
+        # full table. `use_pundit` takes over `scope` for the read filter
+        # (Policy::Scope#resolve wins) but `owned_by` still drives owner
+        # assignment on create.
+        def owned_by(association, via: :current_user)
+          @owned_by = { association: association, via: via }
+
+          define_singleton_method(:scope) do |controller|
+            if pundit_enabled?
+              Pundit.policy_scope(controller.current_user, model)
+            else
+              owner = controller.public_send(via)
+              owner.nil? ? model.none : model.where(association => owner)
+            end
+          end
+
+          define_singleton_method(:build_record) do |controller|
+            owner = controller.public_send(via)
+            base = pundit_enabled? ? model : scope(controller)
+            base.new(association => owner)
+          end
+        end
+
+        # Opts the resource into Pundit. When enabled:
+        #   - `scope(controller)` is `Pundit.policy_scope(current_user, model)`.
+        #   - The controller calls `authorize(@record)` after loading a member
+        #     record (show/edit/update/destroy) — Pundit raises on denial.
+        #   - The `@resource_can_*` route-exposure flags are ANDed with the
+        #     class-level policy (e.g. `policy(model).new?`) so action buttons
+        #     hide automatically for users who can't perform the action.
+        #
+        # Per-record visibility (e.g. "this user can edit *this* record") is
+        # available in views via the `resource_can?(:update, record)` helper,
+        # which composes the route-exposure flag with the per-record policy.
+        def use_pundit
+          @use_pundit = true
+        end
+
+        def pundit_enabled?
+          inherited_attribute(:@use_pundit) == true
         end
 
         def after_save_path(controller, _record)
