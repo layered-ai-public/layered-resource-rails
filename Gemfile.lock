@@ -1,5 +1,7 @@
-PATH
-  remote: ../layered-ui-rails
+GIT
+  remote: https://github.com/layered-ai-public/layered-ui-rails
+  revision: be88861924f5f51cde5785c7d93a5670d84efceb
+  branch: release
   specs:
     layered-ui-rails (0.9.0)
       rails (~> 8.0)
