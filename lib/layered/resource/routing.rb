@@ -69,6 +69,17 @@ module Layered
             target << { verb: verb, action: action_name.to_sym }
           end
         end
+
+        def method_missing(name, *_args, &_block)
+          raise ArgumentError,
+                "`#{name}` is not supported inside a layered_resources block. " \
+                "Only `member`, `collection`, and HTTP verbs (#{VERBS.join(', ')}) are available; " \
+                "declare other routes outside the block."
+        end
+
+        def respond_to_missing?(_name, _include_private = false)
+          false
+        end
       end
 
       def layered_resources(resource_name, resource: nil, controller: nil, only: RESOURCE_ACTIONS, except: nil, **options, &block)
@@ -163,15 +174,26 @@ module Layered
           custom_member = builder.member_actions
           custom_collection = builder.collection_actions
 
-          # Member custom routes live under /:id/<action> so they can't
-          # shadow CRUD. Collection custom routes share the /<route_key>/<x>
-          # namespace with :new and would silently lose the dispatch race.
-          collection_conflict = custom_collection.map { |a| a[:action] } & RESOURCE_ACTIONS
-          if collection_conflict.any?
+          # Path collisions with built-ins: collection :new shares
+          # /<route_key>/new, and member :edit shares /<route_key>/:id/edit.
+          # Other CRUD names live on different paths (:show is /:id, not
+          # /:id/show; :create is POST /<key>, not /<key>/create) so they
+          # don't collide. Built-in routes are declared first, so without
+          # these guards a custom :edit/:new would silently lose the
+          # dispatch race. Only flag when the colliding built-in is
+          # actually enabled (respect except:/only:).
+          if custom_collection.any? { |a| a[:action] == :new } && actions.include?(:new)
             raise ArgumentError,
-                  "layered_resources :#{resource_name} collection action(s) " \
-                  "#{collection_conflict.inspect} collide with built-in CRUD actions. " \
-                  "Rename them or pass `except: #{collection_conflict.inspect}`."
+                  "layered_resources :#{resource_name} declares collection :new, " \
+                  "which collides with the built-in /#{route_key}/new route. " \
+                  "Rename it or pass `except: [:new]`."
+          end
+
+          if custom_member.any? { |a| a[:action] == :edit } && actions.include?(:edit)
+            raise ArgumentError,
+                  "layered_resources :#{resource_name} declares member :edit, " \
+                  "which collides with the built-in /#{route_key}/:id/edit route. " \
+                  "Rename it or pass `except: [:edit]`."
           end
         end
 

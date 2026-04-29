@@ -21,7 +21,7 @@ module Layered
 
       initializer "layered-resource-rails.view_paths" do
         ActiveSupport.on_load(:action_controller) do
-          prepend_view_path Engine.root.join("app/views")
+          append_view_path Engine.root.join("app/views")
         end
       end
     end

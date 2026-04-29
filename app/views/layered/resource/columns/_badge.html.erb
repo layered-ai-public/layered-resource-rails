@@ -1,2 +1,2 @@
-<% variant = (value.present? && options.fetch(:variants, {})[value.to_s.to_sym]) || :default %>
+<% variant = (!value.nil? && options.fetch(:variants, {})[value.to_s.to_sym]) || :default %>
 <span class="l-ui-badge l-ui-badge--<%= variant %>"><%= value %></span>

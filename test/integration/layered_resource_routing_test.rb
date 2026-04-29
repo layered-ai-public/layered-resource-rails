@@ -229,6 +229,61 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
     Rails.application.reload_routes!
   end
 
+  test "block form raises when member :edit collides with the built-in" do
+    error = assert_raises(ArgumentError) do
+      Rails.application.routes.draw do
+        layered_resources :posts, controller: "posts" do
+          member { get :edit }
+        end
+      end
+    end
+    assert_match(/member :edit/, error.message)
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "block form allows member :edit when except: [:edit] disables the built-in" do
+    Rails.application.routes.draw do
+      layered_resources :posts, controller: "posts", except: [:edit] do
+        member { get :edit }
+      end
+    end
+
+    route = Rails.application.routes.routes.find { |r| r.path.spec.to_s == "/posts/:id/edit(.:format)" }
+    assert route, "expected custom /posts/:id/edit route to be generated"
+    assert_equal "edit", route.defaults[:action]
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "block form allows member action names that don't path-collide" do
+    Rails.application.routes.draw do
+      layered_resources :posts, controller: "posts" do
+        member { get :show }
+      end
+    end
+
+    route = Rails.application.routes.routes.find { |r| r.path.spec.to_s == "/posts/:id/show(.:format)" }
+    assert route, "expected /posts/:id/show route to be generated alongside /posts/:id"
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "block form raises a friendly error when unsupported DSL is used" do
+    error = assert_raises(ArgumentError) do
+      Rails.application.routes.draw do
+        layered_resources :posts, controller: "posts" do
+          scope "/admin" do
+            member { get :foo }
+          end
+        end
+      end
+    end
+    assert_match(/`scope` is not supported/, error.message)
+  ensure
+    Rails.application.reload_routes!
+  end
+
   test "Routing.register records member and collection action names" do
     Rails.application.routes.draw do
       layered_resources :posts, controller: "posts" do

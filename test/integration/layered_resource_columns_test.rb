@@ -117,6 +117,14 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "as: :badge looks up variants for false" do
+    truthy = ApplicationController.renderer.render(
+      partial: "layered/resource/columns/badge",
+      locals: { record: nil, value: false, options: { variants: { "false": :danger } } }
+    )
+    assert_match(/l-ui-badge--danger/, truthy)
+  end
+
   test "as: :badge renders integer values without raising" do
     swap_columns(UserResource,
       [{ attribute: :name, primary: true },

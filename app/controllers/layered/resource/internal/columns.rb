@@ -69,24 +69,30 @@ module Layered
                       "render: proc for column #{col[:attribute].inspect} must accept " \
                       "(record) or (record, view_context); got arity #{arity}."
               end
-            elsif col[:as]
+            else
               attr = col[:attribute]
-              partial = resolve_column_partial(col[:as])
+              type = col[:as] || infer_column_type(attr)
+              partial = resolve_column_partial(type)
               options = col
               col.merge(
                 render: ->(record) {
                   view.render(partial: partial, locals: { record: record, value: record.public_send(attr), options: options })
                 }
               )
-            else
-              attr = col[:attribute]
-              col.merge(
-                render: ->(record) {
-                  raw = record.public_send(attr)
-                  raw.respond_to?(:strftime) ? raw.strftime("%-d %b %Y %H:%M") : raw
-                }
-              )
             end
+          end
+        end
+
+        # Picks a default column partial type from the model's schema:
+        # boolean → :boolean, date/time/datetime → :datetime, everything
+        # else (including virtual attributes with no DB column) → :text.
+        # Resources can pin a specific renderer with as:.
+        def infer_column_type(attr)
+          col = @resource.model.columns_hash[attr.to_s]
+          case col&.type
+          when :boolean then :boolean
+          when :datetime, :date, :time, :timestamp then :datetime
+          else :text
           end
         end
 
