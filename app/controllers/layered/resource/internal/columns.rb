@@ -36,17 +36,28 @@ module Layered
           end
         end
 
+        # Two-arity render procs opt into receiving view_context as a second
+        # argument - lets escape-hatch procs emit HTML via link_to / tag.* /
+        # other view helpers without ActionController::Base.helpers gymnastics.
+        # We normalise to single-arity here so downstream helpers (l_ui_table)
+        # can keep calling proc.call(record) blindly.
         def apply_column_renderers
-          @columns = @columns.map do |col|
-            next col if col[:render]
+          view = view_context
 
-            attr = col[:attribute]
-            col.merge(
-              render: ->(record) {
-                raw = record.public_send(attr)
-                raw.respond_to?(:strftime) ? raw.strftime("%-d %b %Y %H:%M") : raw
-              }
-            )
+          @columns = @columns.map do |col|
+            if (user_render = col[:render])
+              next col if user_render.arity == 1
+
+              col.merge(render: ->(record) { user_render.call(record, view) })
+            else
+              attr = col[:attribute]
+              col.merge(
+                render: ->(record) {
+                  raw = record.public_send(attr)
+                  raw.respond_to?(:strftime) ? raw.strftime("%-d %b %Y %H:%M") : raw
+                }
+              )
+            end
           end
         end
 
@@ -55,7 +66,7 @@ module Layered
         # marked primary: true (or the first column if none is). Columns
         # that already declare a custom link: are left alone.
         def apply_primary_column_show_link
-          return unless @can_show
+          return unless @resource_can_show
 
           routes_proxy = layered_routes
           singular = @layered_route_key.singularize

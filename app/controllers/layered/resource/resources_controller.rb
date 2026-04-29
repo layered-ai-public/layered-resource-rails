@@ -96,7 +96,7 @@ module Layered
 
       # Looks up the resource class from the route registry and sets all
       # the instance variables the views need (@resource, @model, @columns,
-      # @fields, and the @can_* action flags).
+      # @fields, and the @resource_can_* route-exposure flags).
       def load_layered_resource
         route_key = request.path_parameters.delete(:_layered_resource_route_key)
         params.delete(:_layered_resource_route_key)
@@ -119,10 +119,10 @@ module Layered
         @crud_enabled = @fields.any?
 
         resource_actions = @_route_entry[:actions]
-        @can_create = @crud_enabled && resource_actions.include?(:new)
-        @can_update = @crud_enabled && resource_actions.include?(:edit)
-        @can_destroy = resource_actions.include?(:destroy)
-        @can_show = resource_actions.include?(:show)
+        @resource_can_create = @crud_enabled && resource_actions.include?(:new)
+        @resource_can_update = @crud_enabled && resource_actions.include?(:edit)
+        @resource_can_destroy = resource_actions.include?(:destroy)
+        @resource_can_show = resource_actions.include?(:show)
       end
 
       def require_layered_fields
