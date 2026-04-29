@@ -180,7 +180,12 @@ module Layered
           # User) to whatever the associated model has configured directly.
           original_attributes = m.method(:ransackable_attributes)
           original_associations = m.method(:ransackable_associations)
-          host_associations_defined = m.singleton_methods(false).include?(:ransackable_associations)
+          # Detect a host-defined override anywhere in the model's singleton
+          # ancestry (Post, ApplicationRecord, ActiveRecord::Base, etc.).
+          # Ransack supplies the default via a regular Module mixin, so its
+          # `owner` is a Module but not a Class; an explicit `def self.x` in
+          # any host class produces a singleton-class owner, which is a Class.
+          host_associations_defined = original_associations.owner.is_a?(Class)
 
           m.define_singleton_method(:ransackable_attributes) do |auth_object = nil|
             if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
@@ -201,9 +206,10 @@ module Layered
           # the surface narrow: virtual columns are not ransackable by
           # default, so requests like `q[s]=user_name asc` are silently
           # ignored rather than 500ing. Hosts that genuinely want cross-
-          # model sort/filter define `ransackable_associations` on the
-          # parent model themselves (and allowlist attributes on the child)
-          # — we defer to that explicit definition when present.
+          # model sort/filter define `ransackable_associations` themselves
+          # (on the model or a shared abstract base like `ApplicationRecord`,
+          # plus the child model's attribute allowlist) — we defer to that
+          # explicit definition when present.
           m.define_singleton_method(:ransackable_associations) do |auth_object = nil|
             if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
               host_associations_defined ? original_associations.call(auth_object) : []

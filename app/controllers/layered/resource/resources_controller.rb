@@ -45,8 +45,8 @@ module Layered
 
       def create
         @record = @resource.build_record(self)
-        @record.assign_attributes(layered_resource_params)
         authorize_layered_record(@record)
+        @record.assign_attributes(layered_resource_params)
 
         if @record.save
           redirect_to @resource.after_save_path(self, @record),

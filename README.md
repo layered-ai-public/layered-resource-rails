@@ -224,6 +224,15 @@ When enabled:
   `policy(record).new?/update?/destroy?` so users only see actions they
   can perform.
 
+> **`verify_authorized` / `verify_policy_scoped`**: if your
+> `ApplicationController` runs Pundit's `after_action :verify_authorized`
+> (or `:verify_policy_scoped`) globally, layered resources that don't opt
+> into `use_pundit` will raise `AuthorizationNotPerformed` because the
+> controller never calls `authorize` for them. Either skip those checks
+> for the layered controller (`skip_after_action :verify_authorized,
+> if: -> { is_a?(Layered::Resource::ResourcesController) }`) or scope the
+> hardening to the controllers you actually want it on.
+
 `owned_by` composes with `use_pundit`: Pundit owns the read filter
 (`Policy::Scope` wins over the owner-where), and `owned_by` still drives
 owner assignment on `create`. Stack them when the policy needs to express
