@@ -214,11 +214,11 @@ When enabled:
   the index reads through `Policy::Scope#resolve`. This routes through
   Pundit's `pundit_user`, so apps that authorize as `current_account` (or
   any other identity) get the same context here as in `authorize` calls.
-- Member actions (`show`, `edit`, `update`, `destroy`, plus any custom
-  member action declared in a `layered_resources` block) call
-  `authorize(@record)` automatically. Pundit raises
-  `Pundit::NotAuthorizedError` on denial; handle it in your
-  `ApplicationController` as you would for any Pundit-backed app.
+- Every action that loads or builds a record (`new`, `create`, `show`,
+  `edit`, `update`, `destroy`, plus any custom member action declared in
+  a `layered_resources` block) calls `authorize(@record)` automatically.
+  Pundit raises `Pundit::NotAuthorizedError` on denial; handle it in
+  your `ApplicationController` as you would for any Pundit-backed app.
 - Action buttons hide automatically: the `New` link on the index, the
   `Edit`/`Delete` buttons on the index row and show page check
   `policy(record).new?/update?/destroy?` so users only see actions they
