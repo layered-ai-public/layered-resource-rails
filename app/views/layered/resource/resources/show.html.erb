@@ -1,5 +1,5 @@
 <% primary_column = @columns.find { |c| c[:primary] } || @columns.first %>
-<% record_label = primary_column[:render].call(@record) if primary_column %>
+<% record_label = primary_column ? @record.public_send(primary_column[:attribute]) : @record.to_s %>
 <% index_helper = :"#{@layered_route_key}_path" %>
 <% index_path = layered_routes.respond_to?(index_helper) ? layered_routes.send(index_helper) : nil %>
 
@@ -19,12 +19,12 @@
   </div>
 
   <div class="l-ui-container--spread">
-    <% if @can_update %>
+    <% if @resource_can_update %>
       <%= link_to "Edit",
             layered_routes.send(:"edit_#{@layered_route_key.singularize}_path", @record),
             class: "l-ui-button l-ui-button--primary" %>
     <% end %>
-    <% if @can_destroy %>
+    <% if @resource_can_destroy %>
       <%= button_to "Delete",
             layered_routes.send(:"#{@layered_route_key.singularize}_path", @record),
             method: :delete,
@@ -33,12 +33,3 @@
     <% end %>
   </div>
 </div>
-
-<% @columns.each do |col| %>
-  <h4 class="l-ui-heading l-ui-utility--mt-lg">
-    <%= col[:label] || col[:attribute].to_s.humanize %>
-  </h4>
-  <p>
-    <%= col[:render].call(@record) %>
-  </p>
-<% end %>

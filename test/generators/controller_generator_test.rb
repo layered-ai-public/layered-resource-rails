@@ -41,4 +41,27 @@ class Layered::Resource::Generators::ControllerGeneratorTest < ::Rails::Generato
     assert_match(/namespace :admin do/, output)
     assert_match(/layered_resources :articles, controller: "articles"/, output)
   end
+
+  test "aborts when the controller file already exists" do
+    run_generator ["articles"]
+    target = File.join(destination_root, "app/controllers/articles_controller.rb")
+    File.write(target, "# stale\n")
+
+    output = capture(:stderr) { run_generator ["articles"] }
+
+    assert_match(/already exists/, output)
+    assert_match(/--force/, output)
+    assert_equal "# stale\n", File.read(target)
+  end
+
+  test "overwrites when --force is passed" do
+    run_generator ["articles"]
+    File.write(File.join(destination_root, "app/controllers/articles_controller.rb"), "# stale\n")
+
+    run_generator ["articles", "--force"]
+
+    assert_file "app/controllers/articles_controller.rb" do |content|
+      assert_match(/class ArticlesController < Layered::Resource::ResourcesController/, content)
+    end
+  end
 end

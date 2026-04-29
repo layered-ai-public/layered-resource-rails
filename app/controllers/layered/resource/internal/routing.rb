@@ -7,8 +7,6 @@ module Layered
       module Routing
         extend ActiveSupport::Concern
 
-        private
-
         # Returns an object that responds to the route helpers (e.g.
         # users_posts_path) with parent params already filled in from
         # the current request. Used by views to generate links without

@@ -13,6 +13,7 @@ module Layered
       helper Layered::Ui::BreadcrumbsHelper
 
       before_action :load_layered_resource
+      before_action :load_layered_member_record
       before_action :require_layered_fields, only: %i[new create edit update]
 
       helper_method :layered_routes
@@ -32,7 +33,6 @@ module Layered
 
       def show
         @record = @resource.scope(self).find(params[:id])
-        decorate_columns
       end
 
       def new
@@ -87,16 +87,11 @@ module Layered
         ["layered/#{@layered_resource_name}", *super]
       end
 
-      def layered_resource_collection_url
-        helper_name = :"#{@layered_route_key}_path"
-        layered_routes.send(helper_name) if layered_routes.respond_to?(helper_name)
-      end
-
       private
 
       # Looks up the resource class from the route registry and sets all
       # the instance variables the views need (@resource, @model, @columns,
-      # @fields, and the @can_* action flags).
+      # @fields, and the @resource_can_* route-exposure flags).
       def load_layered_resource
         route_key = request.path_parameters.delete(:_layered_resource_route_key)
         params.delete(:_layered_resource_route_key)
@@ -119,10 +114,26 @@ module Layered
         @crud_enabled = @fields.any?
 
         resource_actions = @_route_entry[:actions]
-        @can_create = @crud_enabled && resource_actions.include?(:new)
-        @can_update = @crud_enabled && resource_actions.include?(:edit)
-        @can_destroy = resource_actions.include?(:destroy)
-        @can_show = resource_actions.include?(:show)
+        @resource_can_create = @crud_enabled && resource_actions.include?(:new)
+        @resource_can_update = @crud_enabled && resource_actions.include?(:edit)
+        @resource_can_destroy = resource_actions.include?(:destroy)
+        @resource_can_show = resource_actions.include?(:show)
+      end
+
+      # For custom member actions declared in a `layered_resources` block,
+      # populate @record from params[:id] so action bodies don't have to
+      # repeat `@resource.scope(self).find(params[:id])`. Skip this with
+      # `skip_before_action :load_layered_member_record, only: [:foo]` if
+      # the action doesn't need the record (or shouldn't 404 on a missing
+      # one).
+      def load_layered_member_record
+        return unless @_route_entry
+        return unless params[:id]
+
+        member_actions = @_route_entry[:member_actions] || []
+        return unless member_actions.include?(action_name.to_sym)
+
+        @record = @resource.scope(self).find(params[:id])
       end
 
       def require_layered_fields

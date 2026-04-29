@@ -144,6 +144,213 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
     Rails.application.reload_routes!
   end
 
+  # -- block form (member / collection) --
+
+  test "block form generates routes for member actions" do
+    Rails.application.routes.draw do
+      layered_resources :posts, controller: "posts" do
+        member do
+          post :approve_payment
+        end
+      end
+    end
+
+    route = Rails.application.routes.routes.find { |r| r.path.spec.to_s == "/posts/:id/approve_payment(.:format)" }
+    assert route, "expected /posts/:id/approve_payment route to be generated"
+    assert_equal "posts", route.defaults[:controller]
+    assert_equal "approve_payment", route.defaults[:action]
+    assert_equal "posts", route.defaults[:_layered_resource_route_key]
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "block form generates routes for collection actions" do
+    Rails.application.routes.draw do
+      layered_resources :posts, controller: "posts" do
+        collection do
+          post :bulk_archive
+        end
+      end
+    end
+
+    route = Rails.application.routes.routes.find { |r| r.path.spec.to_s == "/posts/bulk_archive(.:format)" }
+    assert route, "expected /posts/bulk_archive route to be generated"
+    assert_equal "bulk_archive", route.defaults[:action]
+    assert_equal "posts", route.defaults[:_layered_resource_route_key]
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "GET collection custom route is declared before show so it isn't shadowed" do
+    Rails.application.routes.draw do
+      layered_resources :posts, controller: "posts" do
+        collection do
+          get :bulk_archive
+        end
+      end
+    end
+
+    routes = Rails.application.routes.routes.to_a
+    bulk_index = routes.index { |r| r.path.spec.to_s == "/posts/bulk_archive(.:format)" }
+    show_index = routes.index { |r| r.path.spec.to_s == "/posts/:id(.:format)" && r.defaults[:action] == "show" }
+    assert bulk_index, "expected bulk_archive route to be generated"
+    assert show_index, "expected show route to be generated"
+    assert bulk_index < show_index,
+      "GET /posts/bulk_archive must be declared before GET /posts/:id or it will dispatch to show"
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "block form raises when controller: is not overridden" do
+    error = assert_raises(ArgumentError) do
+      Rails.application.routes.draw do
+        layered_resources :posts do
+          member do
+            post :approve_payment
+          end
+        end
+      end
+    end
+    assert_match(/no controller: override/, error.message)
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "block form raises when verb is declared outside member/collection" do
+    error = assert_raises(ArgumentError) do
+      Rails.application.routes.draw do
+        layered_resources :posts, controller: "posts" do
+          post :stray_action
+        end
+      end
+    end
+    assert_match(/declared outside member\/collection/, error.message)
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "block form raises when member :edit collides with the built-in" do
+    error = assert_raises(ArgumentError) do
+      Rails.application.routes.draw do
+        layered_resources :posts, controller: "posts" do
+          member { get :edit }
+        end
+      end
+    end
+    assert_match(/member :edit/, error.message)
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "block form allows member :edit when except: [:edit] disables the built-in" do
+    Rails.application.routes.draw do
+      layered_resources :posts, controller: "posts", except: [:edit] do
+        member { get :edit }
+      end
+    end
+
+    route = Rails.application.routes.routes.find { |r| r.path.spec.to_s == "/posts/:id/edit(.:format)" }
+    assert route, "expected custom /posts/:id/edit route to be generated"
+    assert_equal "edit", route.defaults[:action]
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "block form allows member action names that don't path-collide" do
+    Rails.application.routes.draw do
+      layered_resources :posts, controller: "posts" do
+        member { get :show }
+      end
+    end
+
+    route = Rails.application.routes.routes.find { |r| r.path.spec.to_s == "/posts/:id/show(.:format)" }
+    assert route, "expected /posts/:id/show route to be generated alongside /posts/:id"
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "block form raises a friendly error when unsupported DSL is used" do
+    error = assert_raises(ArgumentError) do
+      Rails.application.routes.draw do
+        layered_resources :posts, controller: "posts" do
+          scope "/admin" do
+            member { get :foo }
+          end
+        end
+      end
+    end
+    assert_match(/`scope` is not supported/, error.message)
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "Routing.register records member and collection action names" do
+    Rails.application.routes.draw do
+      layered_resources :posts, controller: "posts" do
+        member { post :approve_payment }
+        collection { post :bulk_archive }
+      end
+    end
+
+    entry = Layered::Resource::Routing.lookup("posts")
+    assert_equal [:approve_payment], entry[:member_actions]
+    assert_equal [:bulk_archive], entry[:collection_actions]
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  # -- custom member action @record auto-load --
+
+  test "custom member actions get @record auto-populated from params[:id]" do
+    post = Post.create!(title: "Hello", user: @user)
+
+    post "/custom/posts/#{post.id}/publish"
+
+    assert_response :success
+    assert_equal "published #{post.id} Hello", response.body
+  end
+
+  test "custom collection actions do not populate @record" do
+    post "/custom/posts/archive_all"
+
+    assert_response :success
+    assert_equal "archived all (record nil: true)", response.body
+  end
+
+  test "skip_before_action :load_layered_member_record opts out of auto-load" do
+    post = Post.create!(title: "Skip", user: @user)
+
+    post "/custom/posts/#{post.id}/deferred"
+
+    assert_response :success
+    assert_equal "deferred (record nil: true)", response.body
+  end
+
+  test "custom member action 404s on missing record" do
+    post "/custom/posts/0/publish"
+    assert_response :not_found
+  end
+
+  test "custom member action dispatches with @resource and @resource_can_* loaded" do
+    post = Post.create!(title: "Hello", user: @user)
+
+    get "/custom/posts/#{post.id}/state"
+
+    assert_response :success
+    assert_equal(
+      "resource=PostResource key=custom_posts " \
+      "can_show=true can_update=true can_destroy=true record=#{post.id}",
+      response.body
+    )
+  end
+
+  test "custom collection action dispatches with @resource loaded and no @record" do
+    get "/custom/posts/collection_state"
+
+    assert_response :success
+    assert_equal "resource=PostResource key=custom_posts record_nil=true", response.body
+  end
+
   # -- controller: option --
 
   test "controller: option routes to a custom controller" do

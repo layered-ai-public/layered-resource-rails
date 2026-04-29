@@ -15,7 +15,7 @@
     </h1>
   </div>
 
-  <% if @can_create %>
+  <% if @resource_can_create %>
     <%= link_to "New",
           layered_routes.send(:"new_#{singular_key}_path"),
           class: "l-ui-button l-ui-button--primary" %>
@@ -33,14 +33,14 @@
     </div>
   <% end %>
 
-  <% actions_proc = if @can_update || @can_destroy
+  <% actions_proc = if @resource_can_update || @resource_can_destroy
     ->(record) do
       parts = []
-      if @can_update
+      if @resource_can_update
         parts << link_to("Edit", layered_routes.send(:"edit_#{singular_key}_path", record),
                   data: { turbo_frame: "_top" })
       end
-      if @can_destroy
+      if @resource_can_destroy
         parts << button_to("Delete", layered_routes.send(:"#{singular_key}_path", record),
                     method: :delete,
                     class: "l-ui-table__action--danger",

@@ -28,14 +28,11 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
 
   # -- show --
 
-  test "show renders record details" do
+  test "show renders the primary column as the heading" do
     record = Post.create!(title: "Showcase", body: "Body text", user: @user)
     get "/posts/#{record.id}"
     assert_response :success
     assert_select "h1", text: "Showcase"
-    assert_select "h4", text: /Title/
-    assert_select "h4", text: /Body/
-    assert_select "p", text: /Body text/
   end
 
   test "show renders edit and delete buttons when crud enabled" do

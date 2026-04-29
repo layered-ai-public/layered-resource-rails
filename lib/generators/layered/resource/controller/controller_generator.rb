@@ -17,8 +17,15 @@ module Layered
         desc "Generate a controller that inherits from Layered::Resource::ResourcesController."
 
         def create_controller_file
-          template "controller.rb.tt",
-                   File.join("app/controllers", class_path, "#{file_name}_controller.rb")
+          path = File.join("app/controllers", class_path, "#{file_name}_controller.rb")
+          full_path = File.join(destination_root, path)
+          if File.exist?(full_path) && !options[:force]
+            raise Thor::Error,
+                  "#{path} already exists. The layered:resource:controller generator " \
+                  "scaffolds a fresh subclass and would overwrite your existing file. " \
+                  "Pass --force to overwrite, or delete/rename the existing file first."
+          end
+          template "controller.rb.tt", path
         end
 
         def show_routing_instructions
