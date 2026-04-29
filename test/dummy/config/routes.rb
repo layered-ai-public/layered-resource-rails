@@ -42,4 +42,16 @@ Rails.application.routes.draw do
   scope "showonly" do
     layered_resources :posts, only: [:show]
   end
+
+  scope "custom" do
+    layered_resources :posts, controller: "custom_posts" do
+      member do
+        post :publish
+        post :deferred
+      end
+      collection do
+        post :archive_all
+      end
+    end
+  end
 end

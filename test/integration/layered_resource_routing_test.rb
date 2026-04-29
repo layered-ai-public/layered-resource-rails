@@ -299,6 +299,38 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
     Rails.application.reload_routes!
   end
 
+  # -- custom member action @record auto-load --
+
+  test "custom member actions get @record auto-populated from params[:id]" do
+    post = Post.create!(title: "Hello", user: @user)
+
+    post "/custom/posts/#{post.id}/publish"
+
+    assert_response :success
+    assert_equal "published #{post.id} Hello", response.body
+  end
+
+  test "custom collection actions do not populate @record" do
+    post "/custom/posts/archive_all"
+
+    assert_response :success
+    assert_equal "archived all (record nil: true)", response.body
+  end
+
+  test "skip_before_action :load_layered_member_record opts out of auto-load" do
+    post = Post.create!(title: "Skip", user: @user)
+
+    post "/custom/posts/#{post.id}/deferred"
+
+    assert_response :success
+    assert_equal "deferred (record nil: true)", response.body
+  end
+
+  test "custom member action 404s on missing record" do
+    post "/custom/posts/0/publish"
+    assert_response :not_found
+  end
+
   # -- controller: option --
 
   test "controller: option routes to a custom controller" do

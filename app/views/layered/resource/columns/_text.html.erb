@@ -1,1 +1,1 @@
-<%= value %>
+<%= value.respond_to?(:strftime) ? value.strftime("%-d %b %Y %H:%M") : value %>

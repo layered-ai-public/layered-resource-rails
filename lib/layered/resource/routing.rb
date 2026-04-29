@@ -209,7 +209,7 @@ module Layered
         route_defaults = (options[:defaults] || {}).merge(
           _layered_resource_route_key: scoped_key
         )
-        options = options.except(:defaults)
+        options = options.except(:defaults, :as)
 
         if actions.include?(:index)
           get route_key, to: "#{controller}#index",

@@ -294,9 +294,8 @@ end
 ```ruby
 class PostsController < Layered::Resource::ResourcesController
   def approve
-    record = @resource.scope(self).find(params[:id])
-    record.update!(approved: true)
-    redirect_to layered_resource_collection_url, notice: "Post approved"
+    @record.update!(approved: true)
+    redirect_to layered_member_path(@record), notice: "Post approved"
   end
 
   def bulk_archive
@@ -305,7 +304,15 @@ class PostsController < Layered::Resource::ResourcesController
 end
 ```
 
-Inside the controller, `@resource` is the resource class, `layered_resource_collection_url` returns the index path for the current resource, and the standard Rails `before_action`s from `ApplicationController` (e.g. `authenticate_user!`) still apply.
+Inside the controller, `@resource` is the resource class and the standard Rails `before_action`s from `ApplicationController` (e.g. `authenticate_user!`) still apply.
+
+**Auto-loaded `@record` (member actions only).** Custom member actions get `@record` set from `params[:id]` via `@resource.scope(self).find` before the action runs. This does not extend to collection actions — those have no `:id` and `@record` stays `nil`, so do any lookups yourself. Opt a member action out of the auto-load with `skip_before_action :load_layered_member_record, only: [:foo]` if it shouldn't 404 on a missing record (or shouldn't pay for the lookup).
+
+Path helpers available inside actions:
+
+- `layered_collection_path` — index path for the current resource. Raises if `:index` isn't routed.
+- `layered_member_path(record)` — show/update/destroy path for the current resource. Raises if no member route is registered.
+- `layered_routes.<helper>_path(...)` — any registered route, with parent params filled in from the current request.
 
 ## Variants via inheritance
 

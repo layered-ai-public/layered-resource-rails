@@ -93,12 +93,7 @@ module Layered
         end
 
         def after_save_path(controller, _record)
-          url = controller.layered_resource_collection_url
-          return url if url
-
-          raise ActionController::RoutingError,
-                "No :index route for #{model.model_name.human.pluralize}. " \
-                "Add :index to only: or override after_save_path."
+          controller.layered_collection_path
         end
 
         def field_type_for(attribute)

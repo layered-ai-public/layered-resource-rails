@@ -4,5 +4,28 @@ class <%= class_name %>Controller < Layered::Resource::ResourcesController
   # #create, #edit, #update, #destroy) and call `super` when you only
   # want to tweak behaviour. Drop the inheritance and write a plain
   # Rails controller if you outgrow the gem entirely.
+  #
+  # Custom member/collection actions declared in the matching
+  # `layered_resources` block dispatch here. @resource, @model,
+  # @columns, @fields, and the @resource_can_* flags are already set.
+  #
+  # Member actions also get @record auto-loaded from params[:id] via
+  # @resource.scope(self).find — add
+  # `skip_before_action :load_layered_member_record, only: [:foo]`
+  # to opt out. Collection actions never auto-load (no :id in the
+  # path), so do any lookups yourself.
+  #
+  # Example member action:
+  #
+  #   def publish
+  #     @record.update!(published_at: Time.current)
+  #     redirect_to layered_member_path(@record), notice: "Published"
+  #   end
+  #
+  # Path helpers available:
+  #   layered_collection_path           # index
+  #   layered_member_path(record)       # show/update/destroy
+  #   layered_routes.<name>_path(...)   # any registered route,
+  #                                     # parent params filled in
 end
 <% end -%>
