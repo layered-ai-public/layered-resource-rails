@@ -36,19 +36,48 @@ module Layered
           end
         end
 
-        # Two-arity render procs opt into receiving view_context as a second
-        # argument - lets escape-hatch procs emit HTML via link_to / tag.* /
-        # other view helpers without ActionController::Base.helpers gymnastics.
-        # We normalise to single-arity here so downstream helpers (l_ui_table)
-        # can keep calling proc.call(record) blindly.
+        # Column rendering precedence:
+        #   1. render: proc — escape hatch. Procs with arity 1 receive only
+        #      the record. Anything else (fixed arity >= 2, or variadic /
+        #      optional-arg procs with negative arity such as
+        #      `->(record, view = nil)`) also receives view_context as a
+        #      second arg, letting escape-hatch procs emit HTML via link_to
+        #      / tag.* without ActionController::Base.helpers gymnastics.
+        #      Normalised to single-arity here so downstream helpers
+        #      (l_ui_table) keep calling proc.call(record).
+        #   2. as: <type> — dispatch to a partial. Lookup order:
+        #        a. app/views/layered/<resource_name>/columns/_<type>.html.erb
+        #        b. app/views/layered/resource/columns/_<type>.html.erb
+        #           (host-app override > gem default, via Rails view paths).
+        #      Partial locals: (record, value, options). options is the
+        #      column hash itself - partials read keys like :variants,
+        #      :true_label, :format.
+        #   3. Default: raw attribute value with a strftime fallback so
+        #      datetime columns render readably without ceremony.
         def apply_column_renderers
           view = view_context
 
           @columns = @columns.map do |col|
             if (user_render = col[:render])
-              next col if user_render.arity == 1
-
-              col.merge(render: ->(record) { user_render.call(record, view) })
+              arity = user_render.arity
+              if arity == 1
+                col
+              elsif arity >= 2 || arity < 0
+                col.merge(render: ->(record) { user_render.call(record, view) })
+              else
+                raise ArgumentError,
+                      "render: proc for column #{col[:attribute].inspect} must accept " \
+                      "(record) or (record, view_context); got arity #{arity}."
+              end
+            elsif col[:as]
+              attr = col[:attribute]
+              partial = resolve_column_partial(col[:as])
+              options = col
+              col.merge(
+                render: ->(record) {
+                  view.render(partial: partial, locals: { record: record, value: record.public_send(attr), options: options })
+                }
+              )
             else
               attr = col[:attribute]
               col.merge(
@@ -58,6 +87,27 @@ module Layered
                 }
               )
             end
+          end
+        end
+
+        # Per-resource override wins; otherwise fall back to the host-wide
+        # path. The host-wide path resolves to the host app's override (if
+        # any) before the gem's built-in via the standard view-path chain.
+        # Raises if neither exists - typo'd `as:` types should fail loudly,
+        # not render an empty cell.
+        def resolve_column_partial(type)
+          per_resource = "layered/#{@layered_resource_name}/columns/#{type}"
+          shared = "layered/resource/columns/#{type}"
+
+          if lookup_context.exists?(type, ["layered/#{@layered_resource_name}/columns"], true)
+            per_resource
+          elsif lookup_context.exists?(type, ["layered/resource/columns"], true)
+            shared
+          else
+            raise ArgumentError,
+                  "No column partial found for as: #{type.inspect}. " \
+                  "Looked for #{per_resource} and #{shared}. " \
+                  "Run `rails g layered:resource:column #{type}` to scaffold one."
           end
         end
 

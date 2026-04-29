@@ -6,14 +6,16 @@ module Layered
       @registry = Concurrent::Map.new
 
       class << self
-        def register(route_key, resource_class_name, actions: [], routes: nil, parent_params: [], parent_collection_keys: {}, resource_name: nil)
+        def register(route_key, resource_class_name, actions: [], routes: nil, parent_params: [], parent_collection_keys: {}, resource_name: nil, member_actions: [], collection_actions: [])
           @registry[route_key.to_s] = {
             resource: resource_class_name.to_s,
             actions: actions,
             routes: routes,
             parent_params: parent_params,
             parent_collection_keys: parent_collection_keys,
-            resource_name: resource_name.to_s
+            resource_name: resource_name.to_s,
+            member_actions: member_actions,
+            collection_actions: collection_actions
           }
         end
 
@@ -28,7 +30,48 @@ module Layered
 
       RESOURCE_ACTIONS = %i[index show new create edit update destroy].freeze
 
-      def layered_resources(resource_name, resource: nil, controller: nil, only: RESOURCE_ACTIONS, except: nil, **options)
+      # Collects custom member/collection routes declared inside a
+      # `layered_resources` block. Mirrors the small subset of Rails'
+      # `resources` block DSL we care about: nested `member do ... end` /
+      # `collection do ... end` containing HTTP-verb action declarations.
+      class CustomActionsBuilder
+        VERBS = %i[get post patch put delete].freeze
+
+        attr_reader :member_actions, :collection_actions
+
+        def initialize
+          @member_actions = []
+          @collection_actions = []
+          @scope = nil
+        end
+
+        def member(&block)
+          previous, @scope = @scope, :member
+          instance_eval(&block)
+        ensure
+          @scope = previous
+        end
+
+        def collection(&block)
+          previous, @scope = @scope, :collection
+          instance_eval(&block)
+        ensure
+          @scope = previous
+        end
+
+        VERBS.each do |verb|
+          define_method(verb) do |action_name|
+            unless @scope
+              raise ArgumentError,
+                    "#{verb} :#{action_name} declared outside member/collection block in layered_resources"
+            end
+            target = @scope == :member ? @member_actions : @collection_actions
+            target << { verb: verb, action: action_name.to_sym }
+          end
+        end
+      end
+
+      def layered_resources(resource_name, resource: nil, controller: nil, only: RESOURCE_ACTIONS, except: nil, **options, &block)
         resource_class_name = resource || "#{resource_name.to_s.classify}Resource"
         route_key = resource_name.to_s
         singular_key = resource_name.to_s.singularize
@@ -58,6 +101,7 @@ module Layered
         scoped_key = [prefix, route_key].compact.join("_")
         scoped_singular = [prefix, singular_key].compact.join("_")
 
+        controller_override = controller
         # Use a leading "/" when inside a module scope (e.g. another engine) so
         # Rails' add_controller_module treats the path as absolute and skips
         # prepending the engine's namespace. Without a module scope the plain
@@ -103,7 +147,42 @@ module Layered
                 "Destroy redirects to the collection route; add :index to only:."
         end
 
-        Layered::Resource::Routing.register(scoped_key, resource_class_name, actions: actions, routes: @set, parent_params: parent_params, parent_collection_keys: parent_collection_keys, resource_name: route_key)
+        custom_member = []
+        custom_collection = []
+        if block
+          unless controller_override
+            raise ArgumentError,
+                  "layered_resources :#{resource_name} declared a block of custom actions " \
+                  "but no controller: override. Generate one with " \
+                  "`rails g layered:resource:controller #{resource_name}` and pass " \
+                  "controller: \"#{resource_name}\"."
+          end
+
+          builder = CustomActionsBuilder.new
+          builder.instance_eval(&block)
+          custom_member = builder.member_actions
+          custom_collection = builder.collection_actions
+
+          # Member custom routes live under /:id/<action> so they can't
+          # shadow CRUD. Collection custom routes share the /<route_key>/<x>
+          # namespace with :new and would silently lose the dispatch race.
+          collection_conflict = custom_collection.map { |a| a[:action] } & RESOURCE_ACTIONS
+          if collection_conflict.any?
+            raise ArgumentError,
+                  "layered_resources :#{resource_name} collection action(s) " \
+                  "#{collection_conflict.inspect} collide with built-in CRUD actions. " \
+                  "Rename them or pass `except: #{collection_conflict.inspect}`."
+          end
+        end
+
+        Layered::Resource::Routing.register(scoped_key, resource_class_name,
+                                            actions: actions,
+                                            routes: @set,
+                                            parent_params: parent_params,
+                                            parent_collection_keys: parent_collection_keys,
+                                            resource_name: route_key,
+                                            member_actions: custom_member.map { |a| a[:action] },
+                                            collection_actions: custom_collection.map { |a| a[:action] })
 
         route_defaults = (options[:defaults] || {}).merge(
           _layered_resource_route_key: scoped_key
@@ -126,6 +205,17 @@ module Layered
           post route_key, to: "#{controller}#create",
                           as: nil,
                           defaults: route_defaults, **options
+        end
+
+        # Custom collection routes must be declared before member `:id` routes
+        # so that paths like `/posts/bulk_archive` don't get shadowed by
+        # `/posts/:id` (which would otherwise dispatch to #show with
+        # id: "bulk_archive").
+        custom_collection.each do |route|
+          public_send(route[:verb], "#{route_key}/#{route[:action]}",
+                      to: "#{controller}##{route[:action]}",
+                      as: :"#{route[:action]}_#{scoped_key}",
+                      defaults: route_defaults, **options)
         end
 
         if actions.include?(:edit)
@@ -153,6 +243,13 @@ module Layered
           destroy_opts = { to: "#{controller}#destroy", defaults: route_defaults, **options }
           destroy_opts[:as] = member_named ? nil : scoped_singular.to_sym
           delete "#{route_key}/:id", **destroy_opts
+        end
+
+        custom_member.each do |route|
+          public_send(route[:verb], "#{route_key}/:id/#{route[:action]}",
+                      to: "#{controller}##{route[:action]}",
+                      as: :"#{route[:action]}_#{scoped_singular}",
+                      defaults: route_defaults, **options)
         end
       end
     end

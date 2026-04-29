@@ -64,8 +64,20 @@ module Layered
           end
         end
 
+        # Builds the args for `params.permit(*permitted_params)`. Each field
+        # is permitted as a scalar by default. A `permit:` entry on a field
+        # opts that field into the hash form: `permit: []` allows array
+        # values (e.g. `documents: []` for `has_many_attached`), and
+        # `permit: [:street, :city]` allows a nested hash with those keys
+        # (e.g. `address_attributes: [:street, :city]` for accepts_nested).
         def permitted_params
-          fields.map { |f| f[:attribute] }
+          fields.map do |f|
+            if f.key?(:permit)
+              { f[:attribute] => f[:permit] }
+            else
+              f[:attribute]
+            end
+          end
         end
 
         def requires_distinct?

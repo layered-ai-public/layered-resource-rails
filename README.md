@@ -235,6 +235,78 @@ end
 
 The `posts_count` cell on each user row renders as a badge linked to `/users/:id/posts`.
 
+## Column rendering
+
+Each column on the index table is rendered through a partial. By default the gem picks one based on the model's column type (`text` for strings, `datetime` for timestamps, etc.), but you can pin a column to a specific renderer with `as:`:
+
+```ruby
+columns [
+  { attribute: :title, primary: true },
+  { attribute: :status, as: :badge, variants: { published: :success, draft: :warning } },
+  { attribute: :created_at, as: :datetime, format: "%Y-%m-%d" },
+  { attribute: :pinned, as: :boolean, true_label: "Yes", false_label: "No" }
+]
+```
+
+The built-in column types are `:text`, `:datetime`, `:badge`, and `:boolean`. Lookup order is per-resource → host-wide → gem default, so any partial you place at `app/views/layered/<resource>/columns/_<type>.html.erb` overrides the gem's built-in for that resource only, and one at `app/views/layered/resource/columns/_<type>.html.erb` overrides it host-wide.
+
+Use the column generator to eject a built-in or scaffold a new one:
+
+```bash
+rails g layered:resource:column badge              # eject the built-in host-wide
+rails g layered:resource:column badge posts        # eject scoped to PostResource
+rails g layered:resource:column priority_badge     # scaffold a brand-new type
+```
+
+A custom partial receives `record`, `value`, and `options` (the column hash) as locals - read keys like `:variants` or `:format` straight off `options`.
+
+## Strong parameters for nested or array fields
+
+By default each entry in `fields` is permitted as a scalar. To allow an array (e.g. `has_many_attached`) or a nested hash (e.g. `accepts_nested_attributes_for`), set `permit:` on the field:
+
+```ruby
+fields [
+  { attribute: :title },
+  { attribute: :documents, as: :file, permit: [] },                  # array of files
+  { attribute: :address_attributes, permit: [:street, :city, :zip] } # nested hash
+]
+```
+
+`permit: []` produces `params.permit(documents: [])`; `permit: [:street, :city]` produces `params.permit(address_attributes: [:street, :city])`.
+
+## Custom member and collection routes
+
+To add non-CRUD actions (e.g. `POST /posts/:id/approve`, `POST /posts/bulk_archive`), pass a block to `layered_resources` with the same `member`/`collection` DSL Rails' `resources` uses. A block requires `controller:` because the action implementation has to live somewhere - generate a controller subclass with `rails g layered:resource:controller posts` and point the route at it:
+
+```ruby
+layered_resources :posts, controller: "posts" do
+  member do
+    post :approve
+  end
+
+  collection do
+    get :bulk_archive
+    post :bulk_destroy
+  end
+end
+```
+
+```ruby
+class PostsController < Layered::Resource::ResourcesController
+  def approve
+    record = @resource.scope(self).find(params[:id])
+    record.update!(approved: true)
+    redirect_to layered_resource_collection_url, notice: "Post approved"
+  end
+
+  def bulk_archive
+    # render a confirmation page, run the archive, etc.
+  end
+end
+```
+
+Inside the controller, `@resource` is the resource class, `layered_resource_collection_url` returns the index path for the current resource, and the standard Rails `before_action`s from `ApplicationController` (e.g. `authenticate_user!`) still apply.
+
 ## Variants via inheritance
 
 For variants that warrant their own URL - typically a separate admin area - declare a subclass and register it on its own route. The subclass inherits `model`, `columns`, `fields`, `search_fields`, `default_sort`, and `per_page` from the parent and overrides only what differs:
