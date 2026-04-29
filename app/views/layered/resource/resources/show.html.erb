@@ -19,7 +19,7 @@
   </div>
 
   <div class="l-ui-container--spread">
-    <% if resource_can?(:update, @record) %>
+    <% if resource_can?(:edit, @record) %>
       <%= link_to "Edit",
             layered_routes.send(:"edit_#{@layered_route_key.singularize}_path", @record),
             class: "l-ui-button l-ui-button--primary" %>

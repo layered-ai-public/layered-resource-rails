@@ -86,7 +86,7 @@ module Layered
 
         def scope(controller)
           if pundit_enabled?
-            Pundit.policy_scope(controller.current_user, model)
+            controller.send(:policy_scope, model)
           else
             model.all
           end
@@ -117,7 +117,7 @@ module Layered
 
           define_singleton_method(:scope) do |controller|
             if pundit_enabled?
-              Pundit.policy_scope(controller.current_user, model)
+              controller.send(:policy_scope, model)
             else
               owner = controller.public_send(via)
               owner.nil? ? model.none : model.where(association => owner)
@@ -180,6 +180,7 @@ module Layered
           # User) to whatever the associated model has configured directly.
           original_attributes = m.method(:ransackable_attributes)
           original_associations = m.method(:ransackable_associations)
+          host_associations_defined = m.singleton_methods(false).include?(:ransackable_associations)
 
           m.define_singleton_method(:ransackable_attributes) do |auth_object = nil|
             if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
@@ -193,14 +194,19 @@ module Layered
             end
           end
 
+          # Cross-model ransack walks (e.g. sorting a Post index by
+          # `user_name`) require both Post AND User to have ransackable
+          # allowlists configured — and we can't allowlist on User without
+          # silently patching a model the consumer didn't reference. Keep
+          # the surface narrow: virtual columns are not ransackable by
+          # default, so requests like `q[s]=user_name asc` are silently
+          # ignored rather than 500ing. Hosts that genuinely want cross-
+          # model sort/filter define `ransackable_associations` on the
+          # parent model themselves (and allowlist attributes on the child)
+          # — we defer to that explicit definition when present.
           m.define_singleton_method(:ransackable_associations) do |auth_object = nil|
             if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
-              db_columns = column_names
-              virtual_attrs = auth_object.columns.map { |c| c[:attribute].to_s }.reject { |a| db_columns.include?(a) }
-              assoc_names = reflect_on_all_associations(:belongs_to).map { |a| a.name.to_s }
-              virtual_attrs.filter_map { |attr|
-                assoc_names.find { |assoc| attr.start_with?("#{assoc}_") }
-              }.uniq
+              host_associations_defined ? original_associations.call(auth_object) : []
             else
               original_associations.call(auth_object)
             end

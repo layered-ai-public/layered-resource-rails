@@ -210,8 +210,10 @@ end
 
 When enabled:
 
-- `scope(controller)` defaults to `Pundit.policy_scope(current_user, model)` -
-  the index reads through `Policy::Scope#resolve`.
+- `scope(controller)` defaults to the controller's `policy_scope(model)` helper -
+  the index reads through `Policy::Scope#resolve`. This routes through
+  Pundit's `pundit_user`, so apps that authorize as `current_account` (or
+  any other identity) get the same context here as in `authorize` calls.
 - Member actions (`show`, `edit`, `update`, `destroy`, plus any custom
   member action declared in a `layered_resources` block) call
   `authorize(@record)` automatically. Pundit raises

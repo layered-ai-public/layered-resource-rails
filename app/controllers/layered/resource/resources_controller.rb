@@ -45,8 +45,8 @@ module Layered
 
       def create
         @record = @resource.build_record(self)
-        authorize_layered_record(@record)
         @record.assign_attributes(layered_resource_params)
+        authorize_layered_record(@record)
 
         if @record.save
           redirect_to @resource.after_save_path(self, @record),
@@ -90,14 +90,18 @@ module Layered
 
       # Composes the route-exposure flag for an action with the per-record
       # Pundit policy when `use_pundit` is enabled. `action` is one of
-      # `:create`, `:show`, `:update`, `:destroy`. Pass a `record` to gate on
-      # an individual record (e.g. inside the index row); omit it to fall back
-      # to the class-level policy. Without `use_pundit` this just returns the
-      # `@resource_can_*` flag.
+      # `:new`, `:create`, `:show`, `:edit`, `:update`, `:destroy`. Each key
+      # gates the route of the same name and runs the matching Pundit query
+      # (`new?`, `create?`, etc.). Pass a `record` to gate on an individual
+      # record (e.g. inside the index row); omit it to fall back to the
+      # class-level policy (`policy(@resource.model)`). Without `use_pundit`
+      # this just returns the `@resource_can_*` flag.
       def resource_can?(action, record = nil)
         flag = case action
+               when :new     then @resource_can_new
                when :create  then @resource_can_create
                when :show    then @resource_can_show
+               when :edit    then @resource_can_edit
                when :update  then @resource_can_update
                when :destroy then @resource_can_destroy
                else raise ArgumentError, "unknown action #{action.inspect}"
@@ -105,9 +109,7 @@ module Layered
         return false unless flag
         return true unless @resource.pundit_enabled?
 
-        target = record || (action == :create ? @resource.build_record(self) : @resource.model)
-        query = action == :create ? :new? : :"#{action}?"
-        policy(target).public_send(query)
+        policy(record || @resource.model).public_send(:"#{action}?")
       end
 
       def _prefixes
@@ -143,10 +145,12 @@ module Layered
         @crud_enabled = @fields.any?
 
         resource_actions = @_route_entry[:actions]
-        @resource_can_create = @crud_enabled && resource_actions.include?(:new)
-        @resource_can_update = @crud_enabled && resource_actions.include?(:edit)
+        @resource_can_new     = @crud_enabled && resource_actions.include?(:new)
+        @resource_can_create  = @crud_enabled && resource_actions.include?(:create)
+        @resource_can_edit    = @crud_enabled && resource_actions.include?(:edit)
+        @resource_can_update  = @crud_enabled && resource_actions.include?(:update)
         @resource_can_destroy = resource_actions.include?(:destroy)
-        @resource_can_show = resource_actions.include?(:show)
+        @resource_can_show    = resource_actions.include?(:show)
       end
 
       # For custom member actions declared in a `layered_resources` block,
