@@ -1,5 +1,5 @@
 <% primary_column = @columns.find { |c| c[:primary] } || @columns.first %>
-<% record_label = primary_column[:render].call(@record) if primary_column %>
+<% record_label = primary_column ? @record.public_send(primary_column[:attribute]) : @record.to_s %>
 <% index_helper = :"#{@layered_route_key}_path" %>
 <% index_path = layered_routes.respond_to?(index_helper) ? layered_routes.send(index_helper) : nil %>
 
