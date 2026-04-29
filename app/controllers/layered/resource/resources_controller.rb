@@ -33,7 +33,6 @@ module Layered
 
       def show
         @record = @resource.scope(self).find(params[:id])
-        decorate_columns
       end
 
       def new
