@@ -1,5 +1,6 @@
 require "rails/generators/named_base"
 require "generators/layered/resource/resource_generator"
+require "generators/layered/resource/views/views_generator"
 
 module Layered
   module Resource
@@ -34,7 +35,7 @@ module Layered
         end
 
         def create_resource_file
-          invoke ResourceGenerator, [singular_name, *attributes.map(&:to_s), "--skip-route"]
+          invoke ResourceGenerator, [singular_name, *attributes.map(&:to_s)], skip_route: true
         end
 
         def eject_controller
@@ -42,7 +43,7 @@ module Layered
         end
 
         def eject_views
-          invoke "layered:resource:views", [plural_name] if options[:views]
+          invoke ViewsGenerator, [plural_name] if options[:views]
         end
 
         def add_route
