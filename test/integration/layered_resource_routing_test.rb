@@ -331,6 +331,26 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "custom member action dispatches with @resource and @resource_can_* loaded" do
+    post = Post.create!(title: "Hello", user: @user)
+
+    get "/custom/posts/#{post.id}/state"
+
+    assert_response :success
+    assert_equal(
+      "resource=PostResource key=custom_posts " \
+      "can_show=true can_update=true can_destroy=true record=#{post.id}",
+      response.body
+    )
+  end
+
+  test "custom collection action dispatches with @resource loaded and no @record" do
+    get "/custom/posts/collection_state"
+
+    assert_response :success
+    assert_equal "resource=PostResource key=custom_posts record_nil=true", response.body
+  end
+
   # -- controller: option --
 
   test "controller: option routes to a custom controller" do

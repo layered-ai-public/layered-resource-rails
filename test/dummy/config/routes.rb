@@ -48,9 +48,11 @@ Rails.application.routes.draw do
       member do
         post :publish
         post :deferred
+        get :state
       end
       collection do
         post :archive_all
+        get :collection_state
       end
     end
   end
