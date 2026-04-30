@@ -19,12 +19,12 @@
   </div>
 
   <div class="l-ui-container--spread">
-    <% if @resource_can_update %>
+    <% if resource_can?(:edit, @record) %>
       <%= link_to "Edit",
             layered_routes.send(:"edit_#{@layered_route_key.singularize}_path", @record),
             class: "l-ui-button l-ui-button--primary" %>
     <% end %>
-    <% if @resource_can_destroy %>
+    <% if resource_can?(:destroy, @record) %>
       <%= button_to "Delete",
             layered_routes.send(:"#{@layered_route_key.singularize}_path", @record),
             method: :delete,

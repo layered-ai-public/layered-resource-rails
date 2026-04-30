@@ -35,6 +35,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "devise", "~> 5.0"
   spec.add_development_dependency "importmap-rails", "~> 2.0"
   spec.add_development_dependency "propshaft", "~> 1.0"
+  spec.add_development_dependency "pundit", "~> 2.4"
   spec.add_development_dependency "puma", "~> 7.0"
   spec.add_development_dependency "sqlite3", "~> 2.0"
   spec.add_development_dependency "stimulus-rails", "~> 1.0"

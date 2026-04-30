@@ -18,6 +18,7 @@ module Layered
 
       helper_method :layered_routes
       helper_method :layered_breadcrumbs
+      helper_method :resource_can?
 
       def index
         @q = @resource.scope(self).ransack(params[:q], auth_object: @resource)
@@ -33,15 +34,18 @@ module Layered
 
       def show
         @record = @resource.scope(self).find(params[:id])
+        authorize_layered_record(@record)
       end
 
       def new
         @record = @resource.build_record(self)
+        authorize_layered_record(@record)
         @form_url = layered_collection_path
       end
 
       def create
         @record = @resource.build_record(self)
+        authorize_layered_record(@record)
         @record.assign_attributes(layered_resource_params)
 
         if @record.save
@@ -55,11 +59,13 @@ module Layered
 
       def edit
         @record = @resource.scope(self).find(params[:id])
+        authorize_layered_record(@record)
         @form_url = layered_member_path(@record)
       end
 
       def update
         @record = @resource.scope(self).find(params[:id])
+        authorize_layered_record(@record)
         if @record.update(layered_resource_params)
           redirect_to @resource.after_save_path(self, @record),
                       notice: "#{@resource.model.model_name.human} updated"
@@ -71,6 +77,7 @@ module Layered
 
       def destroy
         @record = @resource.scope(self).find(params[:id])
+        authorize_layered_record(@record)
         redirect_path = @resource.after_save_path(self, @record)
         if @record.destroy
           redirect_to redirect_path,
@@ -79,6 +86,30 @@ module Layered
           redirect_to redirect_path,
                       alert: "#{@resource.model.model_name.human} could not be deleted"
         end
+      end
+
+      # Composes the route-exposure flag for an action with the per-record
+      # Pundit policy when `use_pundit` is enabled. `action` is one of
+      # `:new`, `:create`, `:show`, `:edit`, `:update`, `:destroy`. Each key
+      # gates the route of the same name and runs the matching Pundit query
+      # (`new?`, `create?`, etc.). Pass a `record` to gate on an individual
+      # record (e.g. inside the index row); omit it to fall back to the
+      # class-level policy (`policy(@resource.model)`). Without `use_pundit`
+      # this just returns the `@resource_can_*` flag.
+      def resource_can?(action, record = nil)
+        flag = case action
+               when :new     then @resource_can_new
+               when :create  then @resource_can_create
+               when :show    then @resource_can_show
+               when :edit    then @resource_can_edit
+               when :update  then @resource_can_update
+               when :destroy then @resource_can_destroy
+               else raise ArgumentError, "unknown action #{action.inspect}"
+               end
+        return false unless flag
+        return true unless @resource.pundit_enabled?
+
+        policy(record || @resource.model).public_send(:"#{action}?")
       end
 
       def _prefixes
@@ -114,10 +145,12 @@ module Layered
         @crud_enabled = @fields.any?
 
         resource_actions = @_route_entry[:actions]
-        @resource_can_create = @crud_enabled && resource_actions.include?(:new)
-        @resource_can_update = @crud_enabled && resource_actions.include?(:edit)
+        @resource_can_new     = @crud_enabled && resource_actions.include?(:new)
+        @resource_can_create  = @crud_enabled && resource_actions.include?(:create)
+        @resource_can_edit    = @crud_enabled && resource_actions.include?(:edit)
+        @resource_can_update  = @crud_enabled && resource_actions.include?(:update)
         @resource_can_destroy = resource_actions.include?(:destroy)
-        @resource_can_show = resource_actions.include?(:show)
+        @resource_can_show    = resource_actions.include?(:show)
       end
 
       # For custom member actions declared in a `layered_resources` block,
@@ -134,6 +167,15 @@ module Layered
         return unless member_actions.include?(action_name.to_sym)
 
         @record = @resource.scope(self).find(params[:id])
+        authorize_layered_record(@record)
+      end
+
+      # No-op unless the resource opts into Pundit. Defers to the host's
+      # Pundit::Authorization mixin (typically included on ApplicationController).
+      def authorize_layered_record(record)
+        return unless @resource&.pundit_enabled?
+
+        authorize(record, :"#{action_name}?")
       end
 
       def require_layered_fields

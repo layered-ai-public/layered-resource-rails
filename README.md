@@ -166,6 +166,122 @@ class PostResource < Layered::Resource::Base
 end
 ```
 
+## Ownership
+
+For the common case where every record belongs to the signed-in user (or
+tenant), use the `owned_by` shorthand:
+
+```ruby
+class QuoteResource < Layered::Resource::Base
+  model Quote
+
+  owned_by :user                          # via :current_user (default)
+  # owned_by :account, via: :current_account
+end
+```
+
+`owned_by` is purely behavioural - it expands to:
+
+1. `scope(controller)` returns `Quote.where(user: controller.current_user)`,
+   so the index, show, edit, etc. only see records the user owns.
+2. `build_record(controller)` assigns the owner on new records, so `create`
+   stamps `user_id` automatically.
+3. When `controller.current_user` is `nil`, `scope` returns `Quote.none`
+   instead of the full table - a defused footgun for unauthenticated
+   requests.
+
+`owned_by` is a fact about the data, not a gate on what users can do. For
+per-action authorisation ("can this user edit *this* record?") use
+`use_pundit` or override `scope` yourself.
+
+## Authorisation
+
+`scope(controller)` is the universal seam - any read filter (Pundit,
+CanCan, a plain PORO) goes there. The gem also ships first-class Pundit
+support via opt-in:
+
+```ruby
+class PostResource < Layered::Resource::Base
+  model Post
+
+  use_pundit
+end
+```
+
+When enabled:
+
+- `scope(controller)` defaults to the controller's `policy_scope(model)` helper -
+  the index reads through `Policy::Scope#resolve`. This routes through
+  Pundit's `pundit_user`, so apps that authorize as `current_account` (or
+  any other identity) get the same context here as in `authorize` calls.
+- Every action that loads or builds a record (`new`, `create`, `show`,
+  `edit`, `update`, `destroy`, plus any custom member action declared in
+  a `layered_resources` block) calls `authorize(@record)` automatically.
+  Pundit raises `Pundit::NotAuthorizedError` on denial; handle it in
+  your `ApplicationController` as you would for any Pundit-backed app.
+- Action buttons hide automatically: the `New` link on the index, the
+  `Edit`/`Delete` buttons on the index row and show page check
+  `policy(record).new?/update?/destroy?` so users only see actions they
+  can perform.
+
+> **`verify_authorized` / `verify_policy_scoped`**: if your
+> `ApplicationController` runs Pundit's `after_action :verify_authorized`
+> (or `:verify_policy_scoped`) globally, layered resources that don't opt
+> into `use_pundit` will raise `AuthorizationNotPerformed` because the
+> controller never calls `authorize` for them. Either skip those checks
+> for the layered controller (`skip_after_action :verify_authorized,
+> if: -> { is_a?(Layered::Resource::ResourcesController) }`) or scope the
+> hardening to the controllers you actually want it on.
+
+`owned_by` composes with `use_pundit`: Pundit owns the read filter
+(`Policy::Scope` wins over the owner-where), and `owned_by` still drives
+owner assignment on `create`. Stack them when the policy needs to express
+more than ownership:
+
+```ruby
+class PostResource < Layered::Resource::Base
+  model Post
+
+  use_pundit
+  owned_by :user
+end
+```
+
+CanCan, plain POROs, and bespoke policies are still supported - just
+override `scope` (and add per-action `before_action :authorize_*` callbacks
+in an ejected controller). Use `use_pundit` when Pundit is the right fit
+and you want the integration without writing it.
+
+### Writing policies
+
+Two conventions worth knowing:
+
+- **Compare ids, not associations.** Inside policy methods write
+  `record.user_id == user.id` rather than `record.user == user`. The id
+  comparison avoids loading the association and works on unsaved records.
+- **The policy queried matches the route, not the model being mutated.**
+  For a custom member action declared on `layered_resources :questions`
+  (e.g. `POST /questions/:id/submit_answer`), `@record` is a `Question`
+  and the gem calls `QuestionPolicy#submit_answer?` — even if the action
+  ultimately creates an `Answer`. Put the predicate on the policy for the
+  resource the route lives on.
+
+### Per-record gating in custom views
+
+Inside ejected views, the `resource_can?(action, record = nil)` helper
+returns `true` only when both the route exposes the action and (when
+Pundit is enabled) the policy permits it for the given record. Use it
+wherever you'd previously read `@resource_can_*`:
+
+```erb
+<% if resource_can?(:update, @record) %>
+  <%= link_to "Edit", edit_post_path(@record) %>
+<% end %>
+```
+
+The raw `@resource_can_*` ivars remain available for route-only checks
+(no per-record policy lookup).
+
 ## Associations
 
 Resources are independent - each model gets its own resource class. To surface association data on an index, add a virtual column whose `attribute:` is a method on the model. For `Post belongs_to :user`, expose `user.name` by delegating on the model:
@@ -350,6 +466,15 @@ end
 ## Authentication
 
 `Layered::Resource::ResourcesController` inherits from your app's `ApplicationController`, so any `before_action` you've declared there (e.g. Devise's `authenticate_user!`) already protects every layered resource request.
+
+## Show is intentionally minimal
+
+The default show view is a heading with `Edit` and `Delete` buttons - it
+doesn't iterate over `columns` because columns are designed for table cells
+and have no per-user gating. If a column is configured for the index it
+would otherwise leak in full on show. When you want a real detail page,
+eject views with `rails g layered:resource:views <name>` and write the show
+template against `@record` directly.
 
 ## Escape hatching
 

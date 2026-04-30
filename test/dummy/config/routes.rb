@@ -43,6 +43,14 @@ Rails.application.routes.draw do
     layered_resources :posts, only: [:show]
   end
 
+  scope "owned" do
+    layered_resources :posts, resource: "OwnedPostResource"
+  end
+
+  scope "pundit" do
+    layered_resources :posts, resource: "PunditPostResource"
+  end
+
   scope "custom" do
     layered_resources :posts, controller: "custom_posts" do
       member do
