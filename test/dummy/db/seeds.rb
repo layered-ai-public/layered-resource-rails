@@ -22,5 +22,13 @@ end
   end
 end
 
+# Comments
+Post.find_each do |post|
+  3.times do |i|
+    Comment.find_or_create_by!(post: post, body: "Comment #{i + 1} on #{post.title}")
+  end
+end
+
 # Counters
 User.find_each { |u| User.reset_counters(u.id, :posts) }
+Post.find_each { |p| Post.reset_counters(p.id, :comments) }

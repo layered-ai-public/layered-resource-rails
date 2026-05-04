@@ -189,10 +189,6 @@ module Layered
         params.require(@resource.model.model_name.param_key)
               .permit(*@resource.permitted_params)
       end
-
-      def default_url_options
-        main_app.default_url_options
-      end
     end
   end
 end

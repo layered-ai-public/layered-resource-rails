@@ -10,9 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_13_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_04_000001) do
+  create_table "comments", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.integer "post_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["post_id"], name: "index_comments_on_post_id"
+  end
+
   create_table "posts", force: :cascade do |t|
     t.text "body"
+    t.integer "comments_count", default: 0, null: false
     t.datetime "created_at", null: false
     t.string "title", null: false
     t.datetime "updated_at", null: false
@@ -48,5 +57,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_13_000000) do
     t.index ["unlock_token"], name: "index_users_on_unlock_token", unique: true
   end
 
+  add_foreign_key "comments", "posts"
   add_foreign_key "posts", "users"
 end
