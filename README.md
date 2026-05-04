@@ -33,7 +33,11 @@ bin/rails generate layered:resource:install_agent_skill
 
 ```bash
 ./install-skill.sh
-# or install remotely without cloning the repo:
+```
+
+Or install remotely without cloning the repo:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/layered-ai-public/layered-resource-rails/main/install-skill.sh | sh
 ```
 
