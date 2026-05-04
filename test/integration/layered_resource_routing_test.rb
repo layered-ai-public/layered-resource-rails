@@ -362,4 +362,20 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   ensure
     Rails.application.reload_routes!
   end
+
+  # -- multi-level nesting --
+
+  test "two-level nested route renders breadcrumbs that link with all parent ids" do
+    post = Post.create!(title: "Hello", user: @user)
+
+    get "/users/#{@user.id}/posts/#{post.id}/comments"
+
+    assert_response :success
+    # Breadcrumb for the user (first parent) links to the unscoped users index
+    assert_select "a[href='/users']", text: "Users"
+    # Breadcrumb for the post (second parent) must include the user_id from
+    # params - users_posts_path requires :user_id, so falling back to {} would
+    # raise. This is the regression that was masked by single-level handling.
+    assert_select "a[href='/users/#{@user.id}/posts']", text: "Posts"
+  end
 end

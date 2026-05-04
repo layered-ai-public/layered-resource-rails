@@ -35,8 +35,13 @@ module Layered
                   rs = collection_entry[:routes] || Rails.application.routes
                   helper = :"#{collection_key}_path"
                   if rs.url_helpers.method_defined?(helper)
-                    path = rs.url_helpers.send(helper, default_url_options)
-                    crumbs << { label: model_class.model_name.human.pluralize, path: path }
+                    ancestor_args = collection_entry[:parent_params].each_with_object({}) do |p, h|
+                      h[p] = params[p]
+                    end
+                    if ancestor_args.values.all?(&:present?)
+                      path = rs.url_helpers.send(helper, default_url_options.merge(ancestor_args))
+                      crumbs << { label: model_class.model_name.human.pluralize, path: path }
+                    end
                   end
                 end
               end

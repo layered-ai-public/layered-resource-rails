@@ -27,6 +27,13 @@ Rails.application.routes.draw do
     layered_resources :posts
   end
 
+  # Two-level deep nesting: comments under a user's post. Exercises
+  # multi-parent breadcrumb / link generation (route key requires both
+  # :user_id and :post_id).
+  scope "users/:user_id/posts/:post_id" do
+    layered_resources :comments
+  end
+
   scope "users/:user_id/readonly" do
     layered_resources :posts, only: [:index]
   end

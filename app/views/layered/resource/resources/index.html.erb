@@ -4,7 +4,6 @@
 <div class="l-ui-container--spread">
   <div>
     <%= l_ui_breadcrumbs do %>
-      <%= l_ui_breadcrumb_item "Home", root_path %>
       <% layered_breadcrumbs.each do |crumb| %>
         <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
       <% end %>

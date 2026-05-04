@@ -165,8 +165,8 @@ module Layered
                            raise(ArgumentError, "Column #{col[:attribute].inspect} on #{@resource.name} has link: #{col[:link].inspect} but no layered_resources route is registered under that key")
 
             rs = linked_entry[:routes] || Rails.application.routes
-            parent_param = linked_entry[:parent_params].last
-            unless parent_param
+            link_parent_params = linked_entry[:parent_params]
+            if link_parent_params.empty?
               raise ArgumentError,
                     "Column #{col[:attribute].inspect} on #{@resource.name} links to #{col[:link].inspect}, " \
                     "but that route has no parent params - link: only works for nested layered_resources"
@@ -179,12 +179,16 @@ module Layered
                     "but #{path_helper} is not defined - does the route include :index?"
             end
 
+            *ancestor_params, immediate_parent = link_parent_params
             attr = col[:attribute]
             col.merge(
               render: ->(record) {
                 value = record.public_send(attr)
                 badge = view.content_tag(:span, value.to_s, class: "l-ui-badge l-ui-badge--default l-ui-badge--rounded")
-                path = rs.url_helpers.send(path_helper, opts.merge(parent_param => record.id))
+                args = opts.dup
+                ancestor_params.each { |p| args[p] = record.public_send(p) }
+                args[immediate_parent] = record.id
+                path = rs.url_helpers.send(path_helper, args)
                 view.link_to badge, path, data: { turbo_frame: "_top" }
               }
             )
