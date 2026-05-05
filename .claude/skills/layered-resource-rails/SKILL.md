@@ -106,7 +106,7 @@ end
 
 - `primary: true` - marks the cell that links to the show page (defaults to first column)
 - `label: "Custom"` - overrides the humanised attribute name
-- `link: :route_key` - renders the value as a badge link to a nested route (e.g. `:users_posts`)
+- `link: :route_key` - wraps the column's rendered value in a link to a nested route (e.g. `:users_posts`); composes with `as:` (pair with `as: :badge` for a badge link)
 - `render: ->(record) { ... }` - custom cell renderer
 
 ### Field types

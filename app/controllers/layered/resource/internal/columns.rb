@@ -10,8 +10,8 @@ module Layered
         private
 
         # Walks @columns and installs the default render proc for any column
-        # that doesn't already have one, then rewrites columns with a `link:`
-        # option to render a badge linked to the named route.
+        # that doesn't already have one, then wraps columns with a `link:`
+        # option in a link to the named route.
         def decorate_columns
           apply_column_sortability
           apply_column_renderers
@@ -180,16 +180,15 @@ module Layered
             end
 
             *ancestor_params, immediate_parent = link_parent_params
-            attr = col[:attribute]
+            inner_render = col[:render]
             col.merge(
               render: ->(record) {
-                value = record.public_send(attr)
-                badge = view.content_tag(:span, value.to_s, class: "l-ui-badge l-ui-badge--default l-ui-badge--rounded")
+                value = inner_render.call(record)
                 args = opts.dup
                 ancestor_params.each { |p| args[p] = record.public_send(p) }
                 args[immediate_parent] = record.id
                 path = rs.url_helpers.send(path_helper, args)
-                view.link_to badge, path, data: { turbo_frame: "_top" }
+                view.link_to value, path, data: { turbo_frame: "_top" }
               }
             )
           end

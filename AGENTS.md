@@ -29,3 +29,8 @@ Engine (`lib/layered/resource/engine.rb`) autoloads `app/layered_resources`, mix
 - Tests in `test/integration/` run against `test/dummy/` (a real Rails app with `Post` and `User` models, plus `PostResource` and `UserResource`). Integration tests are the contract for controller/routing/DSL changes.
 - `attribute_required?` treats a field as required only when the presence validator is unconditional - don't tighten without considering conditional-validation forms.
 - `concurrent-ruby` is depended on solely for the routing registry's `Concurrent::Map`.
+
+## Conventions
+
+- Titles: capitalise first word only (e.g. "This title")
+- Document new DSL surface in three places: the README (user-facing API reference), an integration test under `test/integration/` exercising it against the dummy app, and `.claude/skills/layered-resource-rails/SKILL.md`. When a new DSL option needs a runnable example, wire it into the dummy app to show it working.

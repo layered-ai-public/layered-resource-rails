@@ -10,13 +10,26 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     )
   end
 
-  test "link option renders column value as badge link to nested layered resource" do
+  test "link option wraps the column's rendered value in a link to the nested layered resource" do
     Post.create!(title: "First", user: @user)
     Post.create!(title: "Second", user: @user)
 
     get "/users"
     assert_response :success
-    assert_select "a[href='/users/#{@user.id}/posts'] span.l-ui-badge", text: "2"
+    assert_select "a[href='/users/#{@user.id}/posts']", text: "2"
+    assert_select "a[href='/users/#{@user.id}/posts'] span.l-ui-badge", count: 0
+  end
+
+  test "link combined with as: :badge wraps the badge in a link" do
+    Post.create!(title: "First", user: @user)
+
+    swap_columns(UserResource,
+      [{ attribute: :name, primary: true },
+       { attribute: :posts_count, label: "Posts", as: :badge, link: :users_posts }]) do
+      get "/users"
+      assert_response :success
+      assert_select "a[href='/users/#{@user.id}/posts'] span.l-ui-badge", text: "1"
+    end
   end
 
   test "column without link option renders plain value" do
@@ -129,6 +142,16 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
       get "/posts"
       assert_response :success
       assert_select "span.l-ui-badge.l-ui-badge--default", text: "Hello"
+    end
+  end
+
+  test "as: :badge with rounded: true adds the rounded modifier" do
+    swap_columns(PostResource,
+      [{ attribute: :title, primary: true, as: :badge, rounded: true }]) do
+      Post.create!(title: "Hello", user: @user)
+      get "/posts"
+      assert_response :success
+      assert_select "span.l-ui-badge.l-ui-badge--default.l-ui-badge--rounded", text: "Hello"
     end
   end
 

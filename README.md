@@ -353,7 +353,7 @@ class UserResource < Layered::Resource::Base
 end
 ```
 
-The `posts_count` cell on each user row renders as a badge linked to `/users/:id/posts`.
+The `posts_count` cell on each user row links to `/users/:id/posts`. `link:` wraps the column's normal rendering in a link, so it composes with `as:` — pair it with `as: :badge` if you want a badge link.
 
 ## Column rendering
 
@@ -363,6 +363,7 @@ Each column on the index table is rendered through a partial. By default the gem
 columns [
   { attribute: :title, primary: true },
   { attribute: :status, as: :badge, variants: { published: :success, draft: :warning } },
+  { attribute: :priority, as: :badge, rounded: true },
   { attribute: :created_at, as: :datetime, format: "%Y-%m-%d" },
   { attribute: :pinned, as: :boolean, true_label: "Yes", false_label: "No" }
 ]
