@@ -2,10 +2,14 @@
 
 <% unless devise_controller? %>
   <% content_for :l_ui_navigation_items do %>
-    <%= l_ui_navigation_item "Home", root_path %>
-    <%= l_ui_navigation_item "Examples", examples_path do %>
-      <%= l_ui_navigation_item "Users", users_path %>
-      <%= l_ui_navigation_item "Posts", posts_path %>
+    <%= l_ui_navigation_section do %>
+      <%= l_ui_navigation_item "Home", root_path, icon: "home" %>
+    <% end %>
+
+    <%= l_ui_navigation_section "Examples", icon: "code_bracket", collapsible: true, storage_key: "examples" do %>
+      <%= l_ui_navigation_item "Overview", examples_path %>
+      <%= l_ui_navigation_item "Users", users_path, match: :starts_with %>
+      <%= l_ui_navigation_item "Posts", posts_path, match: :starts_with %>
     <% end %>
   <% end %>
 <% end %>
