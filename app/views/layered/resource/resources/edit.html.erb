@@ -1,4 +1,4 @@
-<div class="l-ui-container--spread">
+<div class="l-ui-spread">
   <div>
     <%= l_ui_breadcrumbs do %>
       <% layered_breadcrumbs.each do |crumb| %>
@@ -11,6 +11,6 @@
   </div>
 </div>
 
-<div class="l-ui-utility--mt-sm">
+<div class="l-ui-mt-2">
   <%= l_ui_form(@record, fields: @fields, url: @form_url, method: :patch) %>
 </div>

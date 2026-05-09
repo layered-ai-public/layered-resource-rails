@@ -1,15 +1,18 @@
-<%= l_ui_title_bar(title: "Examples") %>
+<%= l_ui_title_bar(
+      title: "Examples",
+      breadcrumbs: [{ label: "Home", path: root_path }]
+    ) %>
 
-<p class="l-ui-utility--mt-md">
+<p class="mt-4">
   Two examples, each demonstrating a distinct capability of the gem.
 </p>
 
-<h2 class="l-ui-utility--mt-xl"><%= link_to "Users", users_path %></h2>
-<p class="l-ui-utility--mt-md">
+<h2 class="mt-8"><%= link_to "Users", users_path %></h2>
+<p class="mt-4">
   Restricted actions via <code>only: %i[index edit update destroy]</code> - no show, no create. The <code>posts_count</code> column links to posts scoped to that user, demonstrating nested resources via <code>scope "users/:user_id"</code> and a <code>PostResource.scope</code> override.
 </p>
 
-<h2 class="l-ui-utility--mt-xl"><%= link_to "Posts", posts_path %></h2>
-<p class="l-ui-utility--mt-md">
+<h2 class="mt-8"><%= link_to "Posts", posts_path %></h2>
+<p class="mt-4">
   The baseline: <code>layered_resources :posts</code> plus a <code>PostResource</code> declaring columns, fields, and search fields. You get index, show, new, edit, and destroy - with search, sort, pagination, and forms styled out of the box.
 </p>

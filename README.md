@@ -17,7 +17,7 @@ Most Rails apps need an admin area, an internal dashboard, or a "list and edit s
 - **Skip the boilerplate.** Declare your columns, fields, and search - get index, show, forms, search, sort, and pagination for free. No scaffold to maintain, no half-finished admin gem to fight.
 - **Looks right out of the box.** Tables, forms, and pagination come pre-styled via [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) with WCAG 2.2 AA compliance and dark mode included.
 - **Override only what you need.** Swap a single view partial, subclass the controller for a custom scope or redirect, or generate plain ERB to take full control - without rewriting the rest.
-- **Eject cleanly when you outgrow it.** Generate a standard Rails controller and views, drop the gem, and you're left with idiomatic Rails. No lock-in, no hidden coupling.
+- **Eject cleanly if you outgrow it.** Generate a standard Rails controller and views, drop the gem, and you're left with idiomatic Rails. No lock-in, no hidden coupling.
 
 ## Agent skill
 
@@ -44,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/layered-ai-public/layered-resource-
 ## Requirements
 
 - Ruby on Rails >= 8.0
-- [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) ~> 0.9
+- [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) ~> 0.13
 - Ransack ~> 4.0
 - Pagy ~> 43.2
 

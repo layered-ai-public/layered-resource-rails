@@ -3,7 +3,7 @@
 <% index_helper = :"#{@layered_route_key}_path" %>
 <% index_path = layered_routes.respond_to?(index_helper) ? layered_routes.send(index_helper) : nil %>
 
-<div class="l-ui-container--spread">
+<div class="l-ui-spread">
   <div>
     <%= l_ui_breadcrumbs do %>
       <% layered_breadcrumbs.each do |crumb| %>
@@ -17,7 +17,7 @@
     <h1 class="l-ui-heading"><%= record_label %></h1>
   </div>
 
-  <div class="l-ui-container--spread">
+  <div class="l-ui-spread">
     <% if resource_can?(:edit, @record) %>
       <%= link_to "Edit",
             layered_routes.send(:"edit_#{@layered_route_key.singularize}_path", @record),

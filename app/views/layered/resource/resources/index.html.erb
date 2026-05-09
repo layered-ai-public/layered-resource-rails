@@ -1,7 +1,7 @@
 <% turbo_frame_name = "layered_#{@layered_route_key}" %>
 <% singular_key = @layered_route_key.singularize %>
 
-<div class="l-ui-container--spread">
+<div class="l-ui-spread">
   <div>
     <%= l_ui_breadcrumbs do %>
       <% layered_breadcrumbs.each do |crumb| %>
@@ -23,7 +23,7 @@
 
 <%= turbo_frame_tag turbo_frame_name, data: { turbo_action: "advance" } do %>
   <% if @resource.search_fields.any? %>
-    <div class="l-ui-utility--mt-lg">
+    <div class="l-ui-mt-4">
       <%= l_ui_search_form(@q,
             url: layered_routes.send(:"#{@layered_route_key}_path"),
             fields: @resource.search_fields,
@@ -49,7 +49,7 @@
     end
   end %>
 
-  <div class="l-ui-utility--mt-lg">
+  <div class="l-ui-mt-4">
     <%= l_ui_table(@records,
           columns: @columns,
           caption: @layered_route_key.humanize,
