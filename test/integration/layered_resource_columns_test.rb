@@ -25,7 +25,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
 
     swap_columns(UserResource,
       [{ attribute: :name, primary: true },
-       { attribute: :posts_count, label: "Posts", as: :badge, link: :users_posts }]) do
+       { attribute: :posts_count, label: "Posts", as: :badge, link: :user_posts }]) do
       get "/users"
       assert_response :success
       assert_select "a[href='/users/#{@user.id}/posts'] span.l-ui-badge", text: "1"

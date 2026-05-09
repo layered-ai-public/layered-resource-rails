@@ -132,10 +132,19 @@ Incoherent `only:` combos raise at boot time - e.g. `:new` without `:create`, or
 
 ```ruby
 layered_resources :users
+
+# Either form produces /users/:user_id/posts with Rails-standard helper
+# names (user_posts_path, new_user_post_path, edit_user_post_path, …):
+resources :users, only: [] do
+  layered_resources :posts
+end
+# …or, equivalently…
 scope "users/:user_id" do
   layered_resources :posts
 end
 ```
+
+Helper names follow the standard Rails nested-resources convention, so `polymorphic_path([@user, :posts])`, `link_to "Edit", [@user, @post]`, `url_for([@user, @post, :comments])` etc. all resolve. The `link:` column option uses the same name (`link: :user_posts`, `link: :user_post_comments`).
 
 Resolve the parent in `scope`:
 

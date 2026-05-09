@@ -30,6 +30,8 @@ module Layered
         before_action :require_layered_fields, only: %i[new create edit update]
 
         helper_method :layered_routes
+        helper_method :layered_collection_path
+        helper_method :layered_member_path
         helper_method :layered_breadcrumbs
         helper_method :resource_can?
       end

@@ -22,16 +22,19 @@ Rails.application.routes.draw do
   # Standalone posts (all posts, no user scoping)
   layered_resources :posts
 
-  # Posts nested under users (scoped to that user)
-  scope "users/:user_id" do
+  # Posts nested under users (scoped to that user). Use Rails' own
+  # `resources :users do` block so `polymorphic_path([@user, :posts])`
+  # resolves naturally. `only: []` avoids generating duplicate routes
+  # for users itself (already declared above via layered_resources).
+  resources :users, only: [] do
     layered_resources :posts
-  end
 
-  # Two-level deep nesting: comments under a user's post. Exercises
-  # multi-parent breadcrumb / link generation (route key requires both
-  # :user_id and :post_id).
-  scope "users/:user_id/posts/:post_id" do
-    layered_resources :comments
+    # Two-level deep nesting: comments under a user's post. Exercises
+    # multi-parent breadcrumb / link generation (route key requires both
+    # :user_id and :post_id).
+    resources :posts, only: [] do
+      layered_resources :comments
+    end
   end
 
   scope "users/:user_id/readonly" do

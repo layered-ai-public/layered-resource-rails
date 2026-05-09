@@ -1,7 +1,6 @@
 <% primary_column = @columns.find { |c| c[:primary] } || @columns.first %>
 <% record_label = primary_column ? @record.public_send(primary_column[:attribute]) : @record.to_s %>
-<% index_helper = :"#{@layered_route_key}_path" %>
-<% index_path = layered_routes.respond_to?(index_helper) ? layered_routes.send(index_helper) : nil %>
+<% index_path = @_route_entry[:actions].include?(:index) ? layered_collection_path : nil %>
 
 <div class="l-ui-spread">
   <div>
@@ -20,12 +19,12 @@
   <div class="l-ui-spread">
     <% if resource_can?(:edit, @record) %>
       <%= link_to "Edit",
-            layered_routes.send(:"edit_#{@layered_route_key.singularize}_path", @record),
+            layered_member_path(@record, action: :edit),
             class: "l-ui-button l-ui-button--primary" %>
     <% end %>
     <% if resource_can?(:destroy, @record) %>
       <%= button_to "Delete",
-            layered_routes.send(:"#{@layered_route_key.singularize}_path", @record),
+            layered_member_path(@record),
             method: :delete,
             class: "l-ui-button l-ui-button--outline-danger",
             data: { turbo_confirm: "Are you sure?" } %>

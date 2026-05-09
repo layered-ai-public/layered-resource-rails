@@ -363,6 +363,46 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
     Rails.application.reload_routes!
   end
 
+  # -- nested-resources block auto-nesting --
+
+  test "layered_resources inside resources :foo do block produces Rails-standard helper names" do
+    Rails.application.routes.draw do
+      resources :users, only: [] do
+        layered_resources :posts
+      end
+    end
+
+    paths = Rails.application.routes.routes.map { |r| r.path.spec.to_s }
+    assert_includes paths, "/users/:user_id/posts(.:format)"
+
+    # Helper names follow Rails' standard nested-resources convention so
+    # polymorphic_path([@user, :posts]) and link_to "...", [@user, @post]
+    # find them with no extra wiring.
+    entry = Layered::Resource::Routing.lookup("user_posts")
+    assert entry, "expected layered_resources :posts inside resources :users to register as 'user_posts'"
+    assert_equal [:user_id], entry[:parent_params]
+
+    helpers = Rails.application.routes.url_helpers
+    %i[user_posts_path new_user_post_path edit_user_post_path user_post_path].each do |h|
+      assert helpers.respond_to?(h), "expected #{h} helper to be generated"
+    end
+  ensure
+    Rails.application.reload_routes!
+  end
+
+  test "polymorphic_path resolves nested layered_resources routes" do
+    post = Post.create!(title: "Hello", user: @user)
+    helpers = Rails.application.routes.url_helpers
+
+    # The whole point of the Rails-standard helper-name shape: stock
+    # polymorphic helpers and `link_to [@user, @post]` Just Work, no
+    # gem-specific helpers required.
+    assert_equal "/users/#{@user.id}/posts",                            helpers.polymorphic_path([@user, :posts])
+    assert_equal "/users/#{@user.id}/posts/#{post.id}",                 helpers.polymorphic_path([@user, post])
+    assert_equal "/users/#{@user.id}/posts/#{post.id}/edit",            helpers.polymorphic_path([@user, post], action: :edit)
+    assert_equal "/users/#{@user.id}/posts/#{post.id}/comments",        helpers.polymorphic_path([@user, post, :comments])
+  end
+
   # -- multi-level nesting --
 
   test "two-level nested route renders breadcrumbs that link with all parent ids" do

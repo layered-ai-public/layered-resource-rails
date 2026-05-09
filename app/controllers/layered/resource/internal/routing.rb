@@ -1,16 +1,20 @@
 module Layered
   module Resource
     module Internal
-      # Route helper proxy and path generation for layered resources.
-      # Depends on @_route_entry and @layered_route_key being set by
-      # the controller's load_layered_resource before_action.
+      # Path generation for the current layered resource. Routes are
+      # registered with Rails-standard `:as` names (e.g. `user_posts_path`),
+      # so the helpers here can be backed either by named route lookup or
+      # `polymorphic_path` — they're equivalent. We use named lookup for
+      # the current resource's own paths because we already have the route
+      # entry in hand from `load_layered_resource`; views and breadcrumbs
+      # use polymorphic helpers when reaching across resources.
       module Routing
         extend ActiveSupport::Concern
 
         # Returns an object that responds to the route helpers (e.g.
         # users_posts_path) with parent params already filled in from
-        # the current request. Used by views to generate links without
-        # needing to know the scope or parent context.
+        # the current request. Used by views/columns to generate links
+        # without needing to know the parent params.
         def layered_routes
           @_layered_routes ||= begin
             rs = @_route_entry[:routes] || Rails.application.routes
@@ -24,25 +28,31 @@ module Layered
           end
         end
 
-        def layered_collection_path
-          helper_name = :"#{@layered_route_key}_path"
-          unless layered_routes.respond_to?(helper_name)
+        # Path to the current resource's collection (or one of its
+        # collection-scoped actions, e.g. `:new`).
+        def layered_collection_path(action: nil)
+          base = action ? :"#{action}_#{@layered_route_key.singularize}" : @layered_route_key.to_sym
+          helper = :"#{base}_path"
+          unless layered_routes.respond_to?(helper)
             raise ActionController::RoutingError,
-                  "No collection route registered for #{@layered_route_key}. " \
-                  "Include :index in the only: list, or override after_save_path."
+                  "No #{action || 'collection'} route registered for #{@layered_route_key}. " \
+                  "Include the matching action in only:."
           end
-          layered_routes.send(helper_name)
+          layered_routes.send(helper)
         end
 
-        def layered_member_path(record)
+        # Path to a member of the current resource (or a member-scoped
+        # action like `:edit`).
+        def layered_member_path(record, action: nil)
           singular = @layered_route_key.singularize
-          helper_name = :"#{singular}_path"
-          unless layered_routes.respond_to?(helper_name)
+          base = action ? :"#{action}_#{singular}" : singular.to_sym
+          helper = :"#{base}_path"
+          unless layered_routes.respond_to?(helper)
             raise ActionController::RoutingError,
-                  "No member route registered for #{@layered_route_key}. " \
-                  "Include :update or :destroy in the only: list."
+                  "No #{action || 'member'} route registered for #{@layered_route_key}. " \
+                  "Include the matching action in only:."
           end
-          layered_routes.send(helper_name, record)
+          layered_routes.send(helper, record)
         end
       end
     end

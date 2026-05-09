@@ -4,7 +4,7 @@ class UserResource < Layered::Resource::Base
   columns [
     { attribute: :name, primary: true },
     { attribute: :email },
-    { attribute: :posts_count, label: "Posts", link: :users_posts }
+    { attribute: :posts_count, label: "Posts", link: :user_posts }
   ]
 
   default_sort attribute: :name, direction: :asc

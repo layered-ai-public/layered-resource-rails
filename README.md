@@ -314,15 +314,22 @@ end
 
 ### Nested routes
 
-To scope posts to a user (`/users/:user_id/posts`), nest the route and resolve the parent in `scope`:
+To scope posts to a user (`/users/:user_id/posts`), nest the route inside a Rails `resources :users do` block or an explicit `scope "users/:user_id"`. Either form produces the standard Rails nested-resources helper names (`user_posts_path`, `user_post_path`, `new_user_post_path`, …) — `polymorphic_path([@user, :posts])` and `link_to "Edit", [@user, @post]` resolve to them with no extra wiring:
 
 ```ruby
 # config/routes.rb
 layered_resources :users
+
+resources :users, only: [] do
+  layered_resources :posts
+end
+# …or, equivalently…
 scope "users/:user_id" do
   layered_resources :posts
 end
 ```
+
+Resolve the parent in the resource's `scope`:
 
 ```ruby
 class PostResource < Layered::Resource::Base
@@ -351,7 +358,7 @@ class UserResource < Layered::Resource::Base
   columns [
     { attribute: :name, primary: true },
     { attribute: :email },
-    { attribute: :posts_count, label: "Posts", link: :users_posts }
+    { attribute: :posts_count, label: "Posts", link: :user_posts }
   ]
 end
 ```

@@ -83,6 +83,38 @@ module Layered
       end
 
       def layered_resources(resource_name, resource: nil, controller: nil, namespace: nil, only: RESOURCE_ACTIONS, except: nil, **options, &block)
+        # When called inside `resources :foo do ... end` (or `resource :foo do`),
+        # Rails has set up a resource_scope but hasn't pushed the parent's
+        # path into @scope. Push it ourselves via scope(path:) and recurse.
+        # We also null out the inherited @scope[:as] for the recursion so our
+        # full as_base (computed from path params, e.g. "user_posts") composes
+        # correctly — Rails' :nested scope_level orders `[name_prefix, prefix]`,
+        # which would otherwise turn `as: :new_user_post` into `:user_new_user_post`
+        # when name_prefix is already "user" from an outer `resources :users do`.
+        #
+        # Note: this branch leans on Rails-internal Mapper APIs
+        # (`with_scope_level`, `@scope[:scope_level_resource]`, `Resource#nested_scope`,
+        # direct `@scope.frame[:as]` mutation). Verified against Rails 8.x; if a
+        # future Rails release renames or removes any of these, the integration
+        # test "layered_resources inside resources :foo do block …" will fail at
+        # boot and this block needs revisiting.
+        if @scope.resource_scope?
+          parent = @scope[:scope_level_resource]
+          return send(:with_scope_level, :nested) do
+            scope(path: parent.nested_scope) do
+              saved_as = @scope.frame[:as]
+              @scope.frame[:as] = nil
+              begin
+                layered_resources(resource_name,
+                                  resource: resource, controller: controller, namespace: namespace,
+                                  only: only, except: except, **options, &block)
+              ensure
+                @scope.frame[:as] = saved_as
+              end
+            end
+          end
+        end
+
         # `namespace:` is explicit-only — passing "Layered::Assistant"
         # derives the resource class as `Layered::Assistant::PostResource`
         # and routes to `Layered::Assistant::ResourcesController` (when
@@ -100,27 +132,51 @@ module Layered
         raw_scope_path = @scope[:path].to_s
         parent_params = raw_scope_path.scan(/:([a-zA-Z_]\w*)/).flatten.map(&:to_sym)
 
-        # For each parent param, compute the route key its collection
-        # would have been registered under. e.g. in scope
-        # "orgs/:org_id/users/:user_id", :user_id maps to "orgs_users".
+        # For each parent param, compute the route key its collection would
+        # have been registered under (e.g. in scope "orgs/:org_id/users/:user_id",
+        # :user_id maps to the registry key "org_users"). Used by breadcrumbs
+        # and link: columns to find the parent's resource entry.
         segments = raw_scope_path.split("/")
         parent_collection_keys = {}
+        accumulated_param_prefix = []
         segments.each_with_index do |seg, i|
           next unless seg.start_with?(":")
           param = seg.delete_prefix(":").to_sym
-          next if i == 0
-
-          resource_seg = segments[i - 1]
-          scope_before = segments[0...[i - 1, 0].max].join("/")
-          static_before = scope_before.gsub(%r{/?:[a-zA-Z_]\w*}, "")
-          pfx = static_before.delete_prefix("/").tr("/", "_").gsub(/[^a-zA-Z0-9_]/, "_").squeeze("_").presence
-          parent_collection_keys[param] = [pfx, resource_seg].compact.join("_")
+          # Rails-standard prefix for a nested resource: each parent param
+          # contributes its singularised stem (`:user_id` → "user").
+          parent_collection_keys[param] = [*accumulated_param_prefix, segments[i - 1]].compact.join("_") if i > 0
+          accumulated_param_prefix << param.to_s.delete_suffix("_id")
         end
 
-        static_path = raw_scope_path.gsub(%r{/?:[a-zA-Z_]\w*}, "")
-        prefix = static_path.delete_prefix("/").tr("/", "_").gsub(/[^a-zA-Z0-9_]/, "_").squeeze("_").presence
-        scoped_key = [prefix, route_key].compact.join("_")
-        scoped_singular = [prefix, singular_key].compact.join("_")
+        # Build the route's :as following Rails' nested-resources convention
+        # so polymorphic_path([@user, :posts]) finds the route. Parents
+        # contribute their singularised stem (`:user_id` → "user"); extra
+        # static segments that aren't a parent's collection name (e.g.
+        # `admin` in `users/:user_id/admin`) prefix the result for
+        # disambiguation.
+        parent_collection_segments = segments.each_with_index
+          .select { |seg, i| i > 0 && seg.start_with?(":") }
+          .map { |_, i| segments[i - 1] }
+        extra_static = segments.reject { |s| s.empty? || s.start_with?(":") || parent_collection_segments.include?(s) }
+        parent_prefix = parent_params.map { |p| p.to_s.delete_suffix("_id") }.join("_")
+        as_prefix = [extra_static.join("_").presence, parent_prefix.presence].compact.join("_")
+        as_base = [as_prefix.presence, route_key].compact.join("_")
+        as_singular = [as_prefix.presence, singular_key].compact.join("_")
+
+        # Trim whatever Rails has already accumulated in @scope[:as] —
+        # Rails' name_for_action will re-add it. e.g. inside our auto-nest
+        # wrap @scope[:as] is "user", so we only need to pass `:posts` for
+        # the index route, and Rails composes back to `:user_posts`.
+        existing_as = @scope[:as].to_s
+        trim = ->(name) {
+          if existing_as.present? && name.start_with?("#{existing_as}_")
+            name[(existing_as.length + 1)..]
+          else
+            name
+          end
+        }
+        as_to_pass = trim.call(as_base)
+        singular_as_to_pass = trim.call(as_singular)
 
         controller_override = controller
         # Resolution order:
@@ -220,7 +276,7 @@ module Layered
           end
         end
 
-        Layered::Resource::Routing.register(scoped_key, resource_class_name,
+        Layered::Resource::Routing.register(as_base, resource_class_name,
                                             actions: actions,
                                             routes: @set,
                                             parent_params: parent_params,
@@ -230,19 +286,19 @@ module Layered
                                             collection_actions: custom_collection.map { |a| a[:action] })
 
         route_defaults = (options[:defaults] || {}).merge(
-          _layered_resource_route_key: scoped_key
+          _layered_resource_route_key: as_base
         )
         options = options.except(:defaults, :as)
 
         if actions.include?(:index)
           get route_key, to: "#{controller}#index",
-                         as: scoped_key.to_sym,
+                         as: as_to_pass.to_sym,
                          defaults: route_defaults, **options
         end
 
         if actions.include?(:new)
           get "#{route_key}/new", to: "#{controller}#new",
-                                 as: :"new_#{scoped_singular}",
+                                 as: :"new_#{singular_as_to_pass}",
                                  defaults: route_defaults, **options
         end
 
@@ -259,41 +315,41 @@ module Layered
         custom_collection.each do |route|
           public_send(route[:verb], "#{route_key}/#{route[:action]}",
                       to: "#{controller}##{route[:action]}",
-                      as: :"#{route[:action]}_#{scoped_key}",
+                      as: :"#{route[:action]}_#{as_to_pass}",
                       defaults: route_defaults, **options)
         end
 
         if actions.include?(:edit)
           get "#{route_key}/:id/edit", to: "#{controller}#edit",
-                                       as: :"edit_#{scoped_singular}",
+                                       as: :"edit_#{singular_as_to_pass}",
                                        defaults: route_defaults, **options
         end
 
         member_named = false
         if actions.include?(:show)
           get "#{route_key}/:id", to: "#{controller}#show",
-                                  as: scoped_singular.to_sym,
+                                  as: singular_as_to_pass.to_sym,
                                   defaults: route_defaults, **options
           member_named = true
         end
 
         if actions.include?(:update)
           update_opts = { to: "#{controller}#update", defaults: route_defaults, **options }
-          update_opts[:as] = member_named ? nil : scoped_singular.to_sym
+          update_opts[:as] = member_named ? nil : singular_as_to_pass.to_sym
           patch "#{route_key}/:id", **update_opts
           member_named = true
         end
 
         if actions.include?(:destroy)
           destroy_opts = { to: "#{controller}#destroy", defaults: route_defaults, **options }
-          destroy_opts[:as] = member_named ? nil : scoped_singular.to_sym
+          destroy_opts[:as] = member_named ? nil : singular_as_to_pass.to_sym
           delete "#{route_key}/:id", **destroy_opts
         end
 
         custom_member.each do |route|
           public_send(route[:verb], "#{route_key}/:id/#{route[:action]}",
                       to: "#{controller}##{route[:action]}",
-                      as: :"#{route[:action]}_#{scoped_singular}",
+                      as: :"#{route[:action]}_#{singular_as_to_pass}",
                       defaults: route_defaults, **options)
         end
       end
