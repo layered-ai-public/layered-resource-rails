@@ -250,6 +250,10 @@ namespace :admin do
 end
 ```
 
+## Index introduction
+
+Drop a partial at `app/views/layered/<resource>/_introduction.html.erb` to render content above the search area on that resource's index page. The partial is rendered when present and skipped otherwise — no DSL, no configuration. It uses the same per-resource view path as ejected templates and column overrides.
+
 ## Ejection
 
 Take over presentation or controller logic without giving up the rest:

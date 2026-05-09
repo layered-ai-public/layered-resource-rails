@@ -21,6 +21,11 @@
   <% end %>
 </div>
 
+<% introduction_partial = "layered/#{@layered_resource_name}/introduction" %>
+<% if lookup_context.exists?(introduction_partial, [], true) %>
+  <%= render introduction_partial %>
+<% end %>
+
 <%= turbo_frame_tag turbo_frame_name, data: { turbo_action: "advance" } do %>
   <% if @resource.search_fields.any? %>
     <div class="l-ui-mt-4">

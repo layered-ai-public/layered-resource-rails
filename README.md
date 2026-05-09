@@ -384,6 +384,19 @@ rails g layered:resource:column priority_badge     # scaffold a brand-new type
 
 A custom partial receives `record`, `value`, and `options` (the column hash) as locals - read keys like `:variants` or `:format` straight off `options`.
 
+## Index introduction
+
+To render an introduction above the search area on a resource's index page, drop a partial at `app/views/layered/<resource>/_introduction.html.erb`. It's rendered when present and skipped otherwise — no DSL or configuration needed.
+
+```erb
+<%# app/views/layered/posts/_introduction.html.erb %>
+<div class="l-ui-mt-4">
+  <p>Browse the latest posts. Use search and sort to find what you're looking for.</p>
+</div>
+```
+
+The partial sits inside the resource's view directory, so it follows the same per-resource override path as ejected views and column partials.
+
 ## Strong parameters for nested or array fields
 
 By default each entry in `fields` is permitted as a scalar. To allow an array (e.g. `has_many_attached`) or a nested hash (e.g. `accepts_nested_attributes_for`), set `permit:` on the field:
