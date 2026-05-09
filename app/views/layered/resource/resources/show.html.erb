@@ -1,5 +1,4 @@
-<% primary_column = @columns.find { |c| c[:primary] } || @columns.first %>
-<% record_label = primary_column ? @record.public_send(primary_column[:attribute]) : @record.to_s %>
+<% record_label = layered_record_label(@record) %>
 <% index_path = @_route_entry[:actions].include?(:index) ? layered_collection_path : nil %>
 
 <div class="l-ui-spread">

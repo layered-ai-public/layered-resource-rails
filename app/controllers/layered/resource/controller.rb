@@ -28,12 +28,14 @@ module Layered
         before_action :load_layered_resource
         before_action :load_layered_member_record
         before_action :require_layered_fields, only: %i[new create edit update]
+        before_action :set_layered_page_title
 
         helper_method :layered_routes
         helper_method :layered_collection_path
         helper_method :layered_member_path
         helper_method :layered_breadcrumbs
         helper_method :resource_can?
+        helper_method :layered_record_label
       end
 
       def index
@@ -51,6 +53,7 @@ module Layered
       def show
         @record = @resource.scope(self).find(params[:id])
         authorize_layered_record(@record)
+        @page_title = layered_record_label(@record)
       end
 
       def new
@@ -77,6 +80,7 @@ module Layered
         @record = @resource.scope(self).find(params[:id])
         authorize_layered_record(@record)
         @form_url = layered_member_path(@record)
+        @page_title = "Edit #{layered_record_label(@record)}"
       end
 
       def update
@@ -87,6 +91,7 @@ module Layered
                       notice: t("layered.resource.flash.updated", model: @resource.model.model_name.human)
         else
           @form_url = layered_member_path(@record)
+          @page_title = "Edit #{layered_record_label(@record)}"
           render :edit, status: :unprocessable_entity
         end
       end
@@ -214,6 +219,26 @@ module Layered
 
         raise ActionController::RoutingError,
               "Define fields on #{@resource.name} to enable CRUD actions"
+      end
+
+      # Sets a default `@page_title` based on the action and resource model.
+      # `show` and `edit` actions refine this with the loaded record's label.
+      def set_layered_page_title
+        human = @model.model_name.human
+        @page_title = case action_name
+                      when "new", "create" then "New #{human}"
+                      when "edit", "update" then "Edit #{human}"
+                      when "show" then human
+                      else human.pluralize
+                      end
+      end
+
+      # Renders a record as a human label, preferring the resource's primary
+      # column (or the first column) and falling back to `to_s`.
+      def layered_record_label(record)
+        primary_column = @columns.find { |c| c[:primary] } || @columns.first
+        value = primary_column && record.public_send(primary_column[:attribute])
+        value.presence || record.to_s
       end
 
       def layered_resource_params
