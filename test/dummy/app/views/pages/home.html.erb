@@ -17,6 +17,14 @@
   <li><%= link_to "Posts", posts_path %> - full CRUD with search, sort, and pagination</li>
 </ul>
 
+<h2 class="mt-8">Requirements</h2>
+<ul class="l-ui-list mt-4">
+  <li>Ruby on Rails >= 8.0</li>
+  <li><a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> ~> 0.13</li>
+  <li><a href="https://github.com/activerecord-hackery/ransack">Ransack</a> ~> 4.0</li>
+  <li><a href="https://github.com/ddnexus/pagy">Pagy</a> ~> 43.2</li>
+</ul>
+
 <h2 class="mt-8">Agent skill</h2>
 <p class="mt-4">
   An <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer">agent skill</a> is included so AI coding agents can work with <code>layered-resource-rails</code> in your project. Once installed, the agent can handle the full setup - just ask it to add <code>layered-resource-rails</code> to your app and it will install the gem, scaffold resources, and wire up routes.
@@ -27,14 +35,6 @@
 <pre class="l-ui-surface mt-4"><code>./install-skill.sh</code></pre>
 <p class="mt-4">Or install remotely without cloning the repo:</p>
 <pre class="l-ui-surface mt-4"><code>curl -fsSL https://raw.githubusercontent.com/layered-ai-public/layered-resource-rails/main/install-skill.sh | sh</code></pre>
-
-<h2 class="mt-8">Requirements</h2>
-<ul class="l-ui-list mt-4">
-  <li>Ruby on Rails >= 8.0</li>
-  <li><a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> ~> 0.13</li>
-  <li><a href="https://github.com/activerecord-hackery/ransack">Ransack</a> ~> 4.0</li>
-  <li><a href="https://github.com/ddnexus/pagy">Pagy</a> ~> 43.2</li>
-</ul>
 
 <h2 class="mt-8">Installation</h2>
 <p class="mt-4">Add to your Gemfile:</p>
