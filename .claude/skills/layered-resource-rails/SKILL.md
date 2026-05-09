@@ -123,6 +123,7 @@ layered_resources :posts, only: [:index]                       # read-only
 layered_resources :posts, except: [:destroy]                   # everything but delete
 layered_resources :posts, controller: "posts"                  # use a custom controller
 layered_resources :posts, resource: "Admin::PostResource"      # explicit resource class
+layered_resources :posts, namespace: "Admin"                   # derives Admin::PostResource and Admin::ResourcesController
 ```
 
 Incoherent `only:` combos raise at boot time - e.g. `:new` without `:create`, or `:edit` without `:update`.
@@ -177,7 +178,7 @@ class PostResource < Layered::Resource::Base
 end
 ```
 
-Note: when `current_user` (or whichever accessor a hand-rolled `scope` reads) is `nil`, return `model.none` rather than `model.all` - otherwise unauthenticated requests see the full table. The `owned_by` shorthand below does this for you.
+Note: when `current_user` (or whichever accessor a hand-rolled `scope` reads) is `nil`, return `model.none` rather than `model.all` - otherwise unauthenticated requests see the full table. The `owned_by` shorthand below raises loudly instead, surfacing missing auth wiring.
 
 ## Ownership shorthand
 
@@ -192,7 +193,15 @@ class QuoteResource < Layered::Resource::Base
 end
 ```
 
-It rewires `scope(controller) = model.where(association => controller.public_send(via))` and assigns the owner in `build_record`. Returns `model.none` when the owner is nil (defused footgun for unauthenticated requests). Pure data filter - it does not enforce per-action authorisation.
+It rewires `scope(controller) = model.where(association => controller.public_send(via))` and assigns the owner in `build_record`. Pure data filter - it does not enforce per-action authorisation.
+
+When `via` returns nil, `owned_by` raises `Layered::Resource::MissingOwnerError` so a missing `before_action :authenticate_user!` surfaces immediately instead of every page silently 404ing. Pass `allow_nil: true` to opt into public-with-scope behaviour (returns `model.none` and assigns nil on create):
+
+```ruby
+owned_by :user, allow_nil: true
+```
+
+When combined with `use_pundit`, the nil-owner check is skipped — Pundit's policy gate (`policy.create?`) is the authoritative auth check.
 
 ## Authorisation (Pundit)
 
@@ -257,6 +266,43 @@ To outgrow the gem entirely: drop the inheritance, write a plain Rails controlle
 ## Authentication
 
 `Layered::Resource::ResourcesController` inherits from the host app's `ApplicationController`, so any `before_action` declared there (e.g. Devise's `authenticate_user!`) already protects every layered resource request - no extra configuration needed.
+
+### Engines: route to your engine's `ApplicationController`
+
+For an engine with its own `ApplicationController` (running its own `authorize`/`authenticate` chain), define a sibling controller and include the gem's concern:
+
+```ruby
+# app/controllers/layered/assistant/resources_controller.rb
+class Layered::Assistant::ResourcesController < Layered::Assistant::ApplicationController
+  include Layered::Resource::Controller
+end
+```
+
+Then pass `namespace:` so `layered_resources` derives both the resource class and the controller from one option:
+
+```ruby
+scope path: "/assistant", module: "layered/assistant" do
+  layered_resources :skills, namespace: "Layered::Assistant"
+end
+```
+
+This resolves to `resource: "Layered::Assistant::SkillResource"` and routes to `Layered::Assistant::ResourcesController` automatically — no per-route `resource:`/`controller:` plumbing.
+
+`namespace:` is explicit-only. Avoid wrapping in a `namespace :foo` block: Rails composes URL helpers differently inside one (e.g. `foo_new_post_path` instead of `new_foo_post_path`), and the gem-shipped views call the latter form. Use `scope path:`/`module:` as above.
+
+## Flash messages (i18n)
+
+Flash strings live under `layered.resource.flash.*` in `config/locales/en.yml`:
+
+| Key | Trigger |
+|---|---|
+| `created` / `updated` / `deleted` | Successful create/update/destroy |
+| `not_deleted` | `record.destroy` returned false |
+| `dependent_records` | `destroy` rescued `ActiveRecord::InvalidForeignKey` or `ActiveRecord::DeleteRestrictionError` |
+
+Override per-locale in the host app's `config/locales/<lang>.yml`. The `%{model}` interpolation is the humanised model name.
+
+`destroy` rescues FK and restrict-dependent violations and redirects to the index with the `dependent_records` flash instead of returning a 500.
 
 ## Show is intentionally minimal
 

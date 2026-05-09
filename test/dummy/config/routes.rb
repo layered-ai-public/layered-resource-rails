@@ -54,8 +54,21 @@ Rails.application.routes.draw do
     layered_resources :posts, resource: "OwnedPostResource"
   end
 
+  scope "public_owned" do
+    layered_resources :posts, resource: "PublicOwnedPostResource"
+  end
+
   scope "pundit" do
     layered_resources :posts, resource: "PunditPostResource"
+  end
+
+  # Exercises explicit namespace: option. Derives CustomNamespace::PostResource
+  # as the resource class and routes to CustomNamespace::ResourcesController
+  # (which inherits from CustomNamespace::ApplicationController) automatically.
+  # Path is explicit because we don't auto-infer from a `namespace :foo` block
+  # (Rails composes URL helpers differently inside one — see routing.rb).
+  scope "custom_namespace" do
+    layered_resources :posts, namespace: "CustomNamespace"
   end
 
   scope "custom" do

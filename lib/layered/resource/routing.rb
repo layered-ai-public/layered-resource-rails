@@ -82,8 +82,18 @@ module Layered
         end
       end
 
-      def layered_resources(resource_name, resource: nil, controller: nil, only: RESOURCE_ACTIONS, except: nil, **options, &block)
-        resource_class_name = resource || "#{resource_name.to_s.classify}Resource"
+      def layered_resources(resource_name, resource: nil, controller: nil, namespace: nil, only: RESOURCE_ACTIONS, except: nil, **options, &block)
+        # `namespace:` is explicit-only — passing "Layered::Assistant"
+        # derives the resource class as `Layered::Assistant::PostResource`
+        # and routes to `Layered::Assistant::ResourcesController` (when
+        # defined). We don't auto-infer from a surrounding `namespace :foo`
+        # block because Rails composes URL-helper names differently there
+        # than the gem-shipped views expect; for that pattern, use
+        # `scope path: "foo", module: "foo"` and pass `namespace:` here.
+        namespace = namespace.to_s.presence
+
+        resource_class_name = resource ||
+          (namespace ? "#{namespace}::#{resource_name.to_s.classify}Resource" : "#{resource_name.to_s.classify}Resource")
         route_key = resource_name.to_s
         singular_key = resource_name.to_s.singularize
 
@@ -113,13 +123,26 @@ module Layered
         scoped_singular = [prefix, singular_key].compact.join("_")
 
         controller_override = controller
-        # Use a leading "/" when inside a module scope (e.g. another engine) so
-        # Rails' add_controller_module treats the path as absolute and skips
-        # prepending the engine's namespace. Without a module scope the plain
-        # path is used directly. The caller can override with controller: to
-        # route to a custom subclass of Layered::Resource::ResourcesController.
+        # Resolution order:
+        #   1. explicit `controller:` wins (legacy escape hatch).
+        #   2. if a namespace is in play AND the host has defined
+        #      <Namespace>::ResourcesController (e.g.
+        #      `Layered::Assistant::ResourcesController` including
+        #      `Layered::Resource::Controller`), route to that — this is
+        #      what lets engines wire the controller into their own
+        #      ApplicationController for auth/authorize before_actions.
+        #   3. otherwise fall back to the default. Use a leading "/" when
+        #      inside a module scope so Rails treats the path as absolute
+        #      and doesn't prepend the engine's module to it.
         controller = if controller
                        controller.to_s
+                     elsif namespace && "#{namespace}::ResourcesController".safe_constantize
+                       # Leading slash makes this absolute so a surrounding
+                       # `module:` scope doesn't prepend its own namespace
+                       # in front. Rails 8.1 rejects leading slashes in the
+                       # `controller:` validation, so only add it when
+                       # we're actually inside a module scope.
+                       @scope[:module] ? "/#{namespace.underscore}/resources" : "#{namespace.underscore}/resources"
                      elsif @scope[:module]
                        "/layered/resource/resources"
                      else

@@ -16,11 +16,19 @@ class LayeredResourceOwnedByTest < ActionDispatch::IntegrationTest
     )
   end
 
-  test "scope returns model.none when no current_user (footgun defuse)" do
+  test "raises when via returns nil and allow_nil is not set" do
+    Post.create!(title: "Mine", user: @user)
+
+    assert_raises(Layered::Resource::MissingOwnerError) do
+      get "/owned/posts"
+    end
+  end
+
+  test "with allow_nil: true returns model.none when via returns nil" do
     Post.create!(title: "Mine", user: @user)
     Post.create!(title: "Theirs", user: @other)
 
-    get "/owned/posts"
+    get "/public_owned/posts"
     assert_response :success
     assert_select "th[scope='row']", text: "Mine", count: 0
     assert_select "th[scope='row']", text: "Theirs", count: 0

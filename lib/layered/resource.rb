@@ -8,6 +8,11 @@ require "layered/resource/engine"
 
 module Layered
   module Resource
+    # Raised when `owned_by` resolves a nil owner without `allow_nil: true`.
+    # Surfaces auth misconfiguration loudly instead of silently 404ing every
+    # request.
+    class MissingOwnerError < StandardError; end
+
     # When true (the default), the controller calls Resource.configure_ransack
     # on the active resource's model the first time it's used. Set to false
     # if your app already manages ransackable_attributes / ransackable_associations

@@ -107,25 +107,42 @@ module Layered
         #   - `scope`        scopes records to the owner.
         #   - `build_record` assigns the owner on new records.
         #
-        # When the controller's `via` accessor returns nil, `scope` returns
-        # `model.none` so unauthenticated requests don't accidentally see the
-        # full table. `use_pundit` takes over `scope` for the read filter
-        # (Policy::Scope#resolve wins) but `owned_by` still drives owner
-        # assignment on create.
-        def owned_by(association, via: :current_user)
-          @owned_by = { association: association, via: via }
+        # By default a nil owner (e.g. `current_user` returns nil because
+        # auth wasn't wired up) raises loudly so the misconfiguration surfaces
+        # immediately. Pass `allow_nil: true` for genuinely public-with-scope
+        # behaviour, in which case `scope` falls back to `model.none` and
+        # `build_record` assigns nil. `use_pundit` takes over `scope` for the
+        # read filter (Policy::Scope#resolve wins) but `owned_by` still drives
+        # owner assignment on create.
+        def owned_by(association, via: :current_user, allow_nil: false)
+          @owned_by = { association: association, via: via, allow_nil: allow_nil }
+
+          # Pundit guards auth at the policy layer (policy.create?, etc.),
+          # so when use_pundit is enabled we let nil owners pass and let
+          # Pundit raise NotAuthorizedError. Without Pundit, we raise
+          # MissingOwnerError on nil unless allow_nil: true.
+          resolve_owner = lambda do |controller|
+            owner = controller.public_send(via)
+            if owner.nil? && !allow_nil && !pundit_enabled?
+              raise Layered::Resource::MissingOwnerError,
+                    "#{name}#owned_by(:#{association}) expected #{via} to return an owner but got nil. " \
+                    "Ensure authentication is configured (e.g. before_action :authenticate_user!), " \
+                    "or pass `allow_nil: true` to opt into public-with-scope behaviour."
+            end
+            owner
+          end
 
           define_singleton_method(:scope) do |controller|
             if pundit_enabled?
               controller.send(:policy_scope, model)
             else
-              owner = controller.public_send(via)
+              owner = resolve_owner.call(controller)
               owner.nil? ? model.none : model.where(association => owner)
             end
           end
 
           define_singleton_method(:build_record) do |controller|
-            owner = controller.public_send(via)
+            owner = resolve_owner.call(controller)
             base = pundit_enabled? ? model : scope(controller)
             base.new(association => owner)
           end

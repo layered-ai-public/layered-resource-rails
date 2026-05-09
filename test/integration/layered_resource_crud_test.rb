@@ -91,6 +91,23 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
     assert_select ".l-ui-notice--success", /created/i
   end
 
+  test "create flash respects host i18n override" do
+    I18n.backend.store_translations(:xx, layered: { resource: { flash: { created: "%{model} added successfully" } } })
+    I18n.backend.store_translations(:xx, activerecord: { models: { post: "Post" } })
+    original_locale = I18n.locale
+    original_available = I18n.available_locales
+    I18n.available_locales = original_available + [:xx]
+    I18n.locale = :xx
+    begin
+      post "/users/#{@user.id}/posts", params: { post: { title: "Hi", body: "Body" } }
+      follow_redirect!
+      assert_select ".l-ui-notice--success", text: /Post added successfully/
+    ensure
+      I18n.locale = original_locale
+      I18n.available_locales = original_available
+    end
+  end
+
   test "create with invalid params re-renders with 422" do
     assert_no_difference "Post.count" do
       post "/users/#{@user.id}/posts", params: { post: { title: "" } }
@@ -162,6 +179,33 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
       assert_select ".l-ui-notice--warning", /could not be deleted/i
     ensure
       Post.reset_callbacks(:destroy)
+    end
+  end
+
+  test "destroy handles foreign-key violation gracefully" do
+    record = Post.create!(title: "Locked", user: @user)
+    Post.singleton_class.attr_accessor :_raise_fk_on_destroy
+    fk_module = Module.new
+    fk_module.module_eval do
+      define_method(:destroy) do
+        if self.class._raise_fk_on_destroy
+          raise ActiveRecord::InvalidForeignKey, "fk constraint violation"
+        else
+          super()
+        end
+      end
+    end
+    Post.prepend(fk_module)
+    Post._raise_fk_on_destroy = true
+    begin
+      assert_no_difference "Post.count" do
+        delete "/users/#{@user.id}/posts/#{record.id}"
+      end
+      assert_redirected_to "/users/#{@user.id}/posts"
+      follow_redirect!
+      assert_select ".l-ui-notice--warning", /depend/i
+    ensure
+      Post._raise_fk_on_destroy = false
     end
   end
 

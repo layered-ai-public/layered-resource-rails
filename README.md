@@ -190,9 +190,12 @@ end
    so the index, show, edit, etc. only see records the user owns.
 2. `build_record(controller)` assigns the owner on new records, so `create`
    stamps `user_id` automatically.
-3. When `controller.current_user` is `nil`, `scope` returns `Quote.none`
-   instead of the full table - a defused footgun for unauthenticated
-   requests.
+3. When `controller.current_user` is `nil`, `owned_by` raises
+   `Layered::Resource::MissingOwnerError` so a missing `authenticate_user!`
+   surfaces immediately instead of every page silently 404ing. Pass
+   `allow_nil: true` for genuinely public-with-scope behaviour (returns
+   `Quote.none` and assigns nil on create). With `use_pundit`, the policy
+   gate (`policy.create?`) decides — `owned_by` lets nil through.
 
 `owned_by` is a fact about the data, not a gate on what users can do. For
 per-action authorisation ("can this user edit *this* record?") use
@@ -471,6 +474,55 @@ end
 ## Authentication
 
 `Layered::Resource::ResourcesController` inherits from your app's `ApplicationController`, so any `before_action` you've declared there (e.g. Devise's `authenticate_user!`) already protects every layered resource request.
+
+### Engines: route to your engine's `ApplicationController`
+
+For an engine with its own `ApplicationController` (running its own `authorize`/`authenticate` chain), define a sibling controller and include the gem's concern:
+
+```ruby
+# app/controllers/layered/assistant/resources_controller.rb
+class Layered::Assistant::ResourcesController < Layered::Assistant::ApplicationController
+  include Layered::Resource::Controller
+end
+```
+
+Then pass `namespace:` so `layered_resources` derives both the resource class and the controller from one option:
+
+```ruby
+# config/routes.rb (or your engine's routes)
+scope path: "/assistant", module: "layered/assistant" do
+  layered_resources :skills, namespace: "Layered::Assistant"
+end
+```
+
+This resolves to `resource: "Layered::Assistant::SkillResource"` and routes to `Layered::Assistant::ResourcesController` automatically — no per-route `resource:`/`controller:` plumbing.
+
+`namespace:` is explicit-only. Avoid wrapping in a `namespace :foo` block: Rails composes URL helpers differently inside one (e.g. `foo_new_post_path` instead of `new_foo_post_path`), and the gem-shipped views call the latter form. Use `scope path:`/`module:` as above to get the path/module without the `:as` prefix.
+
+## Flash messages
+
+Flash strings come from i18n. The gem ships English defaults under `layered.resource.flash.*`:
+
+| Key | Trigger |
+|---|---|
+| `created` | `create` succeeded |
+| `updated` | `update` succeeded |
+| `deleted` | `destroy` succeeded |
+| `not_deleted` | `record.destroy` returned false |
+| `dependent_records` | `destroy` rescued `ActiveRecord::InvalidForeignKey` or `ActiveRecord::DeleteRestrictionError` (the gem catches these so dependent-record violations redirect with a flash instead of 500ing) |
+
+Override per-locale by adding the same keys in your host app's `config/locales/<lang>.yml`:
+
+```yaml
+en:
+  layered:
+    resource:
+      flash:
+        created: "%{model} added successfully"
+        dependent_records: "Can't delete %{model} — it still has linked records."
+```
+
+The `%{model}` interpolation is `model.model_name.human`, so it picks up any `activerecord.models.<key>` translations you've already defined.
 
 ## Show is intentionally minimal
 

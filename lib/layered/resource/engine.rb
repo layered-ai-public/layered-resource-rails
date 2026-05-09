@@ -19,6 +19,10 @@ module Layered
         end
       end
 
+      initializer "layered-resource-rails.locales" do |app|
+        config.i18n.load_path += Dir[Engine.root.join("config/locales/*.yml")]
+      end
+
       initializer "layered-resource-rails.view_paths" do
         ActiveSupport.on_load(:action_controller) do
           append_view_path Engine.root.join("app/views")
