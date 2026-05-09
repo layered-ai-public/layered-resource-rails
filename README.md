@@ -130,6 +130,8 @@ That's it. You now have a full CRUD interface with search and pagination for `Po
 
 When `:show` is enabled, the index table's primary column (`primary: true`, or the first column) is automatically linked to the show page.
 
+Each action also sets `@page_title` for use by the layout's `<title>` tag - `"Posts"` on index, `"New Post"` on new, the record's primary column value on show, and `"Edit <record label>"` on edit. Override after `super` in a custom action if you need something different.
+
 ## Options
 
 **Read-only (no forms):** omit `fields` and restrict routes:

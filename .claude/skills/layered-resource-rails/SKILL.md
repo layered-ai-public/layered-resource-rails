@@ -67,6 +67,8 @@ For `layered_resources :posts` with all actions enabled:
 
 When `:show` is enabled, the index table's primary column links to the show page automatically.
 
+`@page_title` is set automatically per action: pluralized model name on index, `"New <Model>"` on new, the record's primary column value on show, and `"Edit <record label>"` on edit. The layered-ui-rails layout reads it for `<title>`.
+
 ## Resource DSL
 
 Resource classes live in `app/layered_resources/` and inherit from `Layered::Resource::Base`:

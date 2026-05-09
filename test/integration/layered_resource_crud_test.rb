@@ -277,4 +277,28 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to "/posts"
   end
+
+  # -- @page_title --
+
+  test "index sets @page_title to pluralized model name" do
+    get "/posts"
+    assert_select "title", text: /Posts/
+  end
+
+  test "show sets @page_title to record's primary column" do
+    record = Post.create!(title: "Memorable", user: @user)
+    get "/posts/#{record.id}"
+    assert_select "title", text: /Memorable/
+  end
+
+  test "new sets @page_title to 'New <Model>'" do
+    get "/posts/new"
+    assert_select "title", text: /New Post/
+  end
+
+  test "edit sets @page_title to 'Edit <record label>'" do
+    record = Post.create!(title: "Memorable", user: @user)
+    get "/posts/#{record.id}/edit"
+    assert_select "title", text: /Edit Memorable/
+  end
 end
