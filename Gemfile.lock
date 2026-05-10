@@ -3,7 +3,7 @@ PATH
   specs:
     layered-resource-rails (0.1.0)
       concurrent-ruby (>= 1.0)
-      layered-ui-rails (~> 0.13)
+      layered-ui-rails (~> 0.14)
       pagy (~> 43.2)
       rails (~> 8.0)
       ransack (~> 4.0)
@@ -117,7 +117,7 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     json (2.19.5)
-    layered-ui-rails (0.13.0)
+    layered-ui-rails (0.14.0)
       rails (~> 8.0)
       tailwindcss-rails (~> 4.0)
     logger (1.7.0)
@@ -299,7 +299,7 @@ CHECKSUMS
   irb (1.18.0) sha256=de9454a0703a54704b9811a5ef31a60c86949fbf4013fcf244fabc7c775248e3
   json (2.19.5) sha256=218a18553e4801d579ca7e0f5bc72bafd776d7397238a1fb4e74db5b0a812c59
   layered-resource-rails (0.1.0)
-  layered-ui-rails (0.13.0) sha256=31849b76c5531472b3181a47f7717b710bcabf6fc96b5bdfcbb7d04b3398a6a9
+  layered-ui-rails (0.14.0) sha256=b2c6ed02198d8ccb8d20f29b552b031d9c569e6546555ab762311d5f5a26e9cb
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
   loofah (2.25.1) sha256=d436c73dbd0c1147b16c4a41db097942d217303e1f7728704b37e4df9f6d2e04
   mail (2.9.0) sha256=6fa6673ecd71c60c2d996260f9ee3dd387d4673b8169b502134659ece6d34941

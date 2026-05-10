@@ -41,7 +41,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     begin
       get "/users"
       assert_response :success
-      assert_select "td.l-ui-table__cell a", count: 0
+      assert_select "td.l-ui-table__cell:not(.l-ui-table__cell--action) a", count: 0
     ensure
       UserResource.instance_variable_set(:@columns, original_columns)
     end

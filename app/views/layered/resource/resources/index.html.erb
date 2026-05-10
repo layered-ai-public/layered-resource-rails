@@ -41,12 +41,13 @@
       parts = []
       if resource_can?(:edit, record)
         parts << link_to("Edit", layered_member_path(record, action: :edit),
+                  class: "l-ui-button l-ui-button--outline l-ui-button--small",
                   data: { turbo_frame: "_top" })
       end
       if resource_can?(:destroy, record)
         parts << button_to("Delete", layered_member_path(record),
                     method: :delete,
-                    class: "l-ui-table__action--danger",
+                    class: "l-ui-button l-ui-button--outline-danger l-ui-button--small",
                     data: { turbo_confirm: "Are you sure?", turbo_frame: "_top" })
       end
       safe_join(parts, " ")
