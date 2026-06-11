@@ -505,7 +505,7 @@ Path helpers available inside actions:
 
 ## Variants via inheritance
 
-For variants that warrant their own URL - typically a separate admin area - declare a subclass and register it on its own route. The subclass inherits `model`, `columns`, `fields`, `search_fields`, `default_sort`, and `per_page` from the parent and overrides only what differs:
+For variants that warrant their own URL - typically a separate admin area - declare a subclass and register it on its own route. The subclass inherits `model`, `columns`, `fields`, `search_fields`, `search_placeholder`, `default_sort`, and `per_page` from the parent and overrides only what differs:
 
 ```ruby
 # app/layered_resources/admin/post_resource.rb

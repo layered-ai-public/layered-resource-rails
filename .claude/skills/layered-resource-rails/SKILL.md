@@ -241,7 +241,7 @@ In ejected views, prefer `resource_can?(:update, @record)` over the raw `@resour
 
 ## Inheritance / variants
 
-Subclasses inherit `model`, `columns`, `fields`, `search_fields`, `default_sort`, and `per_page`. Override only what differs:
+Subclasses inherit `model`, `columns`, `fields`, `search_fields`, `search_placeholder`, `default_sort`, and `per_page`. Override only what differs:
 
 ```ruby
 # app/layered_resources/admin/post_resource.rb
