@@ -11,15 +11,17 @@ module Layered
 
         # e.g. a route scoped under users/:user_id will produce
         # breadcrumbs like "Users" (linked) and "Alice" by looking up
-        # the parent model and its layered index route.
+        # the parent model and its layered index route. A `root_breadcrumb`
+        # declared on the resource is prepended to the trail.
         def layered_breadcrumbs
           @_layered_breadcrumbs ||= begin
+            root_crumbs = [@resource.root_breadcrumb].compact
             parent_param_keys = @_route_entry[:parent_params]
             parent_collection_keys = @_route_entry[:parent_collection_keys] || {}
 
             current_namespace = @_route_entry[:resource].to_s.deconstantize.presence
 
-            parent_param_keys.flat_map do |key|
+            root_crumbs + parent_param_keys.flat_map do |key|
               match = key.to_s.match(/\A(.+)_id\z/)
               next [] unless match
 

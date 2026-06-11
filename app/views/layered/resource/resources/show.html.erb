@@ -3,12 +3,14 @@
 
 <div class="l-ui-spread">
   <div>
-    <%= l_ui_breadcrumbs do %>
-      <% layered_breadcrumbs.each do |crumb| %>
-        <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
-      <% end %>
-      <% if index_path %>
-        <%= l_ui_breadcrumb_item @model.model_name.human.pluralize, index_path %>
+    <% if layered_breadcrumbs.any? || index_path %>
+      <%= l_ui_breadcrumbs do %>
+        <% layered_breadcrumbs.each do |crumb| %>
+          <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
+        <% end %>
+        <% if index_path %>
+          <%= l_ui_breadcrumb_item @model.model_name.human.pluralize, index_path %>
+        <% end %>
       <% end %>
     <% end %>
 

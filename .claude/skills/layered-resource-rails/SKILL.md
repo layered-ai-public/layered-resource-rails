@@ -104,6 +104,7 @@ end
 | `search_placeholder "..."` | Replaces the search box placeholder. Default derives from `search_fields` via `human_attribute_name`, so `activerecord.attributes.<model>.<attr>` i18n renames flow through (association walks resolve each half against its own model) |
 | `default_sort attribute:, direction:` | Default sort order for the index |
 | `per_page n` | Pagination size (default 15) |
+| `root_breadcrumb "Home", "/"` | Static first crumb in the breadcrumb trail (e.g. back to the host app's dashboard). Without it, top-level resources render no trail; nested routes prepend it to the derived parent trail |
 
 ### Column options
 
@@ -241,7 +242,7 @@ In ejected views, prefer `resource_can?(:update, @record)` over the raw `@resour
 
 ## Inheritance / variants
 
-Subclasses inherit `model`, `columns`, `fields`, `search_fields`, `search_placeholder`, `default_sort`, and `per_page`. Override only what differs:
+Subclasses inherit `model`, `columns`, `fields`, `search_fields`, `search_placeholder`, `default_sort`, `per_page`, and `root_breadcrumb`. Override only what differs:
 
 ```ruby
 # app/layered_resources/admin/post_resource.rb

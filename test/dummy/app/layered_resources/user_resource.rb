@@ -7,6 +7,8 @@ class UserResource < Layered::Resource::Base
     { attribute: :posts_count, label: "Posts", link: :user_posts }
   ]
 
+  root_breadcrumb "Home", "/"
+
   default_sort attribute: :name, direction: :asc
 
   fields [

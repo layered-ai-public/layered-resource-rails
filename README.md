@@ -158,6 +158,18 @@ layered_resources :posts, only: [:index, :show, :edit, :update]
 layered_resources :posts, except: [:destroy]
 ```
 
+**Root breadcrumb:** top-level resources render no breadcrumb trail by default. Declare a static first crumb — typically a link back to the host app's dashboard:
+
+```ruby
+class PostResource < Layered::Resource::Base
+  model Post
+
+  root_breadcrumb "Home", "/"
+end
+```
+
+Nested routes prepend it to the derived parent trail (e.g. Home / Users / Alice). Pass `nil` as the path to render unlinked text.
+
 **Custom scope (e.g. tenant isolation):**
 
 ```ruby
@@ -505,7 +517,7 @@ Path helpers available inside actions:
 
 ## Variants via inheritance
 
-For variants that warrant their own URL - typically a separate admin area - declare a subclass and register it on its own route. The subclass inherits `model`, `columns`, `fields`, `search_fields`, `search_placeholder`, `default_sort`, and `per_page` from the parent and overrides only what differs:
+For variants that warrant their own URL - typically a separate admin area - declare a subclass and register it on its own route. The subclass inherits `model`, `columns`, `fields`, `search_fields`, `search_placeholder`, `default_sort`, `per_page`, and `root_breadcrumb` from the parent and overrides only what differs:
 
 ```ruby
 # app/layered_resources/admin/post_resource.rb

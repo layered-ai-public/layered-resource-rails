@@ -38,6 +38,21 @@ module Layered
           end
         end
 
+        # Declares a static crumb rendered before any derived breadcrumbs —
+        # typically a link back to the host app's dashboard:
+        #
+        #   root_breadcrumb "Home", "/"
+        #
+        # Top-level resources otherwise have no trail at all; nested routes
+        # prepend this crumb to the derived parent trail.
+        def root_breadcrumb(label = nil, path = nil)
+          if label
+            @root_breadcrumb = { label: label, path: path }
+          else
+            inherited_attribute(:@root_breadcrumb)
+          end
+        end
+
         def default_sort(value = nil)
           if value.is_a?(Hash)
             @default_sort = value
