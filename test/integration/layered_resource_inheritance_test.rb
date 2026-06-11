@@ -14,7 +14,7 @@ class LayeredResourceInheritanceTest < ActionDispatch::IntegrationTest
 
   test "subclass inherits parent search_fields when not overridden" do
     assert_equal PostResource.search_fields, SubPostResource.search_fields
-    assert_equal [:title, :body], SubPostResource.search_fields
+    assert_equal [:title, :body, :user_name], SubPostResource.search_fields
   end
 
   test "subclass inherits parent fields when not overridden" do
