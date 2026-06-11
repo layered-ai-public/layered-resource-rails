@@ -30,6 +30,14 @@ module Layered
           end
         end
 
+        def search_placeholder(value = nil)
+          if value
+            @search_placeholder = value
+          else
+            inherited_attribute(:@search_placeholder) || default_search_placeholder
+          end
+        end
+
         def default_sort(value = nil)
           if value.is_a?(Hash)
             @default_sort = value
@@ -227,6 +235,25 @@ module Layered
         end
 
         private
+
+        # Labels each search field via human_attribute_name so host-app i18n
+        # (activerecord.attributes.<model>.<attr>) flows through. Association
+        # walks label as "<association> <attribute>", each half resolved
+        # against its own model's human names.
+        def default_search_placeholder
+          walks = association_search_fields.index_by { |a| "#{a[:association]}_#{a[:attribute]}" }
+
+          labels = search_fields.map do |field|
+            if (walk = walks[field.to_s])
+              "#{model.human_attribute_name(walk[:association]).downcase} " \
+                "#{walk[:klass].human_attribute_name(walk[:attribute]).downcase}"
+            else
+              model.human_attribute_name(field).downcase
+            end
+          end
+
+          "Search by #{labels.join(', ')}"
+        end
 
         # Installs scoped ransackable_attributes/ransackable_associations on
         # `m`. The overrides only answer when the `auth_object` is a layered

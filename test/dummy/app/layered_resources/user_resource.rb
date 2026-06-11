@@ -15,4 +15,6 @@ class UserResource < Layered::Resource::Base
   ]
 
   search_fields [:name, :email]
+
+  search_placeholder "Search by name or email address"
 end
