@@ -2,9 +2,11 @@
 
 <div class="l-ui-spread">
   <div>
-    <%= l_ui_breadcrumbs do %>
-      <% layered_breadcrumbs.each do |crumb| %>
-        <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
+    <% if layered_breadcrumbs.any? %>
+      <%= l_ui_breadcrumbs do %>
+        <% layered_breadcrumbs.each do |crumb| %>
+          <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
+        <% end %>
       <% end %>
     <% end %>
 
