@@ -31,6 +31,7 @@
       <%= l_ui_search_form(@q,
             url: layered_collection_path,
             fields: @resource.search_fields,
+            placeholder: @resource.search_placeholder,
             clear: true,
             turbo_frame: turbo_frame_name) %>
     </div>

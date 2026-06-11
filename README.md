@@ -330,6 +330,33 @@ The Ransack allowlists are scoped to the resource: the association and the assoc
 
 A walked search field is also sortable — `q[s]=user_name asc` orders the index by `users.name` — because Ransack derives its sort allowlist from the search allowlist. Associations not declared in `search_fields` stay unsearchable and unsortable.
 
+### Search placeholder
+
+The index search box's placeholder is derived from `search_fields` via `human_attribute_name`, so attribute renames declared in the standard Rails i18n location flow through automatically. Given `search_fields [:title, :user_sid]`:
+
+```yaml
+# config/locales/en.yml
+en:
+  activerecord:
+    attributes:
+      user:
+        sid: Identifier
+```
+
+produces "Search by title, user identifier". Association walks are labelled `<association> <attribute>`, each half resolved against its own model's human names (so translating `post.user` changes the "user" half too).
+
+To replace the derived text wholesale, declare `search_placeholder`:
+
+```ruby
+class PostResource < Layered::Resource::Base
+  model Post
+
+  search_fields [:title, :body, :user_sid]
+
+  search_placeholder "Search by title, body or author identifier"
+end
+```
+
 ### Nested routes
 
 To scope posts to a user (`/users/:user_id/posts`), nest the route inside a Rails `resources :users do` block or an explicit `scope "users/:user_id"`. Either form produces the standard Rails nested-resources helper names (`user_posts_path`, `user_post_path`, `new_user_post_path`, …) — `polymorphic_path([@user, :posts])` and `link_to "Edit", [@user, @post]` resolve to them with no extra wiring:
@@ -478,7 +505,7 @@ Path helpers available inside actions:
 
 ## Variants via inheritance
 
-For variants that warrant their own URL - typically a separate admin area - declare a subclass and register it on its own route. The subclass inherits `model`, `columns`, `fields`, `search_fields`, `default_sort`, and `per_page` from the parent and overrides only what differs:
+For variants that warrant their own URL - typically a separate admin area - declare a subclass and register it on its own route. The subclass inherits `model`, `columns`, `fields`, `search_fields`, `search_placeholder`, `default_sort`, and `per_page` from the parent and overrides only what differs:
 
 ```ruby
 # app/layered_resources/admin/post_resource.rb

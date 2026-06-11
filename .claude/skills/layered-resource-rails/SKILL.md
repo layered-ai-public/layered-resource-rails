@@ -101,6 +101,7 @@ end
 | `columns [...]` | Index table columns. Each entry is `{ attribute:, label:, primary:, link:, render: }` |
 | `fields [...]` | Form fields for new/edit. Omit to disable CRUD forms |
 | `search_fields [...]` | Ransack attributes the index search box matches against. Association-walking entries like `:user_name` (for `belongs_to :user` + `users.name`) join into the association |
+| `search_placeholder "..."` | Replaces the search box placeholder. Default derives from `search_fields` via `human_attribute_name`, so `activerecord.attributes.<model>.<attr>` i18n renames flow through (association walks resolve each half against its own model) |
 | `default_sort attribute:, direction:` | Default sort order for the index |
 | `per_page n` | Pagination size (default 15) |
 
@@ -240,7 +241,7 @@ In ejected views, prefer `resource_can?(:update, @record)` over the raw `@resour
 
 ## Inheritance / variants
 
-Subclasses inherit `model`, `columns`, `fields`, `search_fields`, `default_sort`, and `per_page`. Override only what differs:
+Subclasses inherit `model`, `columns`, `fields`, `search_fields`, `search_placeholder`, `default_sort`, and `per_page`. Override only what differs:
 
 ```ruby
 # app/layered_resources/admin/post_resource.rb
@@ -341,7 +342,7 @@ columns [
 ]
 ```
 
-To make an association searchable, add a Ransack-walk-shaped entry to `search_fields` - e.g. `search_fields [:title, :user_name]` resolves `:user_name` against `belongs_to :user` + `users.name` and joins into the association. The gem scopes the Ransack allowlists per resource: it only responds when the resource class is the auth object (on both the parent and the associated model), so host-app Ransack config is preserved. A walked search field is also *sortable* (`q[s]=user_name asc` orders by `users.name`) because Ransack derives its sort allowlist from the search allowlist. Cross-model sort/filter on associations *not* declared in `search_fields` remains off; to opt in, define `ransackable_associations` on the parent model yourself and allowlist the attributes on the child model - the gem detects the host-defined override and unions with it.
+To make an association searchable, add a Ransack-walk-shaped entry to `search_fields` - e.g. `search_fields [:title, :user_name]` resolves `:user_name` against `belongs_to :user` + `users.name` and joins into the association. The gem scopes the Ransack allowlists per resource: it only responds when the resource class is the auth object (on both the parent and the associated model), so host-app Ransack config is preserved. A walked search field is also *sortable* (`q[s]=user_name asc` orders by `users.name`) because Ransack derives its sort allowlist from the search allowlist. Cross-model sort/filter on associations *not* declared in `search_fields` remains off; to opt in, define `ransackable_associations` on the parent model yourself and allowlist the attributes on the child model - the gem detects the host-defined override and unions with it. The search box placeholder labels a walk as "<association> <attribute>" via each model's `human_attribute_name` - translate `activerecord.attributes.<model>.<attr>` to rename a half, or set `search_placeholder` on the resource to replace the whole string.
 
 ## Common issues
 
