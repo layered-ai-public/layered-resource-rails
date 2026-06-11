@@ -314,6 +314,22 @@ class PostResource < Layered::Resource::Base
 end
 ```
 
+### Searching across associations
+
+`search_fields` accepts association-walking entries in Ransack's `<association>_<attribute>` form. An entry that isn't a column on the resource's own model but matches an association plus a column on the associated model (e.g. `:user_name` for `belongs_to :user` and `users.name`) makes the index search box join into the association:
+
+```ruby
+class PostResource < Layered::Resource::Base
+  model Post
+
+  search_fields [:title, :body, :user_name] # user_name searches users.name
+end
+```
+
+The Ransack allowlists are scoped to the resource: the association and the associated model's attribute are only ransackable when this resource is the one searching, so nothing else gains access to the associated model and any host-app Ransack config is preserved.
+
+A walked search field is also sortable — `q[s]=user_name asc` orders the index by `users.name` — because Ransack derives its sort allowlist from the search allowlist. Associations not declared in `search_fields` stay unsearchable and unsortable.
+
 ### Nested routes
 
 To scope posts to a user (`/users/:user_id/posts`), nest the route inside a Rails `resources :users do` block or an explicit `scope "users/:user_id"`. Either form produces the standard Rails nested-resources helper names (`user_posts_path`, `user_post_path`, `new_user_post_path`, …) — `polymorphic_path([@user, :posts])` and `link_to "Edit", [@user, @post]` resolve to them with no extra wiring:

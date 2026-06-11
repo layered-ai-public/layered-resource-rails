@@ -100,7 +100,7 @@ end
 | `model Post` | The ActiveRecord class this resource manages |
 | `columns [...]` | Index table columns. Each entry is `{ attribute:, label:, primary:, link:, render: }` |
 | `fields [...]` | Form fields for new/edit. Omit to disable CRUD forms |
-| `search_fields [...]` | Ransack attributes the index search box matches against |
+| `search_fields [...]` | Ransack attributes the index search box matches against. Association-walking entries like `:user_name` (for `belongs_to :user` + `users.name`) join into the association |
 | `default_sort attribute:, direction:` | Default sort order for the index |
 | `per_page n` | Pagination size (default 15) |
 
@@ -341,7 +341,7 @@ columns [
 ]
 ```
 
-For sortable/searchable associations, add the joined attribute to `search_fields` and ensure the model exposes it. Ransack's `ransackable_attributes`/`ransackable_associations` are patched per resource - the gem only responds when the resource class is the auth object, so host-app config is preserved. Cross-model walks (e.g. sorting by `user_name`) are off by default; to opt in, define `ransackable_associations` on the parent model yourself and allowlist the attributes on the child model - the gem detects the host-defined override and defers to it.
+To make an association searchable, add a Ransack-walk-shaped entry to `search_fields` - e.g. `search_fields [:title, :user_name]` resolves `:user_name` against `belongs_to :user` + `users.name` and joins into the association. The gem scopes the Ransack allowlists per resource: it only responds when the resource class is the auth object (on both the parent and the associated model), so host-app Ransack config is preserved. A walked search field is also *sortable* (`q[s]=user_name asc` orders by `users.name`) because Ransack derives its sort allowlist from the search allowlist. Cross-model sort/filter on associations *not* declared in `search_fields` remains off; to opt in, define `ransackable_associations` on the parent model yourself and allowlist the attributes on the child model - the gem detects the host-defined override and unions with it.
 
 ## Common issues
 

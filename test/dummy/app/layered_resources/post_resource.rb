@@ -9,7 +9,7 @@ class PostResource < Layered::Resource::Base
     { attribute: :created_at, label: "Created" }
   ]
 
-  search_fields [:title, :body]
+  search_fields [:title, :body, :user_name]
 
   default_sort attribute: :created_at, direction: :desc
 

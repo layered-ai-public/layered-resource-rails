@@ -81,7 +81,39 @@ module Layered
         end
 
         def requires_distinct?
-          model.ransackable_associations(self).any?
+          model.ransackable_associations(self).any? do |assoc|
+            model.reflect_on_association(assoc)&.collection?
+          end
+        end
+
+        # Resolves `search_fields` entries that aren't columns on the
+        # resource's own model but match Ransack's association-walk form
+        # `<association>_<attribute>` (e.g. `:user_name` searches
+        # `users.name` from a `belongs_to :user`). Returns hashes of
+        # { association:, attribute:, klass: }. Longer association names
+        # win when prefixes overlap (e.g. `author_profile_` over
+        # `author_`), mirroring Ransack's greedy resolution.
+        def association_search_fields
+          reflections = model.reflect_on_all_associations
+                             .reject(&:polymorphic?)
+                             .sort_by { |r| -r.name.length }
+
+          search_fields.filter_map do |field|
+            field = field.to_s
+            next if model.column_names.include?(field)
+
+            reflection = reflections.find do |r|
+              field.start_with?("#{r.name}_") &&
+                r.klass.column_names.include?(field.delete_prefix("#{r.name}_"))
+            end
+            next unless reflection
+
+            {
+              association: reflection.name.to_s,
+              attribute: field.delete_prefix("#{reflection.name}_"),
+              klass: reflection.klass
+            }
+          end
         end
 
         def scope(controller)
@@ -186,15 +218,25 @@ module Layered
         end
 
         def configure_ransack
-          m = model
+          patch_ransack(model)
+          # An association-walking search field (e.g. `:user_name`) is the
+          # consumer explicitly referencing the associated model, so it also
+          # gets the scoped patch — Ransack asks the *associated* model for
+          # its ransackable_attributes when resolving the walk.
+          association_search_fields.map { |a| a[:klass] }.uniq.each { |k| patch_ransack(k) }
+        end
+
+        private
+
+        # Installs scoped ransackable_attributes/ransackable_associations on
+        # `m`. The overrides only answer when the `auth_object` is a layered
+        # resource that references `m` — either as its own model, or via an
+        # association-walking search field. Every other caller falls through
+        # to the methods captured below (whether host-defined or the framework
+        # default), so any allowlist the host app has set up is preserved.
+        def patch_ransack(m)
           return if m.instance_variable_get(:@_layered_resource_ransack_configured)
 
-          # Capture the model's existing ransack methods (whether user-defined
-          # or the framework default) before redefining them, and delegate
-          # back for any caller that isn't this resource asking about its own
-          # model. This preserves any allowlist the host app has set up, and
-          # leaves cross-model association walks (e.g. Post.ransack walking to
-          # User) to whatever the associated model has configured directly.
           original_attributes = m.method(:ransackable_attributes)
           original_associations = m.method(:ransackable_associations)
           # Detect a host-defined override anywhere in the model's singleton
@@ -202,34 +244,59 @@ module Layered
           # Ransack supplies the default via a regular Module mixin, so its
           # `owner` is a Module but not a Class; an explicit `def self.x` in
           # any host class produces a singleton-class owner, which is a Class.
+          host_attributes_defined = original_attributes.owner.is_a?(Class)
           host_associations_defined = original_associations.owner.is_a?(Class)
 
           m.define_singleton_method(:ransackable_attributes) do |auth_object = nil|
-            if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
+            unless auth_object.is_a?(Class) && auth_object < Layered::Resource::Base
+              next original_attributes.call(auth_object)
+            end
+
+            if auth_object.model == self
               db_columns = column_names
               attrs = auth_object.columns.map { |c| c[:attribute].to_s }.select { |a| db_columns.include?(a) }
               sort_attr = auth_object.default_sort[:attribute].to_s
               attrs |= [sort_attr] if db_columns.include?(sort_attr)
-              attrs | auth_object.search_fields.map(&:to_s)
+              walks = auth_object.association_search_fields.map { |a| "#{a[:association]}_#{a[:attribute]}" }
+              # Association-walking entries must NOT be allowlisted as
+              # attributes here: Ransack treats an allowlisted name as a
+              # literal column and emits `<table>.user_name` instead of
+              # joining into the association.
+              attrs |= (auth_object.search_fields.map(&:to_s) - walks)
+              # Self-referential walks (e.g. `parent_title` on a Post
+              # `belongs_to :parent, class_name: "Post"`) land in this branch
+              # too — the associated klass IS the resource's model — so the
+              # walked attribute must be allowlisted here, not in the
+              # other-resource branch below.
+              attrs | auth_object.association_search_fields
+                                 .select { |a| a[:klass] == self }
+                                 .map { |a| a[:attribute] }
             else
-              original_attributes.call(auth_object)
+              # A different resource asking about this model: answer only for
+              # the attributes its association-walking search fields target
+              # here (e.g. PostResource searching `user_name` asks User for
+              # `name`), folding in the host's own allowlist when one exists.
+              declared = auth_object.association_search_fields
+                                    .select { |a| a[:klass] == self }
+                                    .map { |a| a[:attribute] }
+              if declared.any?
+                base = host_attributes_defined ? original_attributes.call(auth_object) : []
+                base | declared
+              else
+                original_attributes.call(auth_object)
+              end
             end
           end
 
-          # Cross-model ransack walks (e.g. sorting a Post index by
-          # `user_name`) require both Post AND User to have ransackable
-          # allowlists configured — and we can't allowlist on User without
-          # silently patching a model the consumer didn't reference. Keep
-          # the surface narrow: virtual columns are not ransackable by
-          # default, so requests like `q[s]=user_name asc` are silently
-          # ignored rather than 500ing. Hosts that genuinely want cross-
-          # model sort/filter define `ransackable_associations` themselves
-          # (on the model or a shared abstract base like `ApplicationRecord`,
-          # plus the child model's attribute allowlist) — we defer to that
-          # explicit definition when present.
+          # Associations become ransackable only when the resource explicitly
+          # references them via an association-walking search field, or when
+          # the host has defined its own allowlist. Everything else stays
+          # narrow: requests like `q[s]=user_name asc` are silently ignored
+          # rather than 500ing.
           m.define_singleton_method(:ransackable_associations) do |auth_object = nil|
             if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
-              host_associations_defined ? original_associations.call(auth_object) : []
+              base = host_associations_defined ? original_associations.call(auth_object) : []
+              base | auth_object.association_search_fields.map { |a| a[:association] }
             else
               original_associations.call(auth_object)
             end
@@ -237,8 +304,6 @@ module Layered
 
           m.instance_variable_set(:@_layered_resource_ransack_configured, true)
         end
-
-        private
 
         # Walks the resource class ancestry to find the first ancestor that
         # has the given ivar set. Class-level ivars are not inherited in Ruby,
