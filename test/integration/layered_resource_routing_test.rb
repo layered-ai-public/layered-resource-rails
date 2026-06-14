@@ -147,10 +147,6 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   # -- surrounding scope `as:` --
 
   test "scope with matching path: and as: produces Rails-standard helper names" do
-    # layered_resources derives its own :as from the path segments. A
-    # surrounding `as:` must not make Rails prepend its prefix to the whole
-    # name (which would yield `manage_new_post` and break the gem's internal
-    # path helpers, keyed off `manage_posts`). Names must stay Rails-standard.
     helpers = Rails.application.routes.url_helpers
     %i[manage_posts_path new_manage_post_path edit_manage_post_path manage_post_path].each do |h|
       assert helpers.respond_to?(h), "expected #{h} helper to be generated"
@@ -160,10 +156,8 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   end
 
   test "scope with matching as: serves the new form end to end" do
-    # This is the exact failure mode from the field: booted fine, routes
-    # looked plausible, but /manage/posts/new 404'd because the controller's
-    # internal helper looked up new_manage_post_path while Rails had
-    # registered manage_new_post.
+    # Regression: this 404'd when Rails registered manage_new_post while the
+    # controller's internal helper looked up new_manage_post_path.
     get "/manage/posts/new"
     assert_response :success
 
@@ -173,8 +167,6 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   end
 
   test "scope with matching as: restores the prefix for sibling routes" do
-    # Nulling @scope[:as] during our declarations must not leak: routes
-    # declared after layered_resources in the same scope block keep their as.
     Rails.application.routes.draw do
       scope path: "manage", as: "manage" do
         layered_resources :posts
@@ -198,7 +190,6 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
     end
 
     assert_match(/ignores the surrounding `as: "admin"`/, err + out)
-    # ...and still derives names from the path, not the user's `as:`.
     helpers = Rails.application.routes.url_helpers
     assert helpers.respond_to?(:manage_posts_path)
     assert_not helpers.respond_to?(:admin_posts_path)

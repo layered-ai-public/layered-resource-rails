@@ -163,20 +163,9 @@ module Layered
         as_base = [as_prefix.presence, route_key].compact.join("_")
         as_singular = [as_prefix.presence, singular_key].compact.join("_")
 
-        # layered_resources composes its own route-helper names from the
-        # path segments above (e.g. `scope path: "manage"` yields
-        # `manage_posts`, `new_manage_post`, ...). A surrounding `as:` would
-        # make Rails' name_for_action prepend that prefix — and crucially it
-        # prepends it to the *whole* name, turning our `new_manage_post` into
-        # `manage_new_post`, which the internal path helpers (keyed off
-        # as_base) then can't find. So we null whatever Rails has accumulated
-        # in @scope[:as] for the duration of our route declarations and emit
-        # the full Rails-standard names ourselves. Restored in the ensure
-        # below so sibling routes in the same `scope` block keep their prefix.
-        #
-        # When the user's `as:` matches the prefix we derive from the path
-        # (e.g. `scope path: "manage", as: "manage"`) this is invisible. When
-        # it disagrees we'd be silently ignoring their intent, so warn.
+        # We derive our own helper names from the path; a surrounding `as:`
+        # that disagrees would be silently ignored, so warn (it's nulled
+        # below before we declare routes).
         user_as = @scope[:as].to_s
         if user_as.present? && user_as != as_prefix
           warn "[layered-resource-rails] layered_resources :#{resource_name} ignores the " \
@@ -300,9 +289,9 @@ module Layered
         )
         options = options.except(:defaults, :as)
 
-        # Null the accumulated scope `:as` so Rails doesn't prepend it to the
-        # full Rails-standard names we declare below; restored in the ensure
-        # so sibling routes in the same `scope` block keep their prefix.
+        # Null the scope `:as` so Rails doesn't prepend it to the full names
+        # we declare below (`new_manage_post`, not `manage_new_post`);
+        # restored in the ensure so sibling routes keep their prefix.
         saved_scope_as = @scope.frame[:as]
         @scope.frame[:as] = nil
         begin

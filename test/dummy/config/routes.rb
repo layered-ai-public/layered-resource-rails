@@ -53,11 +53,8 @@ Rails.application.routes.draw do
     layered_resources :posts, only: [:show]
   end
 
-  # Back-office namespace declared with both `path:` and a matching `as:`.
-  # The `as:` agrees with the prefix layered_resources derives from the path,
-  # so it's absorbed silently and the action helpers stay Rails-standard
-  # (`new_manage_post_path`, not `manage_new_post_path`). Regression cover for
-  # the surrounding-`as:` route-helper-naming bug.
+  # Surrounding `as:` is absorbed: helpers stay Rails-standard
+  # (`new_manage_post_path`, not `manage_new_post_path`).
   scope path: "manage", as: "manage" do
     layered_resources :posts
   end
