@@ -156,8 +156,6 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   end
 
   test "scope with matching as: serves the new form end to end" do
-    # Regression: this 404'd when Rails registered manage_new_post while the
-    # controller's internal helper looked up new_manage_post_path.
     get "/manage/posts/new"
     assert_response :success
 
