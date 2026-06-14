@@ -163,20 +163,30 @@ module Layered
         as_base = [as_prefix.presence, route_key].compact.join("_")
         as_singular = [as_prefix.presence, singular_key].compact.join("_")
 
-        # Trim whatever Rails has already accumulated in @scope[:as] —
-        # Rails' name_for_action will re-add it. e.g. inside our auto-nest
-        # wrap @scope[:as] is "user", so we only need to pass `:posts` for
-        # the index route, and Rails composes back to `:user_posts`.
-        existing_as = @scope[:as].to_s
-        trim = ->(name) {
-          if existing_as.present? && name.start_with?("#{existing_as}_")
-            name[(existing_as.length + 1)..]
-          else
-            name
-          end
-        }
-        as_to_pass = trim.call(as_base)
-        singular_as_to_pass = trim.call(as_singular)
+        # layered_resources composes its own route-helper names from the
+        # path segments above (e.g. `scope path: "manage"` yields
+        # `manage_posts`, `new_manage_post`, ...). A surrounding `as:` would
+        # make Rails' name_for_action prepend that prefix — and crucially it
+        # prepends it to the *whole* name, turning our `new_manage_post` into
+        # `manage_new_post`, which the internal path helpers (keyed off
+        # as_base) then can't find. So we null whatever Rails has accumulated
+        # in @scope[:as] for the duration of our route declarations and emit
+        # the full Rails-standard names ourselves. Restored in the ensure
+        # below so sibling routes in the same `scope` block keep their prefix.
+        #
+        # When the user's `as:` matches the prefix we derive from the path
+        # (e.g. `scope path: "manage", as: "manage"`) this is invisible. When
+        # it disagrees we'd be silently ignoring their intent, so warn.
+        user_as = @scope[:as].to_s
+        if user_as.present? && user_as != as_prefix
+          warn "[layered-resource-rails] layered_resources :#{resource_name} ignores the " \
+               "surrounding `as: #{user_as.inspect}` — it derives route-helper names from the " \
+               "path instead, so your helpers are named `#{as_base}_path`, `new_#{as_singular}_path`, " \
+               "etc. Drop the `as:` to silence this (the `path:`/scope segments already namespace " \
+               "the helpers)."
+        end
+        as_to_pass = as_base
+        singular_as_to_pass = as_singular
 
         controller_override = controller
         # Resolution order:
@@ -290,6 +300,12 @@ module Layered
         )
         options = options.except(:defaults, :as)
 
+        # Null the accumulated scope `:as` so Rails doesn't prepend it to the
+        # full Rails-standard names we declare below; restored in the ensure
+        # so sibling routes in the same `scope` block keep their prefix.
+        saved_scope_as = @scope.frame[:as]
+        @scope.frame[:as] = nil
+        begin
         if actions.include?(:index)
           get route_key, to: "#{controller}#index",
                          as: as_to_pass.to_sym,
@@ -351,6 +367,9 @@ module Layered
                       to: "#{controller}##{route[:action]}",
                       as: :"#{route[:action]}_#{singular_as_to_pass}",
                       defaults: route_defaults, **options)
+        end
+        ensure
+          @scope.frame[:as] = saved_scope_as
         end
       end
     end

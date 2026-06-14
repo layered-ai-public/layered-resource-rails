@@ -386,6 +386,25 @@ scope "users/:user_id" do
 end
 ```
 
+> **Don't add `as:` to a surrounding `scope`.** `layered_resources` derives its own route-helper names from the path segments (`scope path: "manage"` → `manage_posts_path`, `new_manage_post_path`, …). A surrounding `as:` is unnecessary, and a value that disagrees with the path is ignored with a warning. (In plain Rails you'd pair `scope path:` with `as:` to name the helpers — here the gem does that for you.)
+>
+> ```ruby
+> # Good — path segment namespaces the helpers automatically:
+> scope path: "manage" do
+>   layered_resources :posts          # manage_posts_path, new_manage_post_path
+> end
+>
+> # Redundant but harmless — `as:` matches what's derived from the path:
+> scope path: "manage", as: "manage" do
+>   layered_resources :posts
+> end
+>
+> # Warns — `as:` disagrees with the path and is ignored:
+> scope path: "manage", as: "admin" do
+>   layered_resources :posts          # still manage_posts_path, not admin_posts_path
+> end
+> ```
+
 Resolve the parent in the resource's `scope`:
 
 ```ruby
