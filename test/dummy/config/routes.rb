@@ -49,6 +49,12 @@ Rails.application.routes.draw do
     layered_resources :posts, only: [:index]
   end
 
+  # index + show, no edit: exercises the index primary-column link falling
+  # back to the show page when the resource isn't editable.
+  scope "detailonly" do
+    layered_resources :posts, only: %i[index show]
+  end
+
   scope "showonly" do
     layered_resources :posts, only: [:show]
   end

@@ -128,7 +128,7 @@ That's it. You now have a full CRUD interface with search and pagination for `Po
 | `PATCH /posts/:id`      | update  | Update post      |
 | `DELETE /posts/:id`     | destroy | Delete post      |
 
-When `:show` is enabled, the index table's primary column (`primary: true`, or the first column) is automatically linked to the show page.
+The index table's primary column (`primary: true`, or the first column) links to each record's edit page - or, for read-only resources without an edit action, to its show page.
 
 Each action also sets `@page_title` for use by the layout's `<title>` tag - `"Posts"` on index, `"New Post"` on new, the record's primary column value on show, and `"Edit <record label>"` on edit. Override after `super` in a custom action if you need something different.
 
@@ -157,6 +157,8 @@ layered_resources :posts, only: [:index]
 layered_resources :posts, only: [:index, :show, :edit, :update]
 layered_resources :posts, except: [:destroy]
 ```
+
+The default `show` view is intentionally a blank canvas - the gem doesn't auto-render an attribute list, since generated detail pages tend to be low-value and always need customizing. The index links each record's title to its **edit** page, not its show page, so `show` is only worth keeping if you're going to build a real detail view (eject it with `rails g layered:resource:views` and fill in the template). If you're not, pass `except: [:show]` to drop the route.
 
 **Root breadcrumb:** top-level resources render no breadcrumb trail by default. Declare a static first crumb — typically a link back to the host app's dashboard:
 
