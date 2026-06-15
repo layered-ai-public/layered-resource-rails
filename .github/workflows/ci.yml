@@ -31,5 +31,8 @@ jobs:
       - name: Set up database
         run: cd test/dummy && bin/rails db:prepare
 
+      - name: Build Tailwind CSS
+        run: cd test/dummy && bin/rails tailwindcss:build
+
       - name: Run tests
         run: bundle exec rake test

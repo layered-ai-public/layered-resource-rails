@@ -386,6 +386,8 @@ scope "users/:user_id" do
 end
 ```
 
+> **Don't add `as:` to a surrounding `scope`.** `layered_resources` derives its own helper names from the path segments (`scope path: "manage"` → `manage_posts_path`, `new_manage_post_path`, …), so an `as:` is unnecessary — and a value that disagrees with the path is ignored with a warning.
+
 Resolve the parent in the resource's `scope`:
 
 ```ruby

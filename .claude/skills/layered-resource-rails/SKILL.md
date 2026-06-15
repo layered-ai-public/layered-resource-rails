@@ -150,6 +150,8 @@ end
 
 Helper names follow the standard Rails nested-resources convention, so `polymorphic_path([@user, :posts])`, `link_to "Edit", [@user, @post]`, `url_for([@user, @post, :comments])` etc. all resolve. The `link:` column option uses the same name (`link: :user_posts`, `link: :user_post_comments`).
 
+**Never add `as:` to a surrounding `scope`.** `layered_resources` composes its own helper names from the path segments (`scope path: "manage"` → `manage_posts_path`, `new_manage_post_path`, …), so `as:` is unnecessary. A value matching the path is absorbed silently; a disagreeing one (`as: "admin"`) is ignored with a boot-time warning.
+
 Resolve the parent in `scope`:
 
 ```ruby

@@ -53,6 +53,12 @@ Rails.application.routes.draw do
     layered_resources :posts, only: [:show]
   end
 
+  # Surrounding `as:` is absorbed: helpers stay Rails-standard
+  # (`new_manage_post_path`, not `manage_new_post_path`).
+  scope path: "manage", as: "manage" do
+    layered_resources :posts
+  end
+
   scope "owned" do
     layered_resources :posts, resource: "OwnedPostResource"
   end
