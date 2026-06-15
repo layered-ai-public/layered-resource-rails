@@ -55,17 +55,26 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
     assert_select "h1", text: "Standalone"
   end
 
-  test "index links primary column to show when show is enabled" do
+  test "index links primary column to edit when editable" do
     record = Post.create!(title: "Linked", user: @user)
     get "/posts"
     assert_response :success
-    assert_select "th[scope='row'] a[href='/posts/#{record.id}']", text: "Linked"
+    assert_select "th[scope='row'] a[href='/posts/#{record.id}/edit']", text: "Linked"
   end
 
-  test "index does not link primary column when show is not enabled" do
-    get "/users"
+  test "index links primary column to show when not editable but show is enabled" do
+    record = Post.create!(title: "Detail", user: @user)
+    get "/detailonly/posts"
     assert_response :success
-    # users route does not include :show, so the name cell should not link
+    # /detailonly/posts is only: [:index, :show] - no edit, so the title falls
+    # back to the show page.
+    assert_select "th[scope='row'] a[href='/detailonly/posts/#{record.id}']", text: "Detail"
+  end
+
+  test "index does not link primary column when neither edit nor show is enabled" do
+    get "/readonly/users"
+    assert_response :success
+    # /readonly/users is only: [:index] - nothing to link the title to.
     assert_select "th[scope='row'] a", text: "Author", count: 0
   end
 

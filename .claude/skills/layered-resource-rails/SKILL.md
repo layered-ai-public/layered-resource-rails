@@ -65,7 +65,9 @@ For `layered_resources :posts` with all actions enabled:
 | `PATCH /posts/:id`      | update  |
 | `DELETE /posts/:id`     | destroy |
 
-When `:show` is enabled, the index table's primary column links to the show page automatically.
+The index table's primary column links to each record's **edit** page automatically (or its show page for read-only resources that have `:show` but not `:edit`).
+
+The default `show` view is intentionally a blank canvas - the gem does not auto-render an attribute list (generated detail pages are low-value and always need customizing). Since the index links titles to edit, `:show` is only worth keeping if you'll build a real detail view (eject it with `rails g layered:resource:views` and fill in the template). Otherwise advise `except: [:show]` to drop the route.
 
 `@page_title` is set automatically per action: pluralized model name on index, `"New <Model>"` on new, the record's primary column value on show, and `"Edit <record label>"` on edit. The layered-ui-rails layout reads it for `<title>`.
 
@@ -108,7 +110,7 @@ end
 
 ### Column options
 
-- `primary: true` - marks the cell that links to the show page (defaults to first column)
+- `primary: true` - marks the cell that links to the record's edit (or show) page (defaults to first column)
 - `label: "Custom"` - overrides the humanised attribute name
 - `link: :route_key` - wraps the column's rendered value in a link to a nested route (e.g. `:users_posts`); composes with `as:` (pair with `as: :badge` for a badge link)
 - `render: ->(record) { ... }` - custom cell renderer

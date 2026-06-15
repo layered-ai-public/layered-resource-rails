@@ -16,7 +16,7 @@ module Layered
           apply_column_sortability
           apply_column_renderers
           apply_column_links
-          apply_primary_column_show_link if action_name == "index"
+          apply_primary_column_link if action_name == "index"
         end
 
         # Marks columns sortable: false unless they map to a real DB column.
@@ -117,16 +117,24 @@ module Layered
           end
         end
 
-        # When :show is enabled, wraps the primary column's render proc to
-        # link the cell to the show path. The "primary" column is the one
-        # marked primary: true (or the first column if none is). Columns
-        # that already declare a custom link: are left alone.
-        def apply_primary_column_show_link
-          return unless @resource_can_show
+        # Wraps the primary column's render proc to link the cell to the most
+        # useful per-record page: the edit page when editable, otherwise the
+        # show page when one exists. The default show view is a blank canvas,
+        # so the index links to edit (where you actually act on the record)
+        # and only falls back to show for read-only resources that still
+        # expose a detail page. The "primary" column is the one marked
+        # primary: true (or the first column if none is). Columns that already
+        # declare a custom link: are left alone.
+        def apply_primary_column_link
+          singular = @layered_route_key.singularize
+          helper = if @resource_can_edit
+                     :"edit_#{singular}_path"
+                   elsif @resource_can_show
+                     :"#{singular}_path"
+                   end
+          return unless helper
 
           routes_proxy = layered_routes
-          singular = @layered_route_key.singularize
-          helper = :"#{singular}_path"
           return unless routes_proxy.respond_to?(helper)
 
           primary_index = @columns.index { |c| c[:primary] } || 0

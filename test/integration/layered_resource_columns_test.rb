@@ -136,15 +136,15 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "primary column rendered as: :badge wraps the badge in a show link" do
+  test "primary column rendered as: :badge wraps the badge in an edit link" do
     swap_columns(PostResource,
       [{ attribute: :title, primary: true, as: :badge,
          variants: { Hello: :success } }]) do
       post = Post.create!(title: "Hello", user: @user)
       get "/posts"
       assert_response :success
-      # The show link must wrap the badge, not the other way around.
-      assert_select "a[href='/posts/#{post.id}'] span.l-ui-badge.l-ui-badge--success",
+      # The edit link must wrap the badge, not the other way around.
+      assert_select "a[href='/posts/#{post.id}/edit'] span.l-ui-badge.l-ui-badge--success",
                     text: "Hello"
       assert_select "span.l-ui-badge a", count: 0,
                     message: "badge must not contain a nested link"
