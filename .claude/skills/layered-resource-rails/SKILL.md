@@ -113,7 +113,7 @@ end
 - `primary: true` - marks the cell that links to the record's edit (or show) page (defaults to first column)
 - `label: "Custom"` - overrides the humanised attribute name
 - `link: :route_key` - wraps the column's rendered value in a link to a nested route (e.g. `:users_posts`); composes with `as:` (pair with `as: :badge` for a badge link)
-- `render: ->(record) { ... }` - custom cell renderer
+- `render: ->(record) { ... }` - custom cell renderer. The proc is a plain Ruby closure invoked with `.call` (not `instance_exec`), so `self` inside it is the lexical scope where you wrote it - the resource class body, which has no view helpers. **To use a view helper (`l_ui_format_datetime`, `link_to`, `tag.*`, etc.), take the view context as a second arg:** `render: ->(record, view) { view.l_ui_format_datetime(record.created_at) }`. Arity `>= 2` (or variadic/optional, e.g. `->(record, view = nil)`) trips the view-injection branch; an arity-1 proc that calls a view helper raises `NoMethodError ... for class YourResource`. Before reaching for a proc at all: the **default renderer already strftime-formats datetime columns** (and dispatches `as:` partials), so a plain `{ attribute: :created_at, label: "Created" }` renders the timestamp readably with no proc needed.
 
 ### Field types
 
