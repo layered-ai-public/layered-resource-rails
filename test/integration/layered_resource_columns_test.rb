@@ -14,10 +14,26 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     Post.create!(title: "First", user: @user)
     Post.create!(title: "Second", user: @user)
 
+    swap_columns(UserResource,
+      [{ attribute: :name, primary: true },
+       { attribute: :posts_count, label: "Posts", link: :user_posts }]) do
+      get "/users"
+      assert_response :success
+      assert_select "a[href='/users/#{@user.id}/posts']", text: "2"
+      assert_select "a[href='/users/#{@user.id}/posts'] span.l-ui-badge", count: 0
+    end
+  end
+
+  test "counter-cache count renders as a rounded badge linking to the nested index" do
+    # UserResource's posts_count is the canonical nested-count column:
+    # counter-cache attribute + as: :badge, rounded: true + link:.
+    Post.create!(title: "First", user: @user)
+    Post.create!(title: "Second", user: @user)
+
     get "/users"
     assert_response :success
-    assert_select "a[href='/users/#{@user.id}/posts']", text: "2"
-    assert_select "a[href='/users/#{@user.id}/posts'] span.l-ui-badge", count: 0
+    assert_select "a[href='/users/#{@user.id}/posts'] span.l-ui-badge.l-ui-badge--rounded",
+                  text: "2"
   end
 
   test "link combined with as: :badge wraps the badge in a link" do

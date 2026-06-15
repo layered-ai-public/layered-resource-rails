@@ -5,7 +5,7 @@ class PostResource < Layered::Resource::Base
     { attribute: :title, primary: true },
     { attribute: :body },
     { attribute: :user_name, label: "Owner" },
-    { attribute: :comments_count, label: "Comments", link: :user_post_comments },
+    { attribute: :comments_count, label: "Comments", as: :badge, rounded: true, link: :user_post_comments },
     { attribute: :created_at, label: "Created" }
   ]
 

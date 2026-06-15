@@ -345,6 +345,28 @@ columns [
 ]
 ```
 
+### Counts of nested resources
+
+To show how many children a record has, back the count with a **Rails counter cache**, not a virtual `record.children.size` column. A virtual size column issues a `COUNT` query per row (an N+1 on the index) and can't be sorted or searched; a counter-cache column reads off the parent row in the index's single query and sorts via `q[s]=<count> asc` like any other attribute.
+
+Add `counter_cache: true` to the child's `belongs_to` and a backing integer column on the parent, then point the column at that real attribute. **Render the count as a rounded badge** so it reads as a count rather than a value:
+
+```ruby
+class Comment < ApplicationRecord
+  belongs_to :post, counter_cache: true    # maintains posts.comments_count
+end
+# add_column :posts, :comments_count, :integer, default: 0, null: false
+```
+
+```ruby
+columns [
+  { attribute: :title, primary: true },
+  { attribute: :comments_count, label: "Comments", as: :badge, rounded: true, link: :post_comments }
+]
+```
+
+`as: :badge, rounded: true` gives the rounded count pill; `link:` (optional) makes it link to the children's nested index. If the parent doesn't already carry a counter-cache column, add the migration and `counter_cache: true` rather than reaching for `.size`.
+
 To make an association searchable, add a Ransack-walk-shaped entry to `search_fields` - e.g. `search_fields [:title, :user_name]` resolves `:user_name` against `belongs_to :user` + `users.name` and joins into the association. The gem scopes the Ransack allowlists per resource: it only responds when the resource class is the auth object (on both the parent and the associated model), so host-app Ransack config is preserved. A walked search field is also *sortable* (`q[s]=user_name asc` orders by `users.name`) because Ransack derives its sort allowlist from the search allowlist. Cross-model sort/filter on associations *not* declared in `search_fields` remains off; to opt in, define `ransackable_associations` on the parent model yourself and allowlist the attributes on the child model - the gem detects the host-defined override and unions with it. The search box placeholder labels a walk as "<association> <attribute>" via each model's `human_attribute_name` - translate `activerecord.attributes.<model>.<attr>` to rename a half, or set `search_placeholder` on the resource to replace the whole string.
 
 ## Common issues

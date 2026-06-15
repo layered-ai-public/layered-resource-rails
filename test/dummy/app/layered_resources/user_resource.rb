@@ -4,7 +4,7 @@ class UserResource < Layered::Resource::Base
   columns [
     { attribute: :name, primary: true },
     { attribute: :email },
-    { attribute: :posts_count, label: "Posts", link: :user_posts }
+    { attribute: :posts_count, label: "Posts", as: :badge, rounded: true, link: :user_posts }
   ]
 
   root_breadcrumb "Home", "/"

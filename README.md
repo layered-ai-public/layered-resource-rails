@@ -417,12 +417,26 @@ class UserResource < Layered::Resource::Base
   columns [
     { attribute: :name, primary: true },
     { attribute: :email },
-    { attribute: :posts_count, label: "Posts", link: :user_posts }
+    { attribute: :posts_count, label: "Posts", as: :badge, rounded: true, link: :user_posts }
   ]
 end
 ```
 
 The `posts_count` cell on each user row links to `/users/:id/posts`. `link:` wraps the column's normal rendering in a link, so it composes with `as:` — pair it with `as: :badge` if you want a badge link.
+
+**Use a counter cache for child counts, not a virtual `child.size` column.** Render the count as a rounded badge (`as: :badge, rounded: true`) so it reads as a count, not a value. Point the column at a real counter-cache attribute and add `counter_cache: true` to the child's `belongs_to`:
+
+```ruby
+class Post < ApplicationRecord
+  belongs_to :user, counter_cache: true   # maintains users.posts_count
+end
+```
+
+```ruby
+# add_column :users, :posts_count, :integer, default: 0, null: false
+```
+
+A counter-cache column reads straight off the parent row, so the index renders in one query. A virtual column backed by `user.posts.size` issues a `COUNT` per row (an N+1) and can't be sorted or searched. Once `posts_count` is a real column it sorts via `q[s]=posts_count asc` like any other.
 
 ## Column rendering
 
