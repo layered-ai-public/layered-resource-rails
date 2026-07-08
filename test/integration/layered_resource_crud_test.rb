@@ -18,12 +18,15 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
     assert_select "a[href='/users/#{@user.id}/posts/new']", text: "New"
   end
 
-  test "index renders edit and delete actions when crud enabled" do
+  test "index renders edit and delete actions in a popover menu when crud enabled" do
     post = Post.create!(title: "Hello", user: @user)
     get "/users/#{@user.id}/posts"
     assert_response :success
-    assert_select "a[href='/users/#{@user.id}/posts/#{post.id}/edit']", text: "Edit"
-    assert_select "form[action='/users/#{@user.id}/posts/#{post.id}'] button", text: "Delete"
+    assert_select "td.l-ui-table__cell--action [data-controller~='l-ui--popover']" do
+      assert_select "button[popovertarget][aria-label='Actions for Hello']"
+      assert_select ".l-ui-popover__menu a[href='/users/#{@user.id}/posts/#{post.id}/edit']", text: "Edit"
+      assert_select ".l-ui-popover__menu form[action='/users/#{@user.id}/posts/#{post.id}'] button", text: "Delete"
+    end
   end
 
   # -- show --

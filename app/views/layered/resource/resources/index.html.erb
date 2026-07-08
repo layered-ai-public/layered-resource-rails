@@ -41,19 +41,29 @@
 
   <% actions_proc = if @resource_can_edit || @resource_can_destroy
     ->(record) do
-      parts = []
+      items = []
       if resource_can?(:edit, record)
-        parts << link_to("Edit", layered_member_path(record, action: :edit),
-                  class: "l-ui-button l-ui-button--outline l-ui-button--small",
+        items << link_to("Edit", layered_member_path(record, action: :edit),
+                  class: "l-ui-popover__menu-item",
                   data: { turbo_frame: "_top" })
       end
       if resource_can?(:destroy, record)
-        parts << button_to("Delete", layered_member_path(record),
+        items << tag.hr(class: "l-ui-popover__menu-divider") if items.any?
+        items << button_to("Delete", layered_member_path(record),
                     method: :delete,
-                    class: "l-ui-button l-ui-button--outline-danger l-ui-button--small",
+                    class: "l-ui-popover__menu-item l-ui-popover__menu-item--danger",
                     data: { turbo_confirm: "Are you sure?", turbo_frame: "_top" })
       end
-      safe_join(parts, " ")
+      next if items.empty?
+
+      l_ui_popover(align: :end) do |p|
+        p.trigger(class: "l-ui-button l-ui-button--outline l-ui-button--icon l-ui-button--small",
+                  aria: { label: "Actions for #{layered_record_label(record)}" }) do
+          image_tag("layered_ui/icon_more.svg", alt: "",
+            class: "l-ui-icon l-ui-icon--sm", aria: { hidden: true })
+        end
+        tag.div(safe_join(items), class: "l-ui-popover__menu")
+      end
     end
   end %>
 

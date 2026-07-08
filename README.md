@@ -243,7 +243,8 @@ When enabled:
   Pundit raises `Pundit::NotAuthorizedError` on denial; handle it in
   your `ApplicationController` as you would for any Pundit-backed app.
 - Action buttons hide automatically: the `New` link on the index, the
-  `Edit`/`Delete` buttons on the index row and show page check
+  `Edit`/`Delete` items in the index row's actions popover, and the
+  `Edit`/`Delete` buttons on the show page check
   `policy(record).new?/update?/destroy?` so users only see actions they
   can perform.
 

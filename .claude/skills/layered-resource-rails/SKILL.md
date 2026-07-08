@@ -236,7 +236,7 @@ When enabled:
 
 - `scope(controller)` defaults to the controller's `policy_scope(model)` helper, so apps that override `pundit_user` (e.g. `current_account`) get the same identity used by `authorize`.
 - The controller calls `authorize(@record)` after loading a member record (show/edit/update/destroy and any custom member action).
-- The `New`/`Edit`/`Delete` buttons in the default views hide for users whose policy denies the action - the views call a `resource_can?(action, record = nil)` helper that ANDs the route-exposure flag with `policy(record).<action>?`.
+- The `New`/`Edit`/`Delete` actions in the default views (inline buttons on show, a per-row actions popover menu on index) hide for users whose policy denies the action - the views call a `resource_can?(action, record = nil)` helper that ANDs the route-exposure flag with `policy(record).<action>?`.
 
 `owned_by` composes with `use_pundit`: Pundit's `Policy::Scope#resolve` wins for the read filter; `owned_by` still drives owner assignment on create. Stack both when needed.
 
