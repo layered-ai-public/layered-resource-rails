@@ -61,13 +61,11 @@
       </label>
     <% end %>
 
-    <div class="l-ui-mt-3 l-ui-search-inline">
-      <%= submit_tag "Apply", name: nil,
-            class: "l-ui-button l-ui-button--primary l-ui-button--small" %>
-      <% if active %>
-        <%= link_to "Clear", layered_filter_remove_path(filter),
-              class: "l-ui-button l-ui-button--outline-danger l-ui-button--small", data: frame_data %>
-      <% end %>
-    </div>
+    <hr class="l-ui-popover__menu-divider l-ui-mt-3">
+    <%= button_tag "Apply", name: nil, class: "l-ui-popover__menu-item" %>
+    <% if active %>
+      <%= link_to "Clear", layered_filter_remove_path(filter),
+            class: "l-ui-popover__menu-item l-ui-popover__menu-item--danger", data: frame_data %>
+    <% end %>
   <% end %>
 <% end %>

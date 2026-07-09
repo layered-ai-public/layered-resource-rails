@@ -352,7 +352,7 @@ class LayeredResourceFiltersPinnedTest < ActionDispatch::IntegrationTest
 
   test "clearing a defaulted filter writes an explicit blank so it stays cleared" do
     get "/pinned/posts"
-    clear = css_select("a.l-ui-button--outline-danger").find { |a| a.text.strip == "Clear" }
+    clear = css_select("a.l-ui-popover__menu-item--danger").find { |a| a.text.strip == "Clear" }
     assert clear, "expected a Clear link in the defaulted chip's popover"
     assert_equal "/pinned/posts?q%5Bstatus_in%5D=", clear["href"]
 
