@@ -32,10 +32,12 @@
     <% if filter[:as] == :select %>
       <% key = layered_filter_param_keys(filter).first %>
       <% layered_filter_collection(filter).each do |label, value| %>
-        <label class="l-ui-checkbox-container">
+        <%# The wrapping label makes the whole row toggle the checkbox, so the
+            row gets the pointer too (no l-ui class carries just a cursor). %>
+        <label class="l-ui-checkbox-container" style="cursor: pointer">
           <%= check_box_tag "#{scope}[#{key}][]", value,
                 layered_filter_selected?(filter, value), id: nil, class: "l-ui-checkbox" %>
-          <%= label %>
+          <span class="l-ui-checkbox-container__label"><%= label %></span>
         </label>
       <% end %>
     <% elsif [:date_range, :range].include?(filter[:as]) %>
