@@ -17,7 +17,9 @@
 
 <div class="l-ui-mt-3 l-ui-search-inline">
   <% chips.each do |filter| %>
-    <div class="l-ui-badge l-ui-badge--default l-ui-badge--rounded l-ui-search-inline">
+    <%# Button classes give the chip the same height/padding rhythm as the
+        add-filter button; badge classes recolour it into a muted pill. %>
+    <div class="l-ui-button l-ui-button--small l-ui-badge--default l-ui-badge--rounded">
       <%= l_ui_popover do |p| %>
         <% p.trigger(aria: { label: "Edit #{layered_filter_label(filter)} filter" }) do %>
           <%= layered_filter_active?(filter) ? layered_filter_chip_text(filter) : layered_filter_label(filter) %>
