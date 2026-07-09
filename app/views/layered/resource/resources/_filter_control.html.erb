@@ -34,7 +34,7 @@
       <% layered_filter_collection(filter).each_with_index do |(label, value), index| %>
         <%# The wrapping label makes the whole row toggle the checkbox, so the
             row gets the pointer too (no l-ui class carries just a cursor). %>
-        <label class="l-ui-checkbox-container <%= "l-ui-mt-0" if index.zero? %>" style="cursor: pointer">
+        <label class="l-ui-checkbox-container <%= index.zero? ? "l-ui-mt-0" : "l-ui-mt-3" %>" style="cursor: pointer">
           <%= check_box_tag "#{scope}[#{key}][]", value,
                 layered_filter_selected?(filter, value), id: nil, class: "l-ui-checkbox" %>
           <span class="l-ui-checkbox-container__label"><%= label %></span>
