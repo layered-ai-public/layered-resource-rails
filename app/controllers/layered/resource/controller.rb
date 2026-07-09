@@ -24,6 +24,7 @@ module Layered
         helper Layered::Ui::RansackHelper
         helper Layered::Ui::PagyHelper
         helper Layered::Ui::BreadcrumbsHelper
+        helper Layered::Resource::FiltersHelper
 
         before_action :load_layered_resource
         before_action :load_layered_member_record
@@ -39,6 +40,7 @@ module Layered
       end
 
       def index
+        apply_layered_filter_defaults
         @q = @resource.scope(self).ransack(params[:q], auth_object: @resource)
         if @q.sorts.empty?
           ds = @resource.default_sort
@@ -212,6 +214,36 @@ module Layered
         return unless @resource&.pundit_enabled?
 
         authorize(record, :"#{action_name}?")
+      end
+
+      # Merges each filter's `default:` into params[:q] when the request
+      # carries none of that filter's keys, so both the Ransack query and the
+      # filter-bar helpers see the same effective state (the chip shows the
+      # default as active, and links/forms round-trip it explicitly). A key
+      # that is present-but-blank means the user explicitly cleared a
+      # defaulted filter — the remove/Clear links write blanks for exactly
+      # this reason — so the default must NOT re-apply.
+      def apply_layered_filter_defaults
+        q = params[:q].respond_to?(:to_unsafe_h) ? params[:q].to_unsafe_h.stringify_keys : {}
+        additions = {}
+
+        @resource.resolved_filters.each do |filter|
+          default = filter[:default]
+          next if default.nil?
+          next if filter[:param_keys].any? { |k| q.key?(k) }
+
+          default = default.call if default.respond_to?(:call)
+          if filter[:predicates]
+            bounds = default.is_a?(Hash) ? default.symbolize_keys : { from: default }
+            from_key, to_key = filter[:param_keys]
+            additions[from_key] = bounds[:from] unless bounds[:from].nil?
+            additions[to_key] = bounds[:to] unless bounds[:to].nil?
+          else
+            additions[filter[:param_keys].first] = filter[:multiple] ? Array(default) : default
+          end
+        end
+
+        params[:q] = q.merge(additions) if additions.any?
       end
 
       def require_layered_fields

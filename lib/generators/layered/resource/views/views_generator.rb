@@ -15,7 +15,8 @@ module Layered
 
         desc "Copy the gem's view templates into app/views/layered/<name>/ for full customisation."
 
-        VIEWS = %w[index.html.erb show.html.erb new.html.erb edit.html.erb].freeze
+        VIEWS = %w[index.html.erb show.html.erb new.html.erb edit.html.erb
+                   _filters.html.erb _filter_control.html.erb].freeze
 
         def copy_views
           VIEWS.each do |view|

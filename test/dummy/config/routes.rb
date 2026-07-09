@@ -77,6 +77,11 @@ Rails.application.routes.draw do
     layered_resources :posts, resource: "PunditPostResource"
   end
 
+  # Exercises pinned filters + default values (see PinnedPostResource).
+  scope "pinned" do
+    layered_resources :posts, resource: "PinnedPostResource", only: [:index]
+  end
+
   # Exercises explicit namespace: option. Derives CustomNamespace::PostResource
   # as the resource class and routes to CustomNamespace::ResourcesController
   # (which inherits from CustomNamespace::ApplicationController) automatically.

@@ -11,6 +11,12 @@ class PostResource < Layered::Resource::Base
 
   search_fields [:title, :body, :user_name]
 
+  filters :featured,                 # boolean  -> Yes / No
+          :created_at,               # datetime -> from / to date range
+          :comments_count,           # integer  -> from / to number range
+          status: { pinned: true },  # enum     -> select, chip always shown
+          user: { multiple: true }   # belongs_to -> multi-select
+
   default_sort attribute: :created_at, direction: :desc
 
   fields [
