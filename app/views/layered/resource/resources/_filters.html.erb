@@ -73,7 +73,9 @@
       after the paint that follows this rAF — so the popover is kept invisible
       for that one frame or it flashes at the viewport origin before jumping
       into place. %>
-  <script>
+  <%# nonce: true keeps this compatible with a host app's nonce-based CSP
+      (and renders no nonce attribute when the host configures none). %>
+  <%= javascript_tag nonce: true do %>
     requestAnimationFrame(() => {
       const popover = document.getElementById("layered-filter-<%= @layered_route_key %>-<%= open_filter[:attribute] %>")
       if (!popover) return
@@ -81,5 +83,5 @@
       popover.addEventListener("toggle", () => { popover.style.visibility = "" }, { once: true })
       popover.showPopover()
     })
-  </script>
+  <% end %>
 <% end %>

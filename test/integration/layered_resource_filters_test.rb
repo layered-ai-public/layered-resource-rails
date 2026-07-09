@@ -175,6 +175,9 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     assert_select "button[aria-label='Edit Created at filter']"
     assert_includes response.body, %(getElementById("layered-filter-posts-created_at"))
     assert_includes response.body, "showPopover()"
+    # The dummy app configures a CSP nonce generator; the script must carry
+    # the nonce or a nonce-based CSP host would silently block the auto-open.
+    assert_select "script[nonce=dummy-csp-nonce]", text: /showPopover/
   end
 
   test "the fo param opens nothing unless it names a declared filter" do
