@@ -154,7 +154,8 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     # Its popover holds the controls.
     assert_select "input[name='q[created_at_gteq]']"
     assert_select "input[name='q[created_at_lteq]']"
-    assert_select "input[type=checkbox][name='q[user_id_in][]']", count: 2
+    assert_select "input[type=checkbox][name='q[user_id_in][]'][value='#{@alice.id}']", count: 1
+    assert_select "input[type=checkbox][name='q[user_id_in][]'][value='#{@bob.id}']", count: 1
 
     # Pending filters leave the add menu; the rest stay.
     assert_select "a.l-ui-popover__menu-item", text: "Created at", count: 0
