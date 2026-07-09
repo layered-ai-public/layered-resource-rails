@@ -14,13 +14,21 @@ class LayeredResourceFiltersDslTest < ActiveSupport::TestCase
     end
   end
 
-  test "infers a select from an enum column with DB values" do
+  test "infers a multi-select from an enum column with DB values" do
     f = resource_with(:status).resolved_filters.first
     assert_equal :status, f[:attribute]
     assert_equal :status, f[:ransack_attribute]
     assert_equal :select, f[:as]
-    assert_equal :eq, f[:predicate]
+    assert_equal :in, f[:predicate]
+    assert f[:multiple]
     assert_equal [["Draft", 0], ["Published", 1], ["Archived", 2]], f[:collection]
+  end
+
+  test "multiple: false opts a select into single-choice eq" do
+    f = resource_with(status: { multiple: false }).resolved_filters.first
+    assert_equal :eq, f[:predicate]
+    assert_not f[:multiple]
+    assert_equal ["status_eq"], f[:param_keys]
   end
 
   test "infers a boolean control from a boolean column" do
@@ -41,8 +49,8 @@ class LayeredResourceFiltersDslTest < ActiveSupport::TestCase
     assert_equal({ from: :gteq, to: :lteq }, f[:predicates])
   end
 
-  test "infers a select keyed on the foreign key for a belongs_to" do
-    f = resource_with(user: { multiple: true }).resolved_filters.first
+  test "infers a multi-select keyed on the foreign key for a belongs_to" do
+    f = resource_with(:user).resolved_filters.first
     assert_equal :user, f[:attribute]
     assert_equal :user_id, f[:ransack_attribute]
     assert_equal :select, f[:as]
@@ -80,7 +88,7 @@ class LayeredResourceFiltersDslTest < ActiveSupport::TestCase
     f = resource_with(status: { pinned: true, default: 1 }).resolved_filters.first
     assert f[:pinned]
     assert_equal 1, f[:default]
-    assert_equal ["status_eq"], f[:param_keys]
+    assert_equal ["status_in"], f[:param_keys]
 
     range = resource_with(:created_at).resolved_filters.first
     assert_not range[:pinned]
@@ -179,7 +187,7 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "an active filter renders as a chip with an edit popover and a remove link" do
-    get "/posts", params: { q: { status_eq: 1, featured_eq: "true" } }
+    get "/posts", params: { q: { status_in: [1], featured_eq: "true" } }
     assert_response :success
 
     assert_select "button[aria-label='Edit Status filter']", text: /Status: Published/
@@ -194,9 +202,9 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "a chip's remove link strips only its own filter, keeping the others" do
-    get "/posts", params: { q: { status_eq: 1, featured_eq: "true" } }
+    get "/posts", params: { q: { status_in: [1], featured_eq: "true" } }
     remove = css_select("a[aria-label='Remove Featured filter']").first["href"]
-    assert_includes remove, "status_eq"
+    assert_includes remove, "status_in"
     assert_not_includes remove, "featured_eq"
   end
 
@@ -210,9 +218,12 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
                   text: /Comments count: ≥ 4/
   end
 
-  test "a multi-select chip lists the selected records" do
+  test "a multi-select chip lists the selected values" do
     get "/posts", params: { q: { user_id_in: [@alice.id, @bob.id] } }
     assert_select "button[aria-label='Edit User filter']", text: /User: Alice, Bob/
+
+    get "/posts", params: { q: { status_in: [0, 1] } }
+    assert_select "button[aria-label='Edit Status filter']", text: /Status: Draft, Published/
   end
 
   test "no active filters renders only pinned chips, none removable" do
@@ -225,39 +236,41 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
   # -- composition: search, filters, and sort survive each other --
 
   test "the search form round-trips active filters and unset chips as hidden fields" do
-    get "/posts", params: { q: { status_eq: 1 }, f: %w[created_at] }
-    assert_select "form input[type=hidden][name='q[status_eq]'][value='1']"
+    get "/posts", params: { q: { status_in: [1] }, f: %w[created_at] }
+    assert_select "form input[type=hidden][name='q[status_in][]'][value='1']"
     assert_select "form input[type=hidden][name='f[]'][value='created_at']"
   end
 
   test "the search clear link drops the term but keeps filters" do
-    get "/posts", params: { q: { status_eq: 1, title_or_body_or_user_name_cont: "post" } }
+    get "/posts", params: { q: { status_in: [1], title_or_body_or_user_name_cont: "post" } }
     clear = css_select("a.l-ui-button--outline").find do |a|
       a.text.strip == "Clear" && !a["class"].include?("l-ui-button--small")
     end
     assert clear, "expected a search clear link"
-    assert_includes clear["href"], "status_eq"
+    assert_includes clear["href"], "status_in"
     assert_not_includes clear["href"], "cont"
   end
 
-  test "filter apply links carry the current search term and sort" do
+  test "filter forms carry the current search term and sort as hidden fields" do
     get "/posts", params: { q: { title_or_body_or_user_name_cont: "post", s: "title asc" } }
-    # The pinned Status chip's value links are always rendered.
-    link = css_select("a.l-ui-popover__menu-item")
-             .map { |a| a["href"] }
-             .find { |h| h.include?("status_eq") }
-    assert link, "expected a status apply link inside the pinned chip"
-    assert_includes link, "title+asc"
-    assert_includes link, "cont%5D=post"
+    # The pinned Status chip's popover form must round-trip both.
+    assert_select "form input[type=hidden][name='q[s]'][value='title asc']"
+    assert_select "form input[type=hidden][name='q[title_or_body_or_user_name_cont]'][value='post']"
+    assert_select "input[type=checkbox][name='q[status_in][]']", count: 3
   end
 
   # -- filtering behaviour --
 
-  test "filters by an enum select" do
-    get "/posts", params: { q: { status_eq: 1 } }
+  test "filters by an enum multi-select" do
+    get "/posts", params: { q: { status_in: [1] } }
     assert_response :success
     assert_select "tbody th", text: /Live post/
     assert_select "tbody th", text: /Draft post/, count: 0
+    assert_select "tbody th", text: /Archived post/, count: 0
+
+    get "/posts", params: { q: { status_in: [0, 1] } }
+    assert_select "tbody th", text: /Draft post/
+    assert_select "tbody th", text: /Live post/
     assert_select "tbody th", text: /Archived post/, count: 0
   end
 
@@ -293,7 +306,7 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "filters compose with the free-text search box" do
-    get "/posts", params: { q: { title_or_body_or_user_name_cont: "post", status_eq: 2 } }
+    get "/posts", params: { q: { title_or_body_or_user_name_cont: "post", status_in: [2] } }
     assert_response :success
     assert_select "tbody th", text: /Archived post/
     assert_select "tbody th", text: /Live post/, count: 0
@@ -339,9 +352,9 @@ class LayeredResourceFiltersPinnedTest < ActionDispatch::IntegrationTest
 
   test "clearing a defaulted filter writes an explicit blank so it stays cleared" do
     get "/pinned/posts"
-    clear = css_select("a.l-ui-popover__menu-item").find { |a| a.text.strip == "Clear" }
+    clear = css_select("a.l-ui-button--outline-danger").find { |a| a.text.strip == "Clear" }
     assert clear, "expected a Clear link in the defaulted chip's popover"
-    assert_equal "/pinned/posts?q%5Bstatus_eq%5D=", clear["href"]
+    assert_equal "/pinned/posts?q%5Bstatus_in%5D=", clear["href"]
 
     # Following it disables the default rather than re-applying it.
     get clear["href"]

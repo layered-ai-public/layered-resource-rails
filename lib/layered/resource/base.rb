@@ -92,11 +92,15 @@ module Layered
         # the column type, enum, or association) or an attribute with an
         # options hash overriding the inference:
         #
-        #   filters :status,                       # enum     -> select
+        #   filters :status,                       # enum     -> multi-select of its values
         #           :featured,                     # boolean  -> Yes / No
         #           :created_at,                   # datetime -> from / to range
         #           :comments_count,               # integer  -> number range
-        #           user: { multiple: true }       # belongs_to -> multi-select
+        #           :user                          # belongs_to -> multi-select
+        #
+        # Select-type filters (enum, belongs_to, collection) default to
+        # multi-select via the `in` predicate; pass `multiple: false` for a
+        # single-choice `eq` select.
         #
         # Recognised override keys: `as:` (control type), `collection:` (select
         # options — an array, an array of [label, value] pairs, or a callable
@@ -426,21 +430,21 @@ module Layered
         # override is supplied.
         def build_filter(attribute, opts)
           reflection = belongs_to_reflection(attribute)
-          multiple = opts.fetch(:multiple, false)
           label = opts[:label]
 
           descriptor =
             if reflection
-              select_filter(attribute, reflection.foreign_key.to_sym, multiple,
+              select_filter(attribute, reflection.foreign_key.to_sym, opts.fetch(:multiple, true),
                             opts[:collection], label, reflection: reflection)
             elsif model.defined_enums.key?(attribute.to_s)
               # Values are the enum's DB representation, not its keys — Ransack
-              # compares the raw column, so `status_eq=1` matches while
-              # `status_eq=published` would depend on attribute-type casting.
+              # compares the raw column, so `status_in[]=1` matches while
+              # `status_in[]=published` would depend on attribute-type casting.
               collection = opts[:collection] || model.defined_enums[attribute.to_s].map { |k, v| [k.humanize, v] }
-              select_filter(attribute, attribute, multiple, collection, label)
+              select_filter(attribute, attribute, opts.fetch(:multiple, true), collection, label)
             else
               as = opts[:as] || default_filter_as(field_type_for(attribute), opts)
+              multiple = opts.fetch(:multiple, as == :select)
               typed_filter(attribute, as, multiple, opts[:collection], label)
             end
 
