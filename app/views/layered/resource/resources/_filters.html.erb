@@ -1,10 +1,10 @@
 <%# The filter bar. Picking a filter from the "Add filter" popover adds it as
-    an unset chip (tracked by the f[] param); pressing a chip's label opens
-    the popover with its controls, and its ✕ removes it. Once a value is set
-    the chip persists via its own q params and the f[] entry drops away. The
-    bar lives inside the index turbo frame, so adding, applying, changing, or
-    removing a filter is a single frame navigation that reloads the table and
-    re-renders the chips. %>
+    an unset chip (tracked by the f[] param) with its popover already open,
+    ready to take a value; pressing a chip's label reopens the popover, and
+    its ✕ removes it. Once a value is set the chip persists via its own q
+    params and the f[] entry drops away. The bar lives inside the index turbo
+    frame, so adding, applying, changing, or removing a filter is a single
+    frame navigation that reloads the table and re-renders the chips. %>
 <%# Chip order: pinned first (declaration order), then filters active straight
     from the URL (e.g. a bookmarked query), then user-added chips in the order
     they were added (the f[] list) — so a new chip always joins the end. %>
@@ -55,3 +55,16 @@
     <% end %>
   <% end %>
 </div>
+
+<% if (open_filter = layered_auto_open_filter) %>
+  <%# A native popover can't be opened declaratively, so the one-shot `fo`
+      param from the add-filter link gets this nudge. Turbo runs it on each
+      frame render; the animation frame lets Stimulus connect layered-ui's
+      placement controller to the fresh chip first, so the popover's toggle
+      event positions it. %>
+  <script>
+    requestAnimationFrame(() => {
+      document.getElementById("layered-filter-<%= @layered_route_key %>-<%= open_filter[:attribute] %>")?.showPopover()
+    })
+  </script>
+<% end %>

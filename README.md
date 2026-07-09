@@ -443,9 +443,9 @@ A counter-cache column reads straight off the parent row, so the index renders i
 
 ## Filters
 
-Where `search_fields` gives a single free-text box, `filters` adds structured controls for narrowing the index by specific attributes. The UI follows the "add filter" pattern: an **Add filter** button opens a popover listing the declared filters; picking one adds it as a **chip**; pressing the chip's label opens a popover with its controls, and its ✕ removes it. Booleans and single-choice selects apply instantly on click; multi-selects, ranges, and text filters have an Apply button.
+Where `search_fields` gives a single free-text box, `filters` adds structured controls for narrowing the index by specific attributes. The UI follows the "add filter" pattern: an **Add filter** button opens a popover listing the declared filters; picking one adds it as a **chip** with its controls popover already open, ready to take a value; pressing the chip's label reopens the popover, and its ✕ removes it. Booleans and single-choice selects apply instantly on click; multi-selects, ranges, and text filters have an Apply button.
 
-Under the hood every filter is a Ransack predicate in the query string, so filters compose with search, sort, and pagination — all coexist in the URL and survive each other's submits (the search form and each filter form round-trip the other params as hidden fields; no JavaScript involved). The lightweight `f[]` param records which chips were added and in what order — new chips join the end of the row (after any pinned ones) and stay put when set; a chip's ✕ removes its entry.
+Under the hood every filter is a Ransack predicate in the query string, so filters compose with search, sort, and pagination — all coexist in the URL and survive each other's submits (the search form and each filter form round-trip the other params as hidden fields; the only JavaScript is the one-shot nudge that opens a freshly added chip's popover). The lightweight `f[]` param records which chips were added and in what order — new chips join the end of the row (after any pinned ones) and stay put when set; a chip's ✕ removes its entry.
 
 Declare `filters` with a list of attributes. The control and predicate are inferred from each column:
 

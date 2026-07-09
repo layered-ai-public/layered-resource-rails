@@ -162,6 +162,40 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     assert_select "a.l-ui-popover__menu-item", text: "Featured"
   end
 
+  test "adding a filter opens its chip's popover via the one-shot fo param" do
+    get "/posts"
+    add = css_select("a.l-ui-popover__menu-item").map { |a| a["href"] }
+            .find { |h| h.include?("f%5B%5D=created_at") }
+    assert add, "expected an add-filter link for created_at"
+    assert_includes add, "fo=created_at"
+
+    # Following it renders the new chip plus the script opening its popover.
+    get add
+    assert_response :success
+    assert_select "button[aria-label='Edit Created at filter']"
+    assert_includes response.body, %(getElementById("layered-filter-posts-created_at")?.showPopover())
+  end
+
+  test "the fo param opens nothing unless it names a declared filter" do
+    get "/posts", params: { fo: "bogus" }
+    assert_response :success
+    assert_not_includes response.body, "showPopover"
+  end
+
+  test "the one-shot fo param is dropped by forms, sort, and pagination links" do
+    16.times { |i| Post.create!(title: "Filler #{i}", user: @alice, status: :published) }
+    get "/posts", params: { f: %w[created_at], fo: "created_at" }
+    assert_response :success
+
+    assert_select "input[type=hidden][name=fo]", count: 0
+    sort = css_select("th.l-ui-table__header-cell--sortable a").map { |a| a["href"] }.first
+    assert sort, "expected a sortable header link"
+    assert_not_includes sort, "fo="
+    page_link = css_select(".l-ui-pagy-container a[href]").map { |a| a["href"] }.first
+    assert page_link, "expected a pagination link"
+    assert_not_includes page_link, "fo="
+  end
+
   test "a chip's value links apply the filter and keep its f[] entry for ordering" do
     get "/posts", params: { f: %w[featured user] }
     apply = css_select("a.l-ui-popover__menu-item")

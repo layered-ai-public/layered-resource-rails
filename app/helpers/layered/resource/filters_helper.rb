@@ -6,7 +6,8 @@ module Layered
     # own keys. Select-type controls apply instantly via links; range and
     # multi-select controls are small GET forms whose hidden fields round-trip
     # every *other* `q` param (search term, sort, other filters) so nothing is
-    # lost across submits — no JavaScript involved.
+    # lost across submits — the only JavaScript is the one-shot nudge that
+    # opens a freshly added chip's popover (see `layered_auto_open_filter`).
     #
     # Picking a filter from the "Add filter" menu doesn't set a value — it
     # adds the filter as an *unset* chip whose popover holds the controls.
@@ -61,10 +62,23 @@ module Layered
       end
 
       # URL the "Add filter" menu links to: current params plus this filter
-      # as an unset chip at the end of the row.
+      # as an unset chip at the end of the row. The `fo` param asks that
+      # render to open the new chip's popover, so the controls are ready
+      # without a second click.
       def layered_filter_add_path(filter)
+        attribute = filter[:attribute].to_s
         layered_filter_path_with(layered_filter_query_params,
-                                 layered_added_filter_attributes | [filter[:attribute].to_s])
+                                 layered_added_filter_attributes | [attribute],
+                                 open: attribute)
+      end
+
+      # The filter whose chip popover should open on this render — the
+      # one-shot `fo` param carried only by the "Add filter" menu links.
+      # Unlike `q` and `f[]` it never round-trips: forms and links rebuild
+      # their URLs without it and the pagy call strips it from page links,
+      # so the popover opens once and stays closed thereafter.
+      def layered_auto_open_filter
+        layered_filters.find { |f| f[:attribute].to_s == params[:fo] } if params[:fo].present?
       end
 
       def layered_filter_label(filter)
@@ -169,10 +183,11 @@ module Layered
 
       private
 
-      def layered_filter_path_with(q, added = layered_added_filter_attributes)
+      def layered_filter_path_with(q, added = layered_added_filter_attributes, open: nil)
         query = {}
         query[layered_filter_scope] = q if q.present?
         query[:f] = added if added.present?
+        query[:fo] = open if open.present?
         path = layered_collection_path
         query.present? ? "#{path}?#{query.to_query}" : path
       end

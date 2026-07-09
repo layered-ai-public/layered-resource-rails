@@ -48,7 +48,11 @@ module Layered
         end
         scope = @q.result(distinct: @resource.requires_distinct?)
 
-        @pagy, @records = pagy(scope, limit: @resource.per_page)
+        # Pagy rebuilds page links from the full request query; `fo` (the
+        # one-shot open-this-chip's-popover param from the add-filter link)
+        # must not ride along or paginating would reopen the popover.
+        @pagy, @records = pagy(scope, limit: @resource.per_page,
+                                      querify: ->(query) { query.delete("fo") })
         decorate_columns
       end
 
