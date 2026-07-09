@@ -30,13 +30,35 @@
 <%= turbo_frame_tag turbo_frame_name, data: { turbo_action: "advance" } do %>
   <% if @resource.search_fields.any? %>
     <div class="l-ui-mt-4">
-      <%= l_ui_search_form(@q,
-            url: layered_collection_path,
-            fields: @resource.search_fields,
-            placeholder: @resource.search_placeholder,
-            clear: true,
-            turbo_frame: turbo_frame_name) %>
+      <% if layered_filters.any? %>
+        <%# With filters declared, the search form must round-trip the active
+            filter and sort q params as hidden fields so its submit composes
+            with them; Clear drops only the search term. %>
+        <%= l_ui_search_form(@q, url: layered_collection_path, turbo_frame: turbo_frame_name) do |f| %>
+          <%= layered_filter_hidden_fields(except: layered_search_field_key) %>
+          <%= f.label layered_search_field_key, "Search", class: "l-ui-sr-only" %>
+          <div class="l-ui-search-inline">
+            <%= f.text_field layered_search_field_key,
+                  class: "l-ui-form__field", placeholder: @resource.search_placeholder %>
+            <%= f.submit "Search", class: "l-ui-button l-ui-button--primary" %>
+            <%= link_to "Clear", layered_search_clear_path,
+                  class: "l-ui-button l-ui-button--outline",
+                  data: { turbo_frame: turbo_frame_name, turbo_action: "advance" } %>
+          </div>
+        <% end %>
+      <% else %>
+        <%= l_ui_search_form(@q,
+              url: layered_collection_path,
+              fields: @resource.search_fields,
+              placeholder: @resource.search_placeholder,
+              clear: true,
+              turbo_frame: turbo_frame_name) %>
+      <% end %>
     </div>
+  <% end %>
+
+  <% if layered_filters.any? %>
+    <%= render "filters", turbo_frame_name: turbo_frame_name %>
   <% end %>
 
   <% actions_proc = if @resource_can_edit || @resource_can_destroy
@@ -68,11 +90,13 @@
   end %>
 
   <div class="l-ui-mt-4">
+    <%# The sort links rebuild their query from this base URL, so it must
+        carry the current search, filters, and unset chips. %>
     <%= l_ui_table(@records,
           columns: @columns,
           caption: @layered_route_key.humanize,
           query: @q,
-          url: layered_collection_path,
+          url: layered_filtered_collection_path,
           actions: actions_proc,
           turbo_frame: turbo_frame_name) %>
 

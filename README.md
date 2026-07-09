@@ -441,6 +441,72 @@ end
 
 A counter-cache column reads straight off the parent row, so the index renders in one query. A virtual column backed by `user.posts.size` issues a `COUNT` per row (an N+1) and can't be sorted or searched. Once `posts_count` is a real column it sorts via `q[s]=posts_count asc` like any other.
 
+## Filters
+
+Where `search_fields` gives a single free-text box, `filters` adds structured controls for narrowing the index by specific attributes. The UI follows the "add filter" pattern: an **Add filter** button opens a popover listing the declared filters; picking one adds it as a **chip**; pressing the chip's label opens a popover with its controls, and its ✕ removes it. Booleans and single-choice selects apply instantly on click; multi-selects, ranges, and text filters have an Apply button.
+
+Under the hood every filter is a Ransack predicate in the query string, so filters compose with search, sort, and pagination — all coexist in the URL and survive each other's submits (the search form and each filter form round-trip the other params as hidden fields; no JavaScript involved). The lightweight `f[]` param records which chips were added and in what order — new chips join the end of the row (after any pinned ones) and stay put when set; a chip's ✕ removes its entry.
+
+Declare `filters` with a list of attributes. The control and predicate are inferred from each column:
+
+```ruby
+class PostResource < Layered::Resource::Base
+  model Post
+
+  filters :status,         # enum column     -> multi-select of its values        (status_in)
+          :featured,       # boolean column  -> Yes / No                           (featured_eq)
+          :created_at,     # date/datetime   -> from / to date range               (created_at_gteq / _lteq)
+          :comments_count, # integer/decimal -> from / to number range             (comments_count_gteq / _lteq)
+          :user            # belongs_to      -> multi-select of associated records (user_id_in)
+end
+```
+
+| Column type | Control | Ransack predicate |
+| --- | --- | --- |
+| `enum` | multi-select of the enum's values | `_in` (or `_eq` with `multiple: false`) |
+| `boolean` | Yes / No | `_eq` |
+| `date` / `datetime` | from–to date range | `_gteq` + `_lteq` |
+| `integer` / `decimal` / `float` | from–to number range | `_gteq` + `_lteq` |
+| `belongs_to` | multi-select of associated records | `<foreign_key>_in` (or `_eq`) |
+| `string` / `text` | text "contains" (multi-select if a `collection:` is given) | `_cont` (or `_in` / `_eq`) |
+
+Select-type filters default to **multi-select**: a checkbox list with an Apply button, filtering via the `_in` predicate. Pass `multiple: false` for a single-choice select — those render as a list of links that apply instantly on click (booleans always do).
+
+A `belongs_to` filter keys on the **foreign-key column** (`user_id`), so it never joins — no association-walk setup is needed, unlike `search_fields`. By default its options are `klass.all`, labelled by the first present of `name`/`title`/`label`/`email`; pass a `collection:` to scope, order, or label differently. As with search, every filtered attribute is added to the resource's Ransack allowlist; attributes that are neither shown, searched, nor filtered stay un-queryable and any `q[...]` referencing them is silently ignored rather than raising.
+
+### Overriding the inference
+
+Pass an options hash per attribute to override what's inferred:
+
+```ruby
+filters :created_at,
+        status: { collection: %w[draft live] },       # override the select options
+        user:   { multiple: false,                    # single-choice (user_id_eq) instead of multi
+                  collection: -> { User.active } },   # scope the options per request
+        title:  { as: :string, label: "Headline" }    # force a "contains" text filter
+```
+
+Recognised keys:
+
+- `as:` — force a control type (`:select`, `:boolean`, `:string`, `:range`, `:date_range`).
+- `collection:` — options for a select: an array of values, an array of `[label, value]` pairs, or a callable resolved per request (returning either form, or records). A `collection:` on a plain string column promotes it to a select.
+- `multiple:` — `true` (the default for select-type filters) renders checkboxes applying via the `_in` predicate; `false` renders instant-apply single-choice links via `_eq`.
+- `label:` — override the filter's name (defaults to `human_attribute_name`, so i18n flows through).
+- `pinned:` — always show the chip. Pinned chips never appear in the add-filter menu and have no remove ✕ (their popover's Clear resets the value; the chip stays).
+- `default:` — value applied when the request carries none of the filter's params: a scalar, `{ from:, to: }` for ranges, an array for `multiple:`, or a callable resolved per request (e.g. `-> { { from: 7.days.ago.to_date } }`).
+
+### Pinned chips and defaults
+
+```ruby
+filters :created_at,
+        status: { pinned: true, default: Post.statuses[:published] },
+        user:   { pinned: true }
+```
+
+Pinned filters render as chips from the start, so the common ones are one click away instead of two; the **Add filter** button only renders while there are unpinned filters left to add (pin everything and it disappears). A `default:` applies whenever the request carries no state for that filter — the chip shows it as active and every link and form round-trips it explicitly from then on. Clearing a defaulted filter writes an explicit blank (`q[status_eq]=`) rather than dropping the param, so the default doesn't immediately re-apply.
+
+The filter bar renders inside the index's Turbo frame between the search box and the table; eject the views (`rails g layered:resource:views`) to customise placement — the bar is the `_filters` partial, and each control is `_filter_control`.
+
 ## Column rendering
 
 Each column on the index table is rendered through a partial. By default the gem picks one based on the model's column type (`text` for strings, `datetime` for timestamps, etc.), but you can pin a column to a specific renderer with `as:`:

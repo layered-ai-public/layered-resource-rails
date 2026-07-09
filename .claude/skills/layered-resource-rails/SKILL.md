@@ -104,6 +104,7 @@ end
 | `fields [...]` | Form fields for new/edit. Omit to disable CRUD forms |
 | `search_fields [...]` | Ransack attributes the index search box matches against. Association-walking entries like `:user_name` (for `belongs_to :user` + `users.name`) join into the association |
 | `search_placeholder "..."` | Replaces the search box placeholder. Default derives from `search_fields` via `human_attribute_name`, so `activerecord.attributes.<model>.<attr>` i18n renames flow through (association walks resolve each half against its own model) |
+| `filters :a, :b, c: {...}` | Structured filter controls on the index — an "Add filter" popover plus removable chips. Control + Ransack predicate inferred per column; trailing hash overrides per attribute. See [Filters](#filters) |
 | `default_sort attribute:, direction:` | Default sort order for the index |
 | `per_page n` | Pagination size (default 15) |
 | `root_breadcrumb "Home", "/"` | Static first crumb in the breadcrumb trail (e.g. back to the host app's dashboard). Without it, top-level resources render no trail; nested routes prepend it to the derived parent trail |
@@ -118,6 +119,24 @@ end
 ### Field types
 
 Field `as:` follows Rails' `form_with` field helpers - `:text`, `:checkbox`, `:date`, `:datetime`, `:select`, etc. A field is automatically marked required if its model has an unconditional presence validator on that attribute.
+
+### Filters
+
+`filters` declares structured index controls complementing the single free-text `search_fields` box. The UI: an **Add filter** button opens a popover listing the declared filters; picking one adds it as an unset **chip** at the end of the row (the `f[]` param tracks added chips and their order for as long as they're shown); pressing the chip's label opens a popover with its controls, and its ✕ removes it. Single-choice filters apply instantly via links; ranges/text/multi-selects apply via a small GET form. Every filter is a Ransack predicate in the URL, so filters compose with search, sort, and pagination — the search form and each filter form round-trip the other `q` params (and `f[]` entries) as hidden fields (no JavaScript).
+
+```ruby
+filters :status,          # enum     -> multi-select of its values  (status_in)
+        :featured,        # boolean  -> Yes / No                     (featured_eq)
+        :created_at,      # date     -> from / to range              (created_at_gteq / _lteq)
+        :comments_count,  # integer  -> number range                 (comments_count_gteq / _lteq)
+        :user             # belongs_to -> multi-select               (user_id_in)
+```
+
+Inference by column type: `enum`/`belongs_to` -> multi-select (`_in` — checkbox list + Apply; `multiple: false` gives a single-choice `_eq` select of instant-apply links); `boolean` -> Yes/No (`_eq`); `date`/`datetime` -> date range (`_gteq`+`_lteq`); numeric -> number range; `string`/`text` -> "contains" (`_cont`), or a multi-select when a `collection:` is given. A `belongs_to` filter keys on the **foreign key** (`user_id`) so it never joins — no association-walk setup needed; its default options are `klass.all` labelled by the first present of `name`/`title`/`label`/`email`.
+
+Override per attribute with a trailing hash: `as:` (force control type: `:select`, `:boolean`, `:string`, `:range`, `:date_range`), `collection:` (select options — array, `[label, value]` pairs, or a callable resolved per request, returning either form or records), `multiple:` (defaults to true for select-types; false gives single-choice `_eq`), `label:`, `pinned:` (chip always shown — never in the add menu, no remove ✕; Clear resets the value but the chip stays), `default:` (value applied when the request has no state for the filter — scalar, `{ from:, to: }` for ranges, array for `multiple:`, or a callable). The add-filter button only renders while unpinned filters remain. Clearing a defaulted filter writes an explicit blank (`q[status_eq]=`) so the default doesn't re-apply. Filtered attributes are added to the resource's Ransack allowlist; un-shown/un-searched/un-filtered attributes stay un-queryable and stray `q[...]` params are ignored, not raised.
+
+The bar renders inside the index Turbo frame between search box and table, built from `l_ui_popover` and the `_filters`/`_filter_control` partials — eject with `rails g layered:resource:views` to customise.
 
 ## Route DSL
 

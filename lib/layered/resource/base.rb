@@ -87,6 +87,52 @@ module Layered
           end
         end
 
+        # Declares structured filter controls for the index table. Each entry
+        # is either a bare attribute (control + Ransack predicate inferred from
+        # the column type, enum, or association) or an attribute with an
+        # options hash overriding the inference:
+        #
+        #   filters :status,                       # enum     -> multi-select of its values
+        #           :featured,                     # boolean  -> Yes / No
+        #           :created_at,                   # datetime -> from / to range
+        #           :comments_count,               # integer  -> number range
+        #           :user                          # belongs_to -> multi-select
+        #
+        # Select-type filters (enum, belongs_to, collection) default to
+        # multi-select via the `in` predicate; pass `multiple: false` for a
+        # single-choice `eq` select.
+        #
+        # Recognised override keys: `as:` (control type), `collection:` (select
+        # options — an array, an array of [label, value] pairs, or a callable
+        # resolved per request), `multiple:` (multi-select via the `in`
+        # predicate), `label:`, `pinned:` (chip always shown, never in the
+        # add-filter menu, no remove ✕), and `default:` (value applied when
+        # the request carries none — a scalar, `{ from:, to: }` for ranges,
+        # or a callable resolved per request).
+        def filters(*entries)
+          if entries.empty?
+            inherited_attribute(:@filters) || []
+          else
+            @filters = entries
+          end
+        end
+
+        # Normalises `filters` into an array of control descriptors the view
+        # layer renders and `patch_ransack` allowlists. Each descriptor carries
+        # the Ransack attribute it keys on (`ransack_attribute` — the foreign
+        # key for association filters), the inferred control (`as`), and the
+        # collection/predicate metadata the control needs.
+        def resolved_filters
+          normalize_filter_entries(filters).map { |attribute, opts| build_filter(attribute, opts) }
+        end
+
+        # The own-model column names a filter set needs allowlisted for Ransack
+        # (e.g. `status`, `created_at`, `user_id`). Association filters resolve
+        # to the foreign-key column, so no association walk/join is required.
+        def filter_attributes
+          resolved_filters.map { |f| f[:ransack_attribute].to_s }
+        end
+
         # Builds the args for `params.permit(*permitted_params)`. Each field
         # is permitted as a scalar by default. A `permit:` entry on a field
         # opts that field into the hash form: `permit: []` allows array
@@ -305,6 +351,10 @@ module Layered
               # literal column and emits `<table>.user_name` instead of
               # joining into the association.
               attrs |= (auth_object.search_fields.map(&:to_s) - walks)
+              # Filter controls key on own-model columns (enum/boolean/date/
+              # number columns, or a belongs_to's foreign key), so they fold
+              # straight into the attribute allowlist alongside search fields.
+              attrs |= auth_object.filter_attributes.select { |a| db_columns.include?(a) }
               # Self-referential walks (e.g. `parent_title` on a Post
               # `belongs_to :parent, class_name: "Post"`) land in this branch
               # too — the associated klass IS the resource's model — so the
@@ -359,6 +409,93 @@ module Layered
             klass = klass.superclass
           end
           nil
+        end
+
+        # Flattens the mixed positional/keyword `filters` form into
+        # [attribute, options] pairs: bare symbols become [attr, {}]; a
+        # trailing hash maps each attribute to its options hash.
+        def normalize_filter_entries(entries)
+          entries.flat_map do |entry|
+            if entry.is_a?(Hash)
+              entry.map { |attribute, opts| [attribute.to_sym, (opts || {}).symbolize_keys] }
+            else
+              [[entry.to_sym, {}]]
+            end
+          end
+        end
+
+        # Resolves one filter entry into a control descriptor, inferring the
+        # control type and Ransack predicate from a belongs_to association, an
+        # ActiveRecord enum, or the column type — unless an explicit `as:`
+        # override is supplied.
+        def build_filter(attribute, opts)
+          reflection = belongs_to_reflection(attribute)
+          label = opts[:label]
+
+          descriptor =
+            if reflection
+              select_filter(attribute, reflection.foreign_key.to_sym, opts.fetch(:multiple, true),
+                            opts[:collection], label, reflection: reflection)
+            elsif model.defined_enums.key?(attribute.to_s)
+              # Values are the enum's DB representation, not its keys — Ransack
+              # compares the raw column, so `status_in[]=1` matches while
+              # `status_in[]=published` would depend on attribute-type casting.
+              collection = opts[:collection] || model.defined_enums[attribute.to_s].map { |k, v| [k.humanize, v] }
+              select_filter(attribute, attribute, opts.fetch(:multiple, true), collection, label)
+            else
+              as = opts[:as] || default_filter_as(field_type_for(attribute), opts)
+              multiple = opts.fetch(:multiple, as == :select)
+              typed_filter(attribute, as, multiple, opts[:collection], label)
+            end
+
+          predicates = descriptor[:predicates] ? descriptor[:predicates].values : [descriptor[:predicate]]
+          descriptor.merge(
+            param_keys: predicates.map { |p| "#{descriptor[:ransack_attribute]}_#{p}" },
+            pinned: opts.fetch(:pinned, false),
+            default: opts[:default]
+          )
+        end
+
+        def belongs_to_reflection(attribute)
+          reflection = model.reflect_on_association(attribute)
+          reflection if reflection&.belongs_to? && !reflection.polymorphic?
+        end
+
+        # Default control for a column type when no `as:` override is given.
+        # A string/text column only becomes a select when a `collection:` is
+        # supplied, otherwise it falls back to a "contains" text filter.
+        def default_filter_as(type, opts)
+          case type
+          when :checkbox then :boolean
+          when :date, :datetime then :date_range
+          when :number then :range
+          else opts.key?(:collection) ? :select : :string
+          end
+        end
+
+        def select_filter(attribute, ransack_attribute, multiple, collection, label, reflection: nil)
+          {
+            attribute: attribute,
+            ransack_attribute: ransack_attribute,
+            as: :select,
+            predicate: multiple ? :in : :eq,
+            multiple: multiple,
+            collection: collection,
+            reflection: reflection,
+            label: label
+          }
+        end
+
+        def typed_filter(attribute, as, multiple, collection, label)
+          base = { attribute: attribute, ransack_attribute: attribute, as: as,
+                   multiple: multiple, collection: collection, label: label }
+          case as
+          when :select  then base.merge(predicate: multiple ? :in : :eq)
+          when :boolean then base.merge(predicate: :eq)
+          when :string  then base.merge(predicate: :cont)
+          when :date_range, :range then base.merge(predicates: { from: :gteq, to: :lteq })
+          else base.merge(predicate: :eq)
+          end
         end
 
         # An attribute is treated as required when it has a presence validator

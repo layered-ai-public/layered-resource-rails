@@ -1,0 +1,57 @@
+<%# The filter bar. Picking a filter from the "Add filter" popover adds it as
+    an unset chip (tracked by the f[] param); pressing a chip's label opens
+    the popover with its controls, and its ✕ removes it. Once a value is set
+    the chip persists via its own q params and the f[] entry drops away. The
+    bar lives inside the index turbo frame, so adding, applying, changing, or
+    removing a filter is a single frame navigation that reloads the table and
+    re-renders the chips. %>
+<%# Chip order: pinned first (declaration order), then filters active straight
+    from the URL (e.g. a bookmarked query), then user-added chips in the order
+    they were added (the f[] list) — so a new chip always joins the end. %>
+<% pinned, unpinned = layered_filters.partition { |f| f[:pinned] }
+   added = layered_added_filter_attributes
+   chips = pinned +
+           unpinned.select { |f| layered_filter_active?(f) && !added.include?(f[:attribute].to_s) } +
+           added.filter_map { |attr| unpinned.find { |f| f[:attribute].to_s == attr } }
+   available = layered_filters - chips %>
+
+<div class="l-ui-mt-3 l-ui-search-inline">
+  <% chips.each do |filter| %>
+    <%= l_ui_tag do |t| %>
+      <% t.button(aria: { label: "Edit #{layered_filter_label(filter)} filter" }) do %>
+        <%= layered_filter_active?(filter) ? layered_filter_chip_text(filter) : layered_filter_label(filter) %>
+      <% end %>
+      <%# A pinned chip is always shown, so it has no remove ✕ — its popover's
+          Clear resets the value but the chip stays. %>
+      <% unless filter[:pinned] %>
+        <% t.remove layered_filter_remove_path(filter),
+             aria: { label: "Remove #{layered_filter_label(filter)} filter" },
+             data: { turbo_frame: turbo_frame_name, turbo_action: "advance" } %>
+      <% end %>
+      <% t.popover id: "layered-filter-#{@layered_route_key}-#{filter[:attribute]}" do %>
+        <%= render "filter_control", filter: filter, turbo_frame_name: turbo_frame_name %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <% if available.any? %>
+    <%= l_ui_popover do |p| %>
+      <% p.trigger(class: "l-ui-button l-ui-button--outline l-ui-button--small") do %>
+        <%# Inline plus (stroke follows the button's text colour) — a text "+"
+            is capped at the button's text-xs and reads too small. %>
+        <svg class="l-ui-icon--xs" fill="none" stroke="currentColor" stroke-width="2"
+             viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
+        </svg>
+        Add filter
+      <% end %>
+      <div class="l-ui-popover__menu">
+        <% available.each do |filter| %>
+          <%= link_to layered_filter_label(filter), layered_filter_add_path(filter),
+                class: "l-ui-popover__menu-item",
+                data: { turbo_frame: turbo_frame_name, turbo_action: "advance" } %>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

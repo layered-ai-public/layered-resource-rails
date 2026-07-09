@@ -1,0 +1,73 @@
+<%# One filter's editing UI, rendered inside its chip's popover.
+    Single-selects and booleans apply instantly via links; multi-selects,
+    ranges, and text filters are GET forms whose hidden fields round-trip
+    every other q param (search, sort, other filters) and the other unset
+    chips' f[] entries, so submits compose. %>
+<% scope = layered_filter_scope
+   active = layered_filter_active?(filter)
+   frame_data = { turbo_frame: turbo_frame_name, turbo_action: "advance" } %>
+
+<% if [:select, :boolean].include?(filter[:as]) && !filter[:multiple] %>
+  <div class="l-ui-popover__menu">
+    <% layered_filter_collection(filter).each do |label, value| %>
+      <% selected = layered_filter_selected?(filter, value) %>
+      <%= link_to layered_filter_apply_path(filter, value),
+            class: "l-ui-popover__menu-item",
+            aria: (selected ? { current: true } : {}),
+            data: frame_data do %>
+        <%= label %><%= " ✓" if selected %>
+      <% end %>
+    <% end %>
+    <% if active %>
+      <hr class="l-ui-popover__menu-divider">
+      <%= link_to "Clear", layered_filter_remove_path(filter),
+            class: "l-ui-popover__menu-item l-ui-popover__menu-item--danger", data: frame_data %>
+    <% end %>
+  </div>
+<% else %>
+  <%= form_with url: layered_collection_path, method: :get,
+        class: "l-ui-form", data: frame_data do %>
+    <%= layered_filter_hidden_fields(filter) %>
+
+    <% if filter[:as] == :select %>
+      <% key = layered_filter_param_keys(filter).first %>
+      <% layered_filter_collection(filter).each_with_index do |(label, value), index| %>
+        <%# The wrapping label makes the whole row toggle the checkbox, so the
+            row gets the pointer too (no l-ui class carries just a cursor). %>
+        <label class="l-ui-checkbox-container <%= index.zero? ? "l-ui-mt-0" : "l-ui-mt-3" %>" style="cursor: pointer">
+          <%= check_box_tag "#{scope}[#{key}][]", value,
+                layered_filter_selected?(filter, value), id: nil, class: "l-ui-checkbox" %>
+          <span class="l-ui-checkbox-container__label"><%= label %></span>
+        </label>
+      <% end %>
+    <% elsif [:date_range, :range].include?(filter[:as]) %>
+      <% from_key, to_key = layered_filter_param_keys(filter) %>
+      <% field_tag = filter[:as] == :date_range ? :date_field_tag : :number_field_tag %>
+      <% field_options = filter[:as] == :range ? { step: "any" } : {} %>
+      <label>
+        From
+        <%= send(field_tag, "#{scope}[#{from_key}]", layered_filter_query_params[from_key],
+              { id: nil, class: "l-ui-form__field" }.merge(field_options)) %>
+      </label>
+      <label class="l-ui-form__group">
+        To
+        <%= send(field_tag, "#{scope}[#{to_key}]", layered_filter_query_params[to_key],
+              { id: nil, class: "l-ui-form__field" }.merge(field_options)) %>
+      </label>
+    <% else %>
+      <% key = layered_filter_param_keys(filter).first %>
+      <label>
+        Contains
+        <%= text_field_tag "#{scope}[#{key}]", layered_filter_query_params[key],
+              id: nil, class: "l-ui-form__field" %>
+      </label>
+    <% end %>
+
+    <hr class="l-ui-popover__menu-divider l-ui-mt-3">
+    <%= button_tag "Apply", name: nil, class: "l-ui-popover__menu-item" %>
+    <% if active %>
+      <%= link_to "Clear", layered_filter_remove_path(filter),
+            class: "l-ui-popover__menu-item l-ui-popover__menu-item--danger", data: frame_data %>
+    <% end %>
+  <% end %>
+<% end %>
