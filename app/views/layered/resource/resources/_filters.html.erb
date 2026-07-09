@@ -32,8 +32,12 @@
         <%= link_to layered_filter_remove_path(filter),
               aria: { label: "Remove #{layered_filter_label(filter)} filter" },
               data: { turbo_frame: turbo_frame_name, turbo_action: "advance" } do %>
-          <%= image_tag "layered_ui/icon_close.svg", alt: "",
-                class: "l-ui-icon l-ui-icon--sm", aria: { hidden: true } %>
+          <%# Same drawing style and size as the add-filter plus, inheriting
+              the chip's muted text colour. %>
+          <svg class="l-ui-icon--xs" fill="none" stroke="currentColor" stroke-width="2"
+               viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         <% end %>
       <% end %>
     </div>
