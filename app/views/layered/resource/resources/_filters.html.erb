@@ -17,7 +17,7 @@
 
 <div class="l-ui-mt-3 l-ui-search-inline">
   <% chips.each do |filter| %>
-    <%= l_ui_tag rounded: true do |t| %>
+    <%= l_ui_tag do |t| %>
       <% t.button(aria: { label: "Edit #{layered_filter_label(filter)} filter" }) do %>
         <%= layered_filter_active?(filter) ? layered_filter_chip_text(filter) : layered_filter_label(filter) %>
       <% end %>
