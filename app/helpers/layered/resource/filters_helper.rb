@@ -159,6 +159,14 @@ module Layered
         layered_filter_path_with(layered_filter_query_params.except(layered_search_field_key))
       end
 
+      # The collection path carrying the full current state (`q` and `f[]`),
+      # minus pagination. Links that rebuild their query from a base URL —
+      # the table's sort links replace only `q[s]` on it — must start from
+      # this, not the bare collection path, or they drop search and filters.
+      def layered_filtered_collection_path
+        layered_filter_path_with(layered_filter_query_params)
+      end
+
       private
 
       def layered_filter_path_with(q, added = layered_added_filter_attributes)

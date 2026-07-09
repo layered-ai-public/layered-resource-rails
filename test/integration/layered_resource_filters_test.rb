@@ -251,6 +251,28 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     assert_not_includes clear["href"], "cont"
   end
 
+  test "sort links keep the search term, filters, and unset chips" do
+    get "/posts", params: { f: %w[created_at],
+                            q: { status_in: [1], title_or_body_or_user_name_cont: "post" } }
+    sort = css_select("th.l-ui-table__header-cell--sortable a").map { |a| a["href"] }.first
+    assert sort, "expected a sortable header link"
+    assert_includes sort, "q%5Bs%5D="
+    assert_includes sort, "status_in"
+    assert_includes sort, "cont%5D=post"
+    assert_includes sort, "f%5B%5D=created_at"
+  end
+
+  test "pagination links keep filters and unset chips" do
+    Post.first.user.tap do |author|
+      16.times { |i| Post.create!(title: "Filler #{i}", user: author, status: :published) }
+    end
+    get "/posts", params: { f: %w[created_at], q: { status_in: [1] } }
+    page_link = css_select(".l-ui-pagy-container a[href]").map { |a| a["href"] }.first
+    assert page_link, "expected a pagination link"
+    assert_includes page_link, "status_in"
+    assert_includes page_link, "f%5B%5D=created_at"
+  end
+
   test "filter forms carry the current search term and sort as hidden fields" do
     get "/posts", params: { q: { title_or_body_or_user_name_cont: "post", s: "title asc" } }
     # The pinned Status chip's popover form must round-trip both.

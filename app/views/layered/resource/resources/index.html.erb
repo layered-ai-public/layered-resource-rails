@@ -90,11 +90,13 @@
   end %>
 
   <div class="l-ui-mt-4">
+    <%# The sort links rebuild their query from this base URL, so it must
+        carry the current search, filters, and unset chips. %>
     <%= l_ui_table(@records,
           columns: @columns,
           caption: @layered_route_key.humanize,
           query: @q,
-          url: layered_collection_path,
+          url: layered_filtered_collection_path,
           actions: actions_proc,
           turbo_frame: turbo_frame_name) %>
 
