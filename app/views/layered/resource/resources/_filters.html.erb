@@ -17,17 +17,24 @@
 
 <div class="l-ui-mt-3 l-ui-search-inline">
   <% chips.each do |filter| %>
+    <% popover_id = "layered-filter-#{@layered_route_key}-#{filter[:attribute]}" %>
     <%# Button classes give the chip the same height/padding rhythm as the
-        add-filter button; badge classes recolour it into a muted pill. %>
-    <div class="l-ui-button l-ui-button--small l-ui-badge--default l-ui-badge--rounded">
-      <%= l_ui_popover do |p| %>
-        <%# Tailwind v4's preflight gives buttons cursor: default, overriding
-            the container's pointer — and no l-ui class carries just a cursor. %>
-        <% p.trigger(style: "cursor: pointer",
-                     aria: { label: "Edit #{layered_filter_label(filter)} filter" }) do %>
-          <%= layered_filter_active?(filter) ? layered_filter_chip_text(filter) : layered_filter_label(filter) %>
-        <% end %>
-        <%= render "filter_control", filter: filter, turbo_frame_name: turbo_frame_name %>
+        add-filter button; badge classes recolour it into a muted pill.
+
+        The chip carries the popover controller itself (hand-rolling
+        l_ui_popover's markup) so the WHOLE pill is the measured trigger
+        target — Stimulus scopes include the root element — which
+        left-justifies the popover with the pill and opens it a gap below the
+        pill's full height rather than the shorter label button inside. The
+        helper can't express that while the ✕ sits beside the trigger button. %>
+    <div class="l-ui-button l-ui-button--small l-ui-badge--default l-ui-badge--rounded"
+         data-controller="l-ui--popover"
+         data-l-ui--popover-target="trigger">
+      <%# Tailwind v4's preflight gives buttons cursor: default, overriding
+          the container's pointer — and no l-ui class carries just a cursor. %>
+      <%= tag.button type: "button", popovertarget: popover_id, style: "cursor: pointer",
+            aria: { label: "Edit #{layered_filter_label(filter)} filter" } do %>
+        <%= layered_filter_active?(filter) ? layered_filter_chip_text(filter) : layered_filter_label(filter) %>
       <% end %>
       <%# A pinned chip is always shown, so it has no remove ✕ — its popover's
           Clear resets the value but the chip stays. %>
@@ -42,6 +49,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         <% end %>
+      <% end %>
+      <%= tag.div id: popover_id, popover: "auto", class: "l-ui-popover",
+            data: { "l-ui--popover-target": "popover" } do %>
+        <%= render "filter_control", filter: filter, turbo_frame_name: turbo_frame_name %>
       <% end %>
     </div>
   <% end %>
