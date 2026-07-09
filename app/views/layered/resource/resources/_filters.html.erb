@@ -21,7 +21,10 @@
         add-filter button; badge classes recolour it into a muted pill. %>
     <div class="l-ui-button l-ui-button--small l-ui-badge--default l-ui-badge--rounded">
       <%= l_ui_popover do |p| %>
-        <% p.trigger(aria: { label: "Edit #{layered_filter_label(filter)} filter" }) do %>
+        <%# Tailwind v4's preflight gives buttons cursor: default, overriding
+            the container's pointer — and no l-ui class carries just a cursor. %>
+        <% p.trigger(style: "cursor: pointer",
+                     aria: { label: "Edit #{layered_filter_label(filter)} filter" }) do %>
           <%= layered_filter_active?(filter) ? layered_filter_chip_text(filter) : layered_filter_label(filter) %>
         <% end %>
         <%= render "filter_control", filter: filter, turbo_frame_name: turbo_frame_name %>
