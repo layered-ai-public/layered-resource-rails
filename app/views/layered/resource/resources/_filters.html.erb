@@ -17,56 +17,21 @@
 
 <div class="l-ui-mt-3 l-ui-search-inline">
   <% chips.each do |filter| %>
-    <% popover_id = "layered-filter-#{@layered_route_key}-#{filter[:attribute]}" %>
-    <%# Button classes give the chip the same height/padding rhythm as the
-        add-filter button; badge classes recolour it into a muted pill.
-
-        The chip carries the popover controller itself (hand-rolling
-        l_ui_popover's markup) so the WHOLE pill is the measured trigger
-        target — Stimulus scopes include the root element — which
-        left-justifies the popover with the pill and opens it a gap below the
-        pill's full height rather than the shorter label button inside. The
-        helper can't express that while the ✕ sits beside the trigger button. %>
-    <div class="l-ui-button l-ui-button--small l-ui-badge--default l-ui-badge--rounded"
-         data-controller="l-ui--popover"
-         data-l-ui--popover-target="trigger">
-      <%# The pill's padding and gap belong to the container, so without help
-          they'd be dead zones. Negative margins + matching padding stretch
-          the two hit targets over them: the label button absorbs the pill's
-          left padding (0.75rem = the --small button's px-3) and full height,
-          the ✕ absorbs the right padding and the 0.25rem gap — every pixel
-          of the pill is clickable. Inline because no l-ui class carries just
-          cursor/hitbox tweaks (Tailwind v4 preflight even resets button
-          cursors to default). %>
-      <% trigger_style = "cursor: pointer; align-self: stretch; display: inline-flex; align-items: center; " \
-                         "margin-left: -0.75rem; padding-left: 0.75rem;"
-         # No ✕ on a pinned chip, so its button absorbs the right padding too.
-         trigger_style += " margin-right: -0.75rem; padding-right: 0.75rem;" if filter[:pinned] %>
-      <%= tag.button type: "button", popovertarget: popover_id, style: trigger_style,
-            aria: { label: "Edit #{layered_filter_label(filter)} filter" } do %>
+    <%= l_ui_tag rounded: true do |t| %>
+      <% t.button(aria: { label: "Edit #{layered_filter_label(filter)} filter" }) do %>
         <%= layered_filter_active?(filter) ? layered_filter_chip_text(filter) : layered_filter_label(filter) %>
       <% end %>
       <%# A pinned chip is always shown, so it has no remove ✕ — its popover's
           Clear resets the value but the chip stays. %>
       <% unless filter[:pinned] %>
-        <%= link_to layered_filter_remove_path(filter),
-              style: "align-self: stretch; display: inline-flex; align-items: center; " \
-                     "margin: 0 -0.75rem 0 -0.25rem; padding: 0 0.75rem 0 0.25rem;",
-              aria: { label: "Remove #{layered_filter_label(filter)} filter" },
-              data: { turbo_frame: turbo_frame_name, turbo_action: "advance" } do %>
-          <%# Same drawing style and size as the add-filter plus, inheriting
-              the chip's muted text colour. %>
-          <svg class="l-ui-icon--xs" fill="none" stroke="currentColor" stroke-width="2"
-               viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        <% end %>
+        <% t.remove layered_filter_remove_path(filter),
+             aria: { label: "Remove #{layered_filter_label(filter)} filter" },
+             data: { turbo_frame: turbo_frame_name, turbo_action: "advance" } %>
       <% end %>
-      <%= tag.div id: popover_id, popover: "auto", class: "l-ui-popover",
-            data: { "l-ui--popover-target": "popover" } do %>
+      <% t.popover id: "layered-filter-#{@layered_route_key}-#{filter[:attribute]}" do %>
         <%= render "filter_control", filter: filter, turbo_frame_name: turbo_frame_name %>
       <% end %>
-    </div>
+    <% end %>
   <% end %>
 
   <% if available.any? %>
