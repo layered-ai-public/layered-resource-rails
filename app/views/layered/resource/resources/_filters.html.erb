@@ -60,11 +60,18 @@
   <%# A native popover can't be opened declaratively, so the one-shot `fo`
       param from the add-filter link gets this nudge. Turbo runs it on each
       frame render; the animation frame lets Stimulus connect layered-ui's
-      placement controller to the fresh chip first, so the popover's toggle
-      event positions it. %>
+      placement controller to the fresh chip first. That controller positions
+      in a `toggle` listener, and the popover spec queues `toggle` as a task —
+      after the paint that follows this rAF — so the popover is kept invisible
+      for that one frame or it flashes at the viewport origin before jumping
+      into place. %>
   <script>
     requestAnimationFrame(() => {
-      document.getElementById("layered-filter-<%= @layered_route_key %>-<%= open_filter[:attribute] %>")?.showPopover()
+      const popover = document.getElementById("layered-filter-<%= @layered_route_key %>-<%= open_filter[:attribute] %>")
+      if (!popover) return
+      popover.style.visibility = "hidden"
+      popover.addEventListener("toggle", () => { popover.style.visibility = "" }, { once: true })
+      popover.showPopover()
     })
   </script>
 <% end %>

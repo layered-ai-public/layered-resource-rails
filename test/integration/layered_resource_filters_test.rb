@@ -173,7 +173,8 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     get add
     assert_response :success
     assert_select "button[aria-label='Edit Created at filter']"
-    assert_includes response.body, %(getElementById("layered-filter-posts-created_at")?.showPopover())
+    assert_includes response.body, %(getElementById("layered-filter-posts-created_at"))
+    assert_includes response.body, "showPopover()"
   end
 
   test "the fo param opens nothing unless it names a declared filter" do
