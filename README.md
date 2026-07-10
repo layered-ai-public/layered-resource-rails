@@ -443,9 +443,9 @@ A counter-cache column reads straight off the parent row, so the index renders i
 
 ## Filters
 
-Where `search_fields` gives a single free-text box, `filters` adds structured controls for narrowing the index by specific attributes. The UI follows the "add filter" pattern: an **Add filter** button opens a popover listing the declared filters; picking one adds it as a **chip** with its controls popover already open, ready to take a value; pressing the chip's label reopens the popover, and its ✕ removes it. Booleans and single-choice selects apply instantly on click; multi-selects, ranges, and text filters have an Apply button.
+Where `search_fields` gives a single free-text box, `filters` adds structured controls for narrowing the index by specific attributes. The UI follows the "add filter" pattern: an **Add filter** button opens a popover listing the declared filters; picking one adds it as a **tag** with its controls popover already open, ready to take a value; pressing the tag's label reopens the popover, and its ✕ removes it. Booleans and single-choice selects apply instantly on click; multi-selects, ranges, and text filters have an Apply button.
 
-Under the hood every filter is a Ransack predicate in the query string, so filters compose with search, sort, and pagination — all coexist in the URL and survive each other's submits (the search form and each filter form round-trip the other params as hidden fields; the only JavaScript is the one-shot nudge that opens a freshly added chip's popover). The lightweight `f[]` param records which chips were added and in what order — new chips join the end of the row (after any pinned ones) and stay put when set; a chip's ✕ removes its entry.
+Under the hood every filter is a Ransack predicate in the query string, so filters compose with search, sort, and pagination — all coexist in the URL and survive each other's submits (the search form and each filter form round-trip the other params as hidden fields; no JavaScript involved). The lightweight `f[]` param records which tags were added and in what order — new tags join the end of the row (after any pinned ones) and stay put when set; a tag's ✕ removes its entry.
 
 Declare `filters` with a list of attributes. The control and predicate are inferred from each column:
 
@@ -492,10 +492,10 @@ Recognised keys:
 - `collection:` — options for a select: an array of values, an array of `[label, value]` pairs, or a callable resolved per request (returning either form, or records). A `collection:` on a plain string column promotes it to a select.
 - `multiple:` — `true` (the default for select-type filters) renders checkboxes applying via the `_in` predicate; `false` renders instant-apply single-choice links via `_eq`.
 - `label:` — override the filter's name (defaults to `human_attribute_name`, so i18n flows through).
-- `pinned:` — always show the chip. Pinned chips never appear in the add-filter menu and have no remove ✕ (their popover's Clear resets the value; the chip stays).
+- `pinned:` — always show the tag. Pinned tags never appear in the add-filter menu and have no remove ✕ (their popover's Clear resets the value; the tag stays).
 - `default:` — value applied when the request carries none of the filter's params: a scalar, `{ from:, to: }` for ranges, an array for `multiple:`, or a callable resolved per request (e.g. `-> { { from: 7.days.ago.to_date } }`).
 
-### Pinned chips and defaults
+### Pinned tags and defaults
 
 ```ruby
 filters :created_at,
@@ -503,7 +503,7 @@ filters :created_at,
         user:   { pinned: true }
 ```
 
-Pinned filters render as chips from the start, so the common ones are one click away instead of two; the **Add filter** button only renders while there are unpinned filters left to add (pin everything and it disappears). A `default:` applies whenever the request carries no state for that filter — the chip shows it as active and every link and form round-trips it explicitly from then on. Clearing a defaulted filter writes an explicit blank (`q[status_eq]=`) rather than dropping the param, so the default doesn't immediately re-apply.
+Pinned filters render as tags from the start, so the common ones are one click away instead of two; the **Add filter** button only renders while there are unpinned filters left to add (pin everything and it disappears). A `default:` applies whenever the request carries no state for that filter — the tag shows it as active and every link and form round-trips it explicitly from then on. Clearing a defaulted filter writes an explicit blank (`q[status_eq]=`) rather than dropping the param, so the default doesn't immediately re-apply.
 
 The filter bar renders inside the index's Turbo frame between the search box and the table; eject the views (`rails g layered:resource:views`) to customise placement — the bar is the `_filters` partial, and each control is `_filter_control`.
 
