@@ -48,7 +48,11 @@ module Layered
         end
         scope = @q.result(distinct: @resource.requires_distinct?)
 
-        @pagy, @records = pagy(scope, limit: @resource.per_page)
+        # Pagy rebuilds page links from the full request query; `fo` (the
+        # one-shot open-this-tag's-popover param from the add-filter link)
+        # must not ride along or paginating would reopen the popover.
+        @pagy, @records = pagy(scope, limit: @resource.per_page,
+                                      querify: ->(query) { query.delete("fo") })
         decorate_columns
       end
 
@@ -218,7 +222,7 @@ module Layered
 
       # Merges each filter's `default:` into params[:q] when the request
       # carries none of that filter's keys, so both the Ransack query and the
-      # filter-bar helpers see the same effective state (the chip shows the
+      # filter-bar helpers see the same effective state (the tag shows the
       # default as active, and links/forms round-trip it explicitly). A key
       # that is present-but-blank means the user explicitly cleared a
       # defaulted filter — the remove/Clear links write blanks for exactly

@@ -105,7 +105,7 @@ module Layered
         # Recognised override keys: `as:` (control type), `collection:` (select
         # options — an array, an array of [label, value] pairs, or a callable
         # resolved per request), `multiple:` (multi-select via the `in`
-        # predicate), `label:`, `pinned:` (chip always shown, never in the
+        # predicate), `label:`, `pinned:` (tag always shown, never in the
         # add-filter menu, no remove ✕), and `default:` (value applied when
         # the request carries none — a scalar, `{ from:, to: }` for ranges,
         # or a callable resolved per request).

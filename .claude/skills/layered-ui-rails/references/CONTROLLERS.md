@@ -56,7 +56,7 @@ Native `<dialog>` wrapper with focus trap, scroll lock, and focus restoration.
   <dialog data-l-ui--modal-target="dialog" class="l-ui-modal">
     <div class="l-ui-modal__header">
       <h2>Title</h2>
-      <button data-action="click->l-ui--modal#close" class="l-ui-button--icon">
+      <button data-action="click->l-ui--modal#close" class="l-ui-button l-ui-button--icon">
         Close
       </button>
     </div>
@@ -82,7 +82,7 @@ Accessible tabbed interface with keyboard navigation.
 **Keyboard:** Arrow Left/Right, Home, End
 
 ```html
-<div data-controller="l-ui--tabs">
+<div class="l-ui-tabs" data-controller="l-ui--tabs">
   <div role="tablist" class="l-ui-tabs__list">
     <button role="tab" data-l-ui--tabs-target="tab"
             data-action="click->l-ui--tabs#select keydown->l-ui--tabs#keydown"
@@ -105,6 +105,32 @@ Accessible tabbed interface with keyboard navigation.
   </div>
 </div>
 ```
+
+## Popover (`l-ui--popover`)
+
+Positions a native `popover`-attribute element relative to its trigger, with auto-flip near viewport edges. Showing, hiding, light-dismiss (outside click), and Escape-to-close are all handled by the browser via the `popover` attribute - this controller only handles placement.
+
+**Targets:** `trigger`, `popover`
+**Values:** `placement` (String, default `"bottom"`; one of `"top"`, `"bottom"`, `"left"`, `"right"`), `align` (String, default `"start"`; `"start"` or `"end"` - which edge of the popover flushes with the trigger on the cross axis), `open` (Boolean, default `false`; when true the popover opens as soon as the controller connects, shown and positioned in the same task so it never paints unpositioned - e.g. re-opening a filter popover after a form submission re-renders the page)
+
+```html
+<div data-controller="l-ui--popover">
+  <button type="button" popovertarget="my-popover"
+          data-l-ui--popover-target="trigger"
+          class="l-ui-button l-ui-button--outline">
+    Open popover
+  </button>
+  <div id="my-popover" popover="auto" class="l-ui-popover"
+       data-l-ui--popover-target="popover">
+    Content here.
+  </div>
+</div>
+```
+
+Features:
+- Repositions on open, and while open on window resize/scroll
+- Flips to the opposite side if the preferred placement would overflow the viewport
+- `data-l-ui--popover-open-value="true"` opens the popover on connect without a flash of unpositioned content
 
 ## Panel (`l-ui--panel`)
 
@@ -140,7 +166,7 @@ Drag handle for resizing the panel width on desktop.
 **Keyboard:** Arrow Left/Right (10px), Shift+Arrow (50px), Home/End
 **Storage key:** `panelWidth` (pixel value)
 
-- Min width: 240px
+- Min width: 256px
 - Default width: 480px
 - Double-click handle to reset to default
 
@@ -176,4 +202,21 @@ When multiple search forms exist on one page (each with a different `scope` valu
   &lt;%= l_ui_table(@users, ..., query: @users_q, turbo_frame: "users_collection") %&gt;
   &lt;%= l_ui_pagy(@users_pagy) %&gt;
 &lt;% end %&gt;
+```
+
+## Scroll hint (`l-ui--scroll-hint`)
+
+Fades the clipped edges of a horizontal scroller while more content is available in that direction, so it is obvious the region can be scrolled.
+
+**Targets:** `scroller` (the scrollable element)
+**Behaviour:** toggles `l-ui-scroll-hint--left`/`l-ui-scroll-hint--right` on the wrapper from the scroll position; updates on scroll and when the scroller or its content resizes. While the scroller overflows it is given `tabindex="0"` so keyboard users can scroll it (WCAG 2.1.1); the attribute is removed when it fits.
+
+`l_ui_table` wires this up automatically. For hand-written tables (or any other horizontal scroller), wrap the scrolling element:
+
+```html
+<div class="l-ui-scroll-hint" data-controller="l-ui--scroll-hint">
+  <div class="l-ui-table-container" data-l-ui--scroll-hint-target="scroller">
+    <table class="l-ui-table">...</table>
+  </div>
+</div>
 ```

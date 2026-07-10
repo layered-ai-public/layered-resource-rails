@@ -1,34 +1,37 @@
 <%# The filter bar. Picking a filter from the "Add filter" popover adds it as
-    an unset chip (tracked by the f[] param); pressing a chip's label opens
-    the popover with its controls, and its ✕ removes it. Once a value is set
-    the chip persists via its own q params and the f[] entry drops away. The
-    bar lives inside the index turbo frame, so adding, applying, changing, or
-    removing a filter is a single frame navigation that reloads the table and
-    re-renders the chips. %>
-<%# Chip order: pinned first (declaration order), then filters active straight
-    from the URL (e.g. a bookmarked query), then user-added chips in the order
-    they were added (the f[] list) — so a new chip always joins the end. %>
+    an unset tag (tracked by the f[] param) with its popover already open,
+    ready to take a value; pressing a tag's label reopens the popover, and
+    its ✕ removes it. Once a value is set the tag persists via its own q
+    params and the f[] entry drops away. The bar lives inside the index turbo
+    frame, so adding, applying, changing, or removing a filter is a single
+    frame navigation that reloads the table and re-renders the tags. %>
+<%# Tag order: pinned first (declaration order), then filters active straight
+    from the URL (e.g. a bookmarked query), then user-added tags in the order
+    they were added (the f[] list) — so a new tag always joins the end. %>
 <% pinned, unpinned = layered_filters.partition { |f| f[:pinned] }
    added = layered_added_filter_attributes
-   chips = pinned +
-           unpinned.select { |f| layered_filter_active?(f) && !added.include?(f[:attribute].to_s) } +
-           added.filter_map { |attr| unpinned.find { |f| f[:attribute].to_s == attr } }
-   available = layered_filters - chips %>
+   tags = pinned +
+          unpinned.select { |f| layered_filter_active?(f) && !added.include?(f[:attribute].to_s) } +
+          added.filter_map { |attr| unpinned.find { |f| f[:attribute].to_s == attr } }
+   available = layered_filters - tags %>
 
-<div class="l-ui-mt-3 l-ui-search-inline">
-  <% chips.each do |filter| %>
+<div class="l-ui-mt-3 l-ui-tag-row">
+  <% tags.each do |filter| %>
     <%= l_ui_tag do |t| %>
       <% t.button(aria: { label: "Edit #{layered_filter_label(filter)} filter" }) do %>
-        <%= layered_filter_active?(filter) ? layered_filter_chip_text(filter) : layered_filter_label(filter) %>
+        <%= layered_filter_active?(filter) ? layered_filter_tag_text(filter) : layered_filter_label(filter) %>
       <% end %>
-      <%# A pinned chip is always shown, so it has no remove ✕ — its popover's
-          Clear resets the value but the chip stays. %>
+      <%# A pinned tag is always shown, so it has no remove ✕ — its popover's
+          Clear resets the value but the tag stays. %>
       <% unless filter[:pinned] %>
         <% t.remove layered_filter_remove_path(filter),
              aria: { label: "Remove #{layered_filter_label(filter)} filter" },
              data: { turbo_frame: turbo_frame_name, turbo_action: "advance" } %>
       <% end %>
-      <% t.popover id: "layered-filter-#{@layered_route_key}-#{filter[:attribute]}" do %>
+      <%# `open` renders a freshly added tag (the one-shot `fo` param from the
+          add-filter link) with its popover already open, ready for a value. %>
+      <% t.popover id: "layered-filter-#{@layered_route_key}-#{filter[:attribute]}",
+                   open: filter == layered_auto_open_filter do %>
         <%= render "filter_control", filter: filter, turbo_frame_name: turbo_frame_name %>
       <% end %>
     <% end %>

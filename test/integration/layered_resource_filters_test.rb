@@ -126,13 +126,13 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
 
   # -- filter bar markup --
 
-  test "the add-filter popover lists each unpinned filter as a link adding an unset chip" do
+  test "the add-filter popover lists each unpinned filter as a link adding an unset tag" do
     get "/posts"
     assert_response :success
 
-    # Status is pinned, so it renders as an always-shown chip instead of a
+    # Status is pinned, so it renders as an always-shown tag instead of a
     # menu entry. Add-menu links are the ones adding an f[] pending marker
-    # (the pinned chip's own value links share the menu-item class).
+    # (the pinned tag's own value links share the menu-item class).
     add_links = css_select("a.l-ui-popover__menu-item").select { |a| a["href"].include?("f%5B%5D") }
     assert_equal ["Featured", "Created at", "Comments count", "User"], add_links.map { |a| a.text.strip }
     assert_select "button[aria-label='Edit Status filter']", text: /\AStatus\z/m
@@ -143,11 +143,11 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     assert_select "button[aria-label='Edit Created at filter']", count: 0
   end
 
-  test "an added filter renders as an unset chip holding its controls" do
+  test "an added filter renders as an unset tag holding its controls" do
     get "/posts", params: { f: %w[created_at user] }
     assert_response :success
 
-    # The chip shows just the filter's name until a value is set.
+    # The tag shows just the filter's name until a value is set.
     assert_select "button[aria-label='Edit Created at filter']", text: /\ACreated at\z/m
     assert_select "a[aria-label='Remove Created at filter']"
 
@@ -162,22 +162,58 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     assert_select "a.l-ui-popover__menu-item", text: "Featured"
   end
 
-  test "a chip's value links apply the filter and keep its f[] entry for ordering" do
+  test "adding a filter opens its tag's popover via the one-shot fo param" do
+    get "/posts"
+    add = css_select("a.l-ui-popover__menu-item").map { |a| a["href"] }
+            .find { |h| h.include?("f%5B%5D=created_at") }
+    assert add, "expected an add-filter link for created_at"
+    assert_includes add, "fo=created_at"
+
+    # Following it renders the new tag with its popover marked open (the
+    # layered-ui popover controller shows and positions it on connect).
+    get add
+    assert_response :success
+    assert_select "button[aria-label='Edit Created at filter']"
+    assert_select "[data-l-ui--popover-open-value]", count: 1
+    assert_select "[data-l-ui--popover-open-value] #layered-filter-posts-created_at"
+  end
+
+  test "the fo param opens nothing unless it names a declared filter" do
+    get "/posts", params: { fo: "bogus" }
+    assert_response :success
+    assert_select "[data-l-ui--popover-open-value]", count: 0
+  end
+
+  test "the one-shot fo param is dropped by forms, sort, and pagination links" do
+    16.times { |i| Post.create!(title: "Filler #{i}", user: @alice, status: :published) }
+    get "/posts", params: { f: %w[created_at], fo: "created_at" }
+    assert_response :success
+
+    assert_select "input[type=hidden][name=fo]", count: 0
+    sort = css_select("th.l-ui-table__header-cell--sortable a").map { |a| a["href"] }.first
+    assert sort, "expected a sortable header link"
+    assert_not_includes sort, "fo="
+    page_link = css_select(".l-ui-pagy-container a[href]").map { |a| a["href"] }.first
+    assert page_link, "expected a pagination link"
+    assert_not_includes page_link, "fo="
+  end
+
+  test "a tag's value links apply the filter and keep its f[] entry for ordering" do
     get "/posts", params: { f: %w[featured user] }
     apply = css_select("a.l-ui-popover__menu-item")
               .map { |a| a["href"] }
               .find { |h| h.include?("q%5Bfeatured_eq%5D=true") }
     assert apply, "expected an instant-apply link for featured yes"
     assert_includes apply, "f%5B%5D=featured" # keeps its place in the row
-    assert_includes apply, "f%5B%5D=user"     # the other chip survives
+    assert_includes apply, "f%5B%5D=user"     # the other tag survives
 
-    # Only the chip's ✕ drops its f[] entry.
+    # Only the tag's ✕ drops its f[] entry.
     remove = css_select("a[aria-label='Remove Featured filter']").first["href"]
     assert_not_includes remove, "f%5B%5D=featured"
     assert_includes remove, "f%5B%5D=user"
   end
 
-  test "chips render pinned first, then URL-only filters, then added order" do
+  test "tags render pinned first, then URL-only filters, then added order" do
     # comments_count and featured were added (in that f[] order, featured now
     # set); created_at is active straight from the URL with no f[] entry.
     get "/posts", params: { f: %w[comments_count featured],
@@ -187,14 +223,14 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
                   "Edit Comments count filter", "Edit Featured filter"], labels
   end
 
-  test "an active filter renders as a chip with an edit popover and a remove link" do
+  test "an active filter renders as a tag with an edit popover and a remove link" do
     get "/posts", params: { q: { status_in: [1], featured_eq: "true" } }
     assert_response :success
 
     assert_select "button[aria-label='Edit Status filter']", text: /Status: Published/
     assert_select "button[aria-label='Edit Featured filter']", text: /Featured: Yes/
     assert_select "a[aria-label='Remove Featured filter']"
-    # Pinned chips are always shown, so they carry no remove ✕.
+    # Pinned tags are always shown, so they carry no remove ✕.
     assert_select "a[aria-label='Remove Status filter']", count: 0
 
     # Active filters leave the add-filter menu.
@@ -202,14 +238,14 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     assert_select "a.l-ui-popover__menu-item", text: "Created at"
   end
 
-  test "a chip's remove link strips only its own filter, keeping the others" do
+  test "a tag's remove link strips only its own filter, keeping the others" do
     get "/posts", params: { q: { status_in: [1], featured_eq: "true" } }
     remove = css_select("a[aria-label='Remove Featured filter']").first["href"]
     assert_includes remove, "status_in"
     assert_not_includes remove, "featured_eq"
   end
 
-  test "range chips summarise their bounds" do
+  test "range tags summarise their bounds" do
     get "/posts", params: { q: { created_at_gteq: "2026-05-01", created_at_lteq: "2026-07-01" } }
     assert_select "button[aria-label='Edit Created at filter']",
                   text: /Created at: 2026-05-01 – 2026-07-01/
@@ -219,7 +255,7 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
                   text: /Comments count: ≥ 4/
   end
 
-  test "a multi-select chip lists the selected values" do
+  test "a multi-select tag lists the selected values" do
     get "/posts", params: { q: { user_id_in: [@alice.id, @bob.id] } }
     assert_select "button[aria-label='Edit User filter']", text: /User: Alice, Bob/
 
@@ -227,16 +263,16 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     assert_select "button[aria-label='Edit Status filter']", text: /Status: Draft, Published/
   end
 
-  test "no active filters renders only pinned chips, none removable" do
+  test "no active filters renders only pinned tags, none removable" do
     get "/posts"
     assert_response :success
     assert_select "[aria-label*='Remove']", count: 0
-    assert_select "button[aria-label*='Edit']", count: 1 # the pinned Status chip
+    assert_select "button[aria-label*='Edit']", count: 1 # the pinned Status tag
   end
 
   # -- composition: search, filters, and sort survive each other --
 
-  test "the search form round-trips active filters and unset chips as hidden fields" do
+  test "the search form round-trips active filters and unset tags as hidden fields" do
     get "/posts", params: { q: { status_in: [1] }, f: %w[created_at] }
     assert_select "form input[type=hidden][name='q[status_in][]'][value='1']"
     assert_select "form input[type=hidden][name='f[]'][value='created_at']"
@@ -252,7 +288,7 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     assert_not_includes clear["href"], "cont"
   end
 
-  test "sort links keep the search term, filters, and unset chips" do
+  test "sort links keep the search term, filters, and unset tags" do
     get "/posts", params: { f: %w[created_at],
                             q: { status_in: [1], title_or_body_or_user_name_cont: "post" } }
     sort = css_select("th.l-ui-table__header-cell--sortable a").map { |a| a["href"] }.first
@@ -263,7 +299,7 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     assert_includes sort, "f%5B%5D=created_at"
   end
 
-  test "pagination links keep filters and unset chips" do
+  test "pagination links keep filters and unset tags" do
     Post.first.user.tap do |author|
       16.times { |i| Post.create!(title: "Filler #{i}", user: author, status: :published) }
     end
@@ -276,7 +312,7 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
 
   test "filter forms carry the current search term and sort as hidden fields" do
     get "/posts", params: { q: { title_or_body_or_user_name_cont: "post", s: "title asc" } }
-    # The pinned Status chip's popover form must round-trip both.
+    # The pinned Status tag's popover form must round-trip both.
     assert_select "form input[type=hidden][name='q[s]'][value='title asc']"
     assert_select "form input[type=hidden][name='q[title_or_body_or_user_name_cont]'][value='post']"
     assert_select "input[type=checkbox][name='q[status_in][]']", count: 3
@@ -347,7 +383,7 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
 end
 
 # PinnedPostResource (at /pinned/posts) pins every filter — status with a
-# default of published — exercising always-shown chips, default values, the
+# default of published — exercising always-shown tags, default values, the
 # explicit-blank clear that keeps a default from re-applying, and the
 # add-filter button disappearing when nothing is left to add.
 class LayeredResourceFiltersPinnedTest < ActionDispatch::IntegrationTest
@@ -358,7 +394,7 @@ class LayeredResourceFiltersPinnedTest < ActionDispatch::IntegrationTest
     @live  = Post.create!(title: "Live post", user: @user, status: :published, featured: true)
   end
 
-  test "a default value filters the index and shows on its chip" do
+  test "a default value filters the index and shows on its tag" do
     get "/pinned/posts"
     assert_response :success
     assert_select "tbody th", text: /Live post/
@@ -366,7 +402,7 @@ class LayeredResourceFiltersPinnedTest < ActionDispatch::IntegrationTest
     assert_select "button[aria-label='Edit Status filter']", text: /Status: Published/
   end
 
-  test "pinned chips have no remove link and suppress the add-filter button" do
+  test "pinned tags have no remove link and suppress the add-filter button" do
     get "/pinned/posts"
     assert_select "button[aria-label='Edit Featured filter']", text: /\AFeatured\z/m
     assert_select "[aria-label*='Remove']", count: 0
@@ -376,7 +412,7 @@ class LayeredResourceFiltersPinnedTest < ActionDispatch::IntegrationTest
   test "clearing a defaulted filter writes an explicit blank so it stays cleared" do
     get "/pinned/posts"
     clear = css_select("a.l-ui-popover__menu-item--danger").find { |a| a.text.strip == "Clear" }
-    assert clear, "expected a Clear link in the defaulted chip's popover"
+    assert clear, "expected a Clear link in the defaulted tag's popover"
     assert_equal "/pinned/posts?q%5Bstatus_in%5D=", clear["href"]
 
     # Following it disables the default rather than re-applying it.

@@ -1,8 +1,8 @@
-<%# One filter's editing UI, rendered inside its chip's popover.
+<%# One filter's editing UI, rendered inside its tag's popover.
     Single-selects and booleans apply instantly via links; multi-selects,
     ranges, and text filters are GET forms whose hidden fields round-trip
     every other q param (search, sort, other filters) and the other unset
-    chips' f[] entries, so submits compose. %>
+    tags' f[] entries, so submits compose. %>
 <% scope = layered_filter_scope
    active = layered_filter_active?(filter)
    frame_data = { turbo_frame: turbo_frame_name, turbo_action: "advance" } %>

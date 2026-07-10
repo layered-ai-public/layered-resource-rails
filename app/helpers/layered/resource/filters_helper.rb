@@ -9,11 +9,11 @@ module Layered
     # lost across submits — no JavaScript involved.
     #
     # Picking a filter from the "Add filter" menu doesn't set a value — it
-    # adds the filter as an *unset* chip whose popover holds the controls.
-    # The top-level `f[]` param records which chips the user added and in
-    # what order (new chips join the end of the row); it round-trips through
+    # adds the filter as an *unset* tag whose popover holds the controls.
+    # The top-level `f[]` param records which tags the user added and in
+    # what order (new tags join the end of the row); it round-trips through
     # every link and form like the `q` params do and lives as long as the
-    # chip does — setting a value keeps it, only the chip's ✕ removes it.
+    # tag does — setting a value keeps it, only the tag's ✕ removes it.
     module FiltersHelper
       BOOLEAN_FILTER_COLLECTION = [["Yes", "true"], ["No", "false"]].freeze
 
@@ -49,7 +49,7 @@ module Layered
 
       # Declared filters added via the "Add filter" menu, in the order they
       # were added (`f[]` in the query string) — set or not, this is the
-      # chip row's ordering. Unknown or stale entries are dropped.
+      # tag row's ordering. Unknown or stale entries are dropped.
       def layered_added_filter_attributes
         declared = layered_filters.map { |f| f[:attribute].to_s }
         Array(params[:f]).map(&:to_s).uniq & declared
@@ -61,10 +61,24 @@ module Layered
       end
 
       # URL the "Add filter" menu links to: current params plus this filter
-      # as an unset chip at the end of the row.
+      # as an unset tag at the end of the row. The `fo` param asks that
+      # render to open the new tag's popover, so the controls are ready
+      # without a second click.
       def layered_filter_add_path(filter)
+        attribute = filter[:attribute].to_s
         layered_filter_path_with(layered_filter_query_params,
-                                 layered_added_filter_attributes | [filter[:attribute].to_s])
+                                 layered_added_filter_attributes | [attribute],
+                                 open: attribute)
+      end
+
+      # The filter whose tag popover should open on this render (via the
+      # tag popover's `open:` option) — the one-shot `fo` param carried only
+      # by the "Add filter" menu links. Unlike `q` and `f[]` it never
+      # round-trips: forms and links rebuild their URLs without it and the
+      # pagy call strips it from page links, so the popover opens once and
+      # stays closed thereafter.
+      def layered_auto_open_filter
+        layered_filters.find { |f| f[:attribute].to_s == params[:fo] } if params[:fo].present?
       end
 
       def layered_filter_label(filter)
@@ -99,7 +113,7 @@ module Layered
 
       # URL applying `value` for a single-select/boolean filter, keeping every
       # other `q` param and dropping pagination. The filter's `f[]` entry is
-      # kept — it holds the chip's position in the row.
+      # kept — it holds the tag's position in the row.
       def layered_filter_apply_path(filter, value)
         q = layered_filter_query_params.except(*layered_filter_param_keys(filter))
         q[layered_filter_param_keys(filter).first] = value
@@ -107,7 +121,7 @@ module Layered
       end
 
       # URL with the filter's own params (and pending `f[]` entry) stripped —
-      # the chip's ✕ and the controls' Clear links. A filter with a `default:`
+      # the tag's ✕ and the controls' Clear links. A filter with a `default:`
       # writes explicit blanks instead of dropping its keys: an absent key
       # would just re-apply the default on the next request.
       def layered_filter_remove_path(filter)
@@ -120,17 +134,17 @@ module Layered
         layered_filter_path_with(q, layered_added_filter_attributes - [filter[:attribute].to_s])
       end
 
-      # Chip text, e.g. "Status: Published", "User: Alice, Bob",
+      # Tag text, e.g. "Status: Published", "User: Alice, Bob",
       # "Created at: 2026-01-01 – 2026-06-30", "Comments count: ≥ 5".
-      def layered_filter_chip_text(filter)
-        "#{layered_filter_label(filter)}: #{layered_filter_chip_value(filter)}"
+      def layered_filter_tag_text(filter)
+        "#{layered_filter_label(filter)}: #{layered_filter_tag_value(filter)}"
       end
 
       # Hidden inputs carrying every same-scope `q` param except the given
       # filter's own keys (and `except:` extras), plus all the `f[]` entries
-      # (including the submitting filter's own — it keeps the chip's position),
+      # (including the submitting filter's own — it keeps the tag's position),
       # so a form's GET submit preserves the search term, sort, the other
-      # filters, and the chip row's order.
+      # filters, and the tag row's order.
       def layered_filter_hidden_fields(filter = nil, except: [])
         skip = (filter ? layered_filter_param_keys(filter) : []) + Array(except).map(&:to_s)
         scope = layered_filter_scope
@@ -169,15 +183,16 @@ module Layered
 
       private
 
-      def layered_filter_path_with(q, added = layered_added_filter_attributes)
+      def layered_filter_path_with(q, added = layered_added_filter_attributes, open: nil)
         query = {}
         query[layered_filter_scope] = q if q.present?
         query[:f] = added if added.present?
+        query[:fo] = open if open.present?
         path = layered_collection_path
         query.present? ? "#{path}?#{query.to_query}" : path
       end
 
-      def layered_filter_chip_value(filter)
+      def layered_filter_tag_value(filter)
         case filter[:as]
         when :select, :boolean
           labels = layered_filter_collection(filter).to_h { |label, value| [value, label] }
