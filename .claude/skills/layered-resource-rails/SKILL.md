@@ -111,10 +111,44 @@ end
 
 ### Column options
 
+- `as: :type` - pins the cell to a column partial instead of the type-inferred default. Built in: `:text`, `:datetime`, `:badge`, `:boolean`; an unrecognised type raises `ArgumentError` at render time rather than rendering an empty cell. See [Column rendering](#column-rendering)
 - `primary: true` - marks the cell that links to the record's edit (or show) page (defaults to first column)
 - `label: "Custom"` - overrides the humanised attribute name
+- `sortable:` - whether the header renders a sort link. **Defaults to `false` for any attribute that isn't a real DB column** (virtual attributes, delegated association values), because a Ransack sort link on one 500s when clicked. Pass `sortable: true` to opt back in - you then own the associated model's `ransackable_attributes` (see [Associations](#associations))
 - `link: :route_key` - wraps the column's rendered value in a link to a nested route (e.g. `:users_posts`); composes with `as:` (pair with `as: :badge` for a badge link)
 - `render: ->(record) { ... }` - custom cell renderer. The proc is a plain Ruby closure invoked with `.call` (not `instance_exec`), so `self` inside it is the lexical scope where you wrote it - the resource class body, which has no view helpers. **To use a view helper (`l_ui_format_datetime`, `link_to`, `tag.*`, etc.), take the view context as a second arg:** `render: ->(record, view) { view.l_ui_format_datetime(record.created_at) }`. Arity `>= 2` (or variadic/optional, e.g. `->(record, view = nil)`) trips the view-injection branch; an arity-1 proc that calls a view helper raises `NoMethodError ... for class YourResource`. Before reaching for a proc at all: the **default renderer already strftime-formats datetime columns** (and dispatches `as:` partials), so a plain `{ attribute: :created_at, label: "Created" }` renders the timestamp readably with no proc needed.
+
+### Column rendering
+
+Cells render through a partial picked by `as:`, or inferred from the model's column type (`boolean` → `:boolean`, `date`/`datetime`/`time`/`timestamp` → `:datetime`, everything else including virtual attributes → `:text`). A `render:` proc bypasses partials entirely. Lookup order is per-resource (`app/views/layered/<resource>/columns/_<type>.html.erb`) → host-wide (`app/views/layered/resource/columns/_<type>.html.erb`) → gem built-in, so an ejected partial overrides the default for one resource or the whole app.
+
+Partial locals are `record`, `value` (`record.public_send(attribute)`), and `options` — **`options` is the column hash itself**. That's the extension point: any extra key on a column is readable by its partial, which is how the per-type options work.
+
+| `as:` | Options it reads |
+|---|---|
+| `:text` | — (strftime-formats a value that responds to `strftime`) |
+| `:datetime` | `format:` (strftime string, default `"%-d %b %Y %H:%M"`); nil-safe |
+| `:boolean` | `true_label:` (default `"✓"`), `false_label:` (default `"✗"`) |
+| `:badge` | `variants:`, `rounded:` |
+
+Since `:datetime` and `:boolean` are already the defaults for their column types, `as:` mostly earns its place for `:badge`, or to pass `format:` / `true_label:`.
+
+`variants:` maps the cell's value to a layered-ui badge modifier, defaulting to `:default` (grey) for any value not listed — including `nil`:
+
+```ruby
+{ attribute: :lock_status, label: "Status", as: :badge,
+  variants: { Locked: :danger, Active: :success } }
+```
+
+Keys are matched as `value.to_s.to_sym`, so they must match the rendered string exactly: a `lock_status` returning `"Locked"` needs the key `Locked:`, and `:locked` silently falls through to grey. Variant names are layered-ui's badge modifiers — see that skill's `references/CSS.md`. Pair with `rounded: true` for a count pill (see [Counts of nested resources](#counts-of-nested-resources)). A badge column is usually backed by a **model method**, not a DB column, so it's non-sortable by default (see `sortable:` above).
+
+```bash
+rails g layered:resource:column badge            # eject the built-in host-wide
+rails g layered:resource:column badge users      # eject for one resource only
+rails g layered:resource:column priority_badge   # scaffold a new as: type
+```
+
+A scaffolded partial ships with the locals contract in a comment, ready to fill in.
 
 ### Field types
 
@@ -135,6 +169,8 @@ filters :status,          # enum     -> multi-select of its values  (status_in)
 Inference by column type: `enum`/`belongs_to` -> multi-select (`_in` — checkbox list + Apply; `multiple: false` gives a single-choice `_eq` select of instant-apply links); `boolean` -> Yes/No (`_eq`); `date`/`datetime` -> date range (`_gteq`+`_lteq`); numeric -> number range; `string`/`text` -> "contains" (`_cont`), or a multi-select when a `collection:` is given. A `belongs_to` filter keys on the **foreign key** (`user_id`) so it never joins — no association-walk setup needed; its default options are `klass.all` labelled by the first present of `name`/`title`/`label`/`email`.
 
 Override per attribute with a trailing hash: `as:` (force control type: `:select`, `:boolean`, `:string`, `:range`, `:date_range`), `collection:` (select options — array, `[label, value]` pairs, or a callable resolved per request, returning either form or records), `multiple:` (defaults to true for select-types; false gives single-choice `_eq`), `label:`, `pinned:` (tag always shown — never in the add menu, no remove ✕; Clear resets the value but the tag stays), `default:` (value applied when the request has no state for the filter — scalar, `{ from:, to: }` for ranges, array for `multiple:`, or a callable). The add-filter button only renders while unpinned filters remain. Clearing a defaulted filter writes an explicit blank (`q[status_eq]=`) so the default doesn't re-apply. Filtered attributes are added to the resource's Ransack allowlist; un-shown/un-searched/un-filtered attributes stay un-queryable and stray `q[...]` params are ignored, not raised.
+
+**The predicate set is closed.** Each control type maps to a fixed predicate (`:select` → `_in`/`_eq`, `:boolean` → `_eq`, `:string` → `_cont`, ranges → `_gteq`+`_lteq`) and there is no `predicate:` option, so predicates Ransack can otherwise express (`_not_null`, `_matches`) aren't reachable through the DSL. In particular a **"is this set / unset" filter on a nullable timestamp** (a `locked_at`-style column) has no inferred control: `as: :boolean` emits `locked_at_eq=true`, which casts against a datetime column and matches nothing. Back the flag with a real boolean column the write path maintains, or eject the filter partials and emit the predicate yourself. Filtered attributes *are* allowlisted, so `q[locked_at_not_null]=1` works hand-typed in the URL — it just has no UI control.
 
 The bar renders inside the index Turbo frame between search box and table, built from `l_ui_popover` and the `_filters`/`_filter_control` partials — eject with `rails g layered:resource:views` to customise.
 

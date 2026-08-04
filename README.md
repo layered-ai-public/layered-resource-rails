@@ -533,6 +533,17 @@ rails g layered:resource:column priority_badge     # scaffold a brand-new type
 
 A custom partial receives `record`, `value`, and `options` (the column hash) as locals - read keys like `:variants` or `:format` straight off `options`.
 
+### Sortable headers
+
+A column header renders a sort link only when the attribute is sortable. This defaults to `true` for real DB columns and `false` for anything else - virtual attributes and delegated association values - because Ransack can't sort those without the associated model allowlisting the underlying field, and the sort link would 500 when clicked. Set `sortable: true` on the column to opt back in; you're then responsible for that model's `ransackable_attributes` (see [Associations](#associations)).
+
+```ruby
+columns [
+  { attribute: :title, primary: true },
+  { attribute: :user_name, label: "Author", sortable: true }
+]
+```
+
 ## Index introduction
 
 To render an introduction above the search area on a resource's index page, drop a partial at `app/views/layered/<resource>/_introduction.html.erb`. It's rendered when present and skipped otherwise — no DSL or configuration needed.
