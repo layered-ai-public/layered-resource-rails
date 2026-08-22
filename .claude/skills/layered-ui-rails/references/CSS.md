@@ -289,6 +289,35 @@ Interactive tag - e.g. an email recipient or an active filter. A badge is a stat
 
 A tag takes the same subtle corner radius as a badge by default; add `l-ui-tag--rounded` for a pill. Segments must be direct children in label-then-remove order; when a remove segment follows, the label segment automatically drops its right padding so the remove owns the gap and every part of the tag stays clickable. A tag never grows past its container; wrap label content in `l-ui-tag__label` so it truncates with an ellipsis instead of overflowing. Prefer the `l_ui_tag` helper (see HELPERS.md), which renders the label wrapper and wires an optional popover.
 
+## Combobox
+
+Token select: a text input with type-ahead filtering whose selections become tags. Built on the ARIA combobox pattern (`role="combobox"` input + `role="listbox"` popup).
+
+```
+.l-ui-combobox                    Wrapper (data-controller="l-ui--combobox"); position context for the listbox
+.l-ui-combobox__control           Field-styled wrapping flex row holding the tokens and the input; draws the focus ring via :focus-within
+.l-ui-combobox__control--disabled Dimmed, non-interactive control
+.l-ui-combobox__tokens            <ul> of tokens inside the control (collapses when empty)
+.l-ui-combobox__token             A selection (<li>); combine with l-ui-tag, whose segments it reuses
+.l-ui-combobox__token--draggable  A token that can be dragged (reorder mode, not disabled); takes cursor-grab
+.l-ui-combobox__token--dragging   Applied to the token being dragged
+.l-ui-combobox__grip              Decorative drag handle at a draggable token's leading edge (aria-hidden)
+.l-ui-combobox__move              Move-earlier / move-later control inside a token (reorder mode)
+.l-ui-combobox__input             The combobox text input; borderless, grows to fill the control, and carries a token's min-height so the control doesn't grow as the first token lands
+.l-ui-combobox__listbox           Absolutely positioned option list (role="listbox"); toggled with the hidden attribute
+.l-ui-combobox__option            An option (role="option"); hover takes bg-surface
+.l-ui-combobox__option--active    The option pointed at by aria-activedescendant (highlight, not DOM focus); bg-surface-highlighted, so it stays legible under a stray pointer
+.l-ui-combobox__option--create    The "Add ..." option offered in create mode
+.l-ui-combobox__option-check      Accent-filled circle holding the tick, shown on options with aria-selected="true"; reserved space so options don't shift
+.l-ui-combobox__option-check-icon The tick itself; sized well inside the circle and drawn with a stroke so its weight holds up at that size
+.l-ui-combobox__empty             "No matches" message
+.l-ui-combobox__spinner           Busy ring shown while a remote request is in flight; keeps its shape without the animation under prefers-reduced-motion
+.l-ui-combobox__busy              Wrapper holding the spinner at the control's trailing edge (hidden until a search is slow enough to report)
+.l-ui-combobox__notice            Presentational row for what the list has to say about itself - a remote search in flight, a failed one, or a truncated result set. Sticks to the foot of the scrolling list and is ruled off from the options above it; the listbox drops its bottom padding while the notice shows, so nothing scrolls through the gap
+```
+
+The listbox and filtered-out options are hidden with the `hidden` attribute, so `.l-ui-combobox [hidden] { display: none !important }` restores Preflight's rule (these components sit outside `@layer`, which would otherwise beat it). Prefer the `l_ui_combobox` helper (see HELPERS.md), which renders the whole structure with its ARIA wiring.
+
 ## Tabs
 
 ```
@@ -369,6 +398,9 @@ A tag takes the same subtle corner radius as a badge by default; add `l-ui-tag--
 .l-ui-navigation__section-chevron       Toggle chevron (rotates when closed)
 .l-ui-navigation__section-items         Section body (ul, hidden when closed)
 .l-ui-navigation__user            User info section
+.l-ui-navigation__user-button     Unpadded full-width account menu trigger (pair with .l-ui-button)
+.l-ui-navigation__user-chevron    Upward chevron inside the account menu trigger
+.l-ui-navigation__user-popover    Account menu popover sized to the sidebar's inner column
 .l-ui-navigation__user-name       User name text
 .l-ui-navigation__user-email      User email text
 ```
@@ -459,6 +491,7 @@ Always combine the base block with one size modifier (e.g. `class="l-ui-icon l-u
 ```
 .l-ui-mt-0/2/3/4/6/8            Margin top (fixed scale)
 .l-ui-mb-0                      Margin bottom zero
+.l-ui-mb-4                      Margin bottom (1rem)
 .l-ui-sr-only                   Visually hidden, screen reader only
 .l-ui-skip-link                 Accessibility skip link
 .l-ui-list                      Styled list
@@ -504,6 +537,7 @@ Tier 2 - Full palette (override individually as needed):
 --error-text            Error text
 --header-height         Header height (default 63px)
 --l-ui-gutter           Page/header horizontal + bottom padding (default 1rem)
+--l-ui-navigation-width Sidebar navigation width (default 256px)
 --l-ui-contained-width  Max width of contained content - header + .l-ui-page__contained (default 80rem)
 ```
 

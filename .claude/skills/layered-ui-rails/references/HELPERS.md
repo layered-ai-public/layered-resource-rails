@@ -257,14 +257,21 @@ Renders a complete form with all fields, error summary, and submit button via th
 
 Field options:
 - `attribute` (Symbol) - model attribute
-- `as` (Symbol, optional) - field type; auto-detected from column type. Supported: `:string`, `:text`, `:email`, `:password`, `:number`, `:tel`, `:url`, `:search`, `:date`, `:datetime`, `:time`, `:month`, `:week`, `:color`, `:range`, `:file`, `:select`, `:checkbox`, `:hidden`. Forms automatically become `multipart` when any field is `:file`.
+- `as` (Symbol, optional) - field type; auto-detected from column type. Supported: `:string`, `:text`, `:email`, `:password`, `:number`, `:tel`, `:url`, `:search`, `:date`, `:datetime`, `:time`, `:month`, `:week`, `:color`, `:range`, `:file`, `:select`, `:combobox`, `:checkbox`, `:hidden`. Forms automatically become `multipart` when any field is `:file`.
 - `label` (String, optional) - custom label text; defaults to humanised attribute
 - `required` (Boolean, optional) - marks field as required; default false
 - `hint` (String, optional) - help text below the field
-- `collection` (Array, optional) - required for `:select` type; e.g. `[['Label', value], ...]`
+- `collection` (Array, optional) - required for `:select`; for `:combobox` either this or `url:` is required; e.g. `[['Label', value], ...]`
 - `include_blank` (Boolean or String, optional) - for `:select` fields; defaults to `true`. Pass a string to use as the blank option's label, or `false` to omit it. Suppressed when `prompt:` is set
 - `prompt` (String, optional) - for `:select` fields; prompt text shown as the first option, only selectable when no value is set
 - `placeholder` (String, optional) - input placeholder text
+- any other key passes through to the underlying field helper as an HTML attribute (`:combobox` excepted - see below)
+
+A `:combobox` field renders its own label and hint, adds the field's error element to its `aria-describedby`, and defaults `selected:` to the record's current value. That, and its keyword-only signature, give three rules:
+
+- It takes only `l_ui_combobox`'s own options - `url:`, `multiple:`, `create:`, `create_name:`, `reorder:`, `min_chars:`, `text:`, `selected:`, `disabled:`, `describedby:`, `container:`, `id:`. Every other key raises, `prompt:` and `include_blank:` included; extra HTML attributes go on `container:`.
+- `multiple:` is inferred from the attribute rather than defaulting to `l_ui_combobox`'s `true`: an `_ids` attribute, an array column, or one already holding an array is multiple; anything else is single, so a scalar attribute posts a scalar rather than an array Active Record would cast to `nil`. Pass `multiple:` explicitly to override.
+- Pass `selected: [[@post.user.name, @post.user_id]]` whenever the record's value might not be in the options - a `url:` collection never holds it, and nor does a scoped, paginated or filtered `collection:`. Without it, the field raises on an edit form.
 
 ```erb
 <%= l_ui_form(@post,
@@ -273,6 +280,8 @@ Field options:
     { attribute: :body, as: :text },
     { attribute: :category, as: :select, collection: Category.pluck(:name, :id) },
     { attribute: :published, as: :checkbox },
+    { attribute: :tag_ids, as: :combobox, collection: Tag.pluck(:name, :id) },
+    { attribute: :author_id, as: :combobox, url: options_users_path },
   ],
   url: posts_path) %>
 ```
@@ -283,6 +292,8 @@ Field options:
 l_ui_normalise_field(record, config)  # Normalise a raw field config into canonical form
 l_ui_field_error_id(record, attribute)  # Error element ID for aria-describedby
 l_ui_field_hint_id(record, attribute)   # Hint element ID for aria-describedby
+l_ui_field_describedby(record, attribute, hint: false)  # Space-joined hint + error IDs for aria-describedby
+l_ui_field_value(record, attribute)     # Record's current value; default :combobox selection
 ```
 
 ## Modal
@@ -408,6 +419,90 @@ Text, button, and link segments wrap their content in `<span class="l-ui-tag__la
 
 When a popover is declared, the tag container itself becomes the `l-ui--popover` controller root and placement target - the popover aligns with the whole tag rather than the label button inside it - and button segments are wired to open it via `popovertarget`. A tag without a popover renders no Stimulus wiring.
 
+## Combobox
+
+```ruby
+l_ui_combobox(name, collection: nil, form: nil, selected: nil, multiple: true,
+              create: false, create_name: nil, reorder: false, url: nil,
+              min_chars: 0, text: {}, id: nil, label: nil, hint: nil, placeholder: nil,
+              required: false, disabled: false, describedby: nil, container: {})
+```
+
+Renders a token select (`class="l-ui-combobox"`): a text input with type-ahead filtering whose selections become removable tags, in the style of an email recipient field. Built on the ARIA combobox pattern - no third-party select library.
+
+- `name` (String or Symbol) - the parameter, e.g. `"post[tag_ids]"`. A Symbol is resolved against `form:`
+- `collection` (Array) - `["Label", value]` pairs, `{ label:, value: }` hashes, or plain strings. Required unless `url:` is given
+- `form` (FormBuilder, optional) - derives parameter names from the builder for Symbol names
+- `selected` (Array or value, optional) - selected values, or `["Label", value]` pairs / `{ label:, value: }` hashes where the label is not in `collection` (the only form a remote selection can take). A value with no label renders as a created token (requires `create:`)
+- `multiple` (Boolean, default `true`) - multi select; `false` drops the `[]` suffix, replaces the token on choice, and closes the list
+- `create` (Boolean, default `false`) - allow values outside the collection; requires `create_name:`
+- `create_name` (String or Symbol) - parameter created values post under, keeping record IDs and free text unambiguous server-side
+- `reorder` (Boolean, default `false`) - move controls plus mouse dragging (each token gains a decorative grip handle advertising the drag); parameters post in the displayed order
+- `url` (String, optional) - endpoint searched as the user types; options come from it rather than from `collection:`
+- `min_chars` (Integer, default `0`) - characters needed before a remote search runs; `0` searches as soon as the field is focused
+- `text` (Hash, optional) - wording for every string the control shows, merged over `Layered::Ui::ComboboxHelper::COMBOBOX_TEXT`: `empty:` ("No matches"), `create:` ("Add “%{term}”"), `min_chars:` ("Type %{count} characters to search."), `progress:` ("Showing %{shown} of %{count} matches."), `error:`, `more_error:`. Placeholders use Rails' `%{name}` syntax; `progress: nil` drops the progress line; an unknown key raises
+- `describedby` (String, optional) - extra element ids appended to the input's `aria-describedby`, for text rendered outside the control (a validation message, say)
+- `label`, `hint`, `placeholder`, `required`, `disabled`, `id`, `container` - as for a normal field
+
+Also available as a field type in `l_ui_form`: `{ attribute: :tag_ids, as: :combobox, collection: ... }`.
+
+```erb
+<%= form_with model: @post do |f| %>
+  <%= l_ui_combobox(:tag_ids, form: f,
+        label: "Tags",
+        collection: Tag.pluck(:name, :id),
+        selected: @post.tag_ids,
+        create: true,
+        create_name: :new_tag_names) %>
+<% end %>
+
+<%# post[tag_ids][]       => ["", "7"]  %>
+<%# post[new_tag_names][] => ["urgent"] %>
+```
+
+Each selection carries its own hidden input, so the control submits with an ordinary form post, and a blank value is always posted first - clearing every token submits an empty collection instead of omitting the parameter and leaving the association untouched. Selections are announced through a local `role="status"` region, and the keyboard help is bound to the input with `aria-describedby`. Reordering exposes move buttons as well as dragging, since WCAG 2.2 SC 2.5.7 requires a single-pointer alternative to a drag.
+
+### Remote options
+
+With `url:`, options are fetched from that endpoint as the user types (debounced, with overtaken responses discarded) instead of being rendered up front and filtered in the browser. Matches load a page at a time, the next page appended as the end of the list is reached - by scrolling to its foot or by pressing Down on its last option, so the keyboard is not capped at the first page. A presentational note under the options (`class="l-ui-combobox__notice"`) says how far into the matches the list has got, or that they could not be loaded; a request in flight shows a spinner instead (trailing the field while searching, beside the note while a page loads), after a short delay so a quick answer never flashes one. Remote selections must be passed as `["Label", value]` pairs, since the browser has no collection to look a label up in.
+
+```ruby
+Layered::Ui::ComboboxOptions   # Controller concern building the JSON the endpoint answers with
+
+l_ui_combobox_options(scope, label:, value: :id, search: nil, predicate: :cont,
+                      combinator: :or, term: nil, page: nil, limit: 20)
+```
+
+- `scope` (Relation or model class) - what the user is allowed to see; the endpoint stays an ordinary action in the host app, authorised as any index is
+- `label` (Symbol or Proc) - attribute, or callable taking the record, used for the option's label
+- `value` (Symbol or Proc, default `:id`) - attribute, or callable, used for the option's value
+- `search` (Array, defaults to `label`) - attributes the term is matched against; required when `label:` is a callable, since a computed label gives the database nothing to search on. An attribute neither backend can search raises rather than quietly matching everything
+- `predicate` (Symbol, default `:cont`) - Ransack predicate for the match; `:i_cont` ignores case. Without Ransack only `:cont` and `:i_cont` can be built, and any other raises rather than quietly matching on something else
+- `combinator` (Symbol, default `:or`) - how the search attributes combine, `:or` or `:and`; honoured on both paths, and anything else raises
+- `term`, `page` - default to `params[:term]` and `params[:page]`
+- `limit` (Integer, default 20) - options per page
+
+Ransack builds the predicate when it is available (so association attributes work) and Pagy takes the page; there is a plain `LIKE` plus `limit`/`offset` fallback, so neither gem is required. An unordered scope is ordered by the label so pages do not overlap.
+
+```erb
+<%= l_ui_combobox(:author_id, form: f, multiple: false,
+      url: options_users_path, min_chars: 2,
+      selected: [[@post.author.name, @post.author_id]]) %>
+```
+
+```ruby
+class UsersController < ApplicationController
+  include Layered::Ui::ComboboxOptions
+
+  def options
+    render json: l_ui_combobox_options(policy_scope(User), label: :name, search: [:name, :email])
+  end
+end
+
+# GET /users/options?term=ali&page=1
+# { "options": [{ "label": "Alice Johnson", "value": "2" }], "page": 1, "pages": 1, "count": 1 }
+```
+
 ## Header
 
 ```ruby
@@ -430,16 +525,22 @@ Use these when overriding the header actions group with `:l_ui_header_actions` t
 ## Authentication
 
 ```ruby
-l_ui_user_signed_in?   # Returns true if current user is present
-l_ui_current_user      # Returns the current user object
-l_ui_devise_installed? # Returns true if Devise is loaded
+l_ui_user_signed_in?      # Returns true if current user is present
+l_ui_current_user         # Returns the current user object
+l_ui_devise_installed?    # Returns true if Devise is loaded
+l_ui_settings_screen?     # Returns true on the Settings screen (Devise registrations#edit)
+l_ui_new_registration_path # Devise registration path for the configured scope, or nil
+l_ui_edit_registration_path # Devise account settings path for the configured scope, or nil
+l_ui_new_session_path      # Devise sign-in path for the configured scope, or nil
+l_ui_destroy_session_path  # Devise sign-out path for the configured scope, or nil
 ```
 
-Configure the current user method:
+Configure the current user method, and the Devise scope used to build the login/register/settings/logout paths (`new_registration_path`, `edit_registration_path`, `new_session_path`, `destroy_session_path`):
 
 ```ruby
 # config/initializers/layered_ui.rb
 Layered::Ui.current_user_method = :current_member
+Layered::Ui.devise_scope = :member
 ```
 
 ## Shared partials
