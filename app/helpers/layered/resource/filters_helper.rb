@@ -215,15 +215,11 @@ module Layered
       end
 
       # Label for a record in a belongs_to select when no `collection:` is
-      # given: the first present of name/title/label/email, else "Model #id".
+      # given. The associated model is another resource's business, not this
+      # one's, so there is no `label_attribute` to ask for: the shared
+      # fallbacks (name/title/label/email, else "Model #id") do the labelling.
       def layered_filter_record_label(record)
-        %i[name title label email].each do |candidate|
-          next unless record.respond_to?(candidate)
-
-          value = record.public_send(candidate)
-          return value.to_s if value.present?
-        end
-        "#{record.model_name.human} ##{record.id}"
+        Layered::Resource.record_label(record)
       end
     end
   end

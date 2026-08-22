@@ -174,6 +174,23 @@ end
 
 Nested routes prepend it to the derived parent trail (e.g. Home / Users / Alice). Pass `nil` as the path to render unlinked text.
 
+**Record label:** a record is labelled by its **primary column** (the one marked `primary: true`, else the first) wherever the gem has to name it: the `show` and `edit` page titles, a row's actions menu, and its options in another resource's picker. Declare `label_attribute` when that column isn't the record's name — a `primary:` column rendered by a `render:` proc, say:
+
+```ruby
+class PostResource < Layered::Resource::Base
+  model Post
+
+  columns [
+    { attribute: :headline, primary: true, render: ->(record, view) { view.tag.strong(record.headline) } },
+    { attribute: :created_at }
+  ]
+
+  label_attribute :title
+end
+```
+
+When the attribute has no value, the label falls back to the first of `name`/`title`/`label`/`email` that does, then to the model's own `to_s` if it defines one, and finally to `"Post #12"` — never a bare `#<Post:0x...>`.
+
 **Custom scope (e.g. tenant isolation):**
 
 ```ruby

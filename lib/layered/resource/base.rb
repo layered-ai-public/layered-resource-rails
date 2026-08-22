@@ -93,6 +93,28 @@ module Layered
           end
         end
 
+        # The attribute one of this resource's records is labelled by - in a
+        # page title, a row's actions menu, or as an option in another
+        # resource's picker. Defaults to the primary column (the column marked
+        # `primary: true`, else the first), which is the label the index
+        # already leads each row with. Declare it when that column is not the
+        # record's name - a `primary:` column rendered by a `render:` proc,
+        # say, or one that is not the record's own attribute at all:
+        #
+        #   label_attribute :title
+        def label_attribute(value = nil)
+          if value
+            @label_attribute = value
+          else
+            inherited_attribute(:@label_attribute) ||
+              (columns.find { |c| c[:primary] } || columns.first)&.fetch(:attribute, nil)
+          end
+        end
+
+        def record_label(record)
+          Layered::Resource.record_label(record, attribute: label_attribute)
+        end
+
         # Declares structured filter controls for the index table. Each entry
         # is either a bare attribute (control + Ransack predicate inferred from
         # the column type, enum, or association) or an attribute with an

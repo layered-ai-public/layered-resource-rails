@@ -269,12 +269,10 @@ module Layered
                       end
       end
 
-      # Renders a record as a human label, preferring the resource's primary
-      # column (or the first column) and falling back to `to_s`.
+      # Renders a record as a human label, via the resource's
+      # `label_attribute` (the primary column unless declared otherwise).
       def layered_record_label(record)
-        primary_column = @columns.find { |c| c[:primary] } || @columns.first
-        value = primary_column && record.public_send(primary_column[:attribute])
-        value.presence || record.to_s
+        @resource.record_label(record)
       end
 
       def layered_resource_params
