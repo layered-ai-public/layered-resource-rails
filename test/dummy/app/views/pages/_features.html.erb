@@ -1,31 +1,34 @@
-<h2 class="mt-6">Features</h2>
+<h2 class="mt-6 l-ui-heading--section">Features</h2>
 <div class="l-ui-grid mt-4">
-  <div class="l-ui-surface flex items-center gap-4">
-    <%= image_tag "layered_ui/icon_code_bracket.svg", class: "l-ui-icon l-ui-icon--xl", alt: "", aria: { hidden: true } %>
-    <div>
-      <h3>Skip the boilerplate</h3>
-      <p>Declare your resource and route - get index, show, create, update, delete, search, sort, and pagination for free.</p>
-    </div>
+  <div class="l-ui-card l-ui-card--gradient l-ui-tint-1">
+    <h3 class="l-ui-card__title">
+      <span class="l-ui-card__icon" style="--l-ui-icon-src: url('<%= asset_path "layered_ui/icon_code_bracket.svg" %>')" aria-hidden="true"></span>
+      <span>Skip the boilerplate</span>
+    </h3>
+    <p class="l-ui-card__body">Declare your resource and route - get index, show, create, update, delete, search, sort, and pagination for free.</p>
   </div>
-  <div class="l-ui-surface flex items-center gap-4">
-    <%= image_tag "icon_paint.svg", class: "l-ui-icon l-ui-icon--xl", alt: "", aria: { hidden: true } %>
-    <div>
-      <h3>Looks right out of the box</h3>
-      <p>Tables, forms, and pagination come pre-styled via <a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> with WCAG 2.2 AA compliance and dark mode included - customize as you need.</p>
-    </div>
+
+  <div class="l-ui-card l-ui-card--gradient l-ui-tint-2">
+    <h3 class="l-ui-card__title">
+      <span class="l-ui-card__icon" style="--l-ui-icon-src: url('<%= asset_path "icon_paint.svg" %>')" aria-hidden="true"></span>
+      <span>Looks right out of the box</span>
+    </h3>
+    <p class="l-ui-card__body">Tables, forms, and pagination come pre-styled via <a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> with WCAG 2.2 AA compliance and dark mode included - customize as you need.</p>
   </div>
-  <div class="l-ui-surface flex items-center gap-4">
-    <%= image_tag "icon_wrench.svg", class: "l-ui-icon l-ui-icon--xl", alt: "", aria: { hidden: true } %>
-    <div>
-      <h3>Override only what you need</h3>
-      <p>Swap a single view partial, or subclass the controller to customize one action - the rest keeps working.</p>
-    </div>
+
+  <div class="l-ui-card l-ui-card--gradient l-ui-tint-3">
+    <h3 class="l-ui-card__title">
+      <span class="l-ui-card__icon" style="--l-ui-icon-src: url('<%= asset_path "icon_wrench.svg" %>')" aria-hidden="true"></span>
+      <span>Override only what you need</span>
+    </h3>
+    <p class="l-ui-card__body">Swap a single view partial, or subclass the controller to customize one action - the rest keeps working.</p>
   </div>
-  <div class="l-ui-surface flex items-center gap-4">
-    <%= image_tag "icon_eject.svg", class: "l-ui-icon l-ui-icon--xl", alt: "", aria: { hidden: true } %>
-    <div>
-      <h3>Eject if you outgrow it</h3>
-      <p>Generate the full view templates into your app to rewrite the markup wholesale - and keep reusing the layered-ui components you still want.</p>
-    </div>
+
+  <div class="l-ui-card l-ui-card--gradient l-ui-tint-4">
+    <h3 class="l-ui-card__title">
+      <span class="l-ui-card__icon" style="--l-ui-icon-src: url('<%= asset_path "icon_eject.svg" %>')" aria-hidden="true"></span>
+      <span>Eject if you outgrow it</span>
+    </h3>
+    <p class="l-ui-card__body">Generate the full view templates into your app to rewrite the markup wholesale - and keep reusing the layered-ui components you still want.</p>
   </div>
 </div>

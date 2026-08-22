@@ -130,6 +130,8 @@ That's it. You now have a full CRUD interface with search and pagination for `Po
 
 The index table's primary column (`primary: true`, or the first column) links to each record's edit page - or, for read-only resources without an edit action, to its show page.
 
+Row actions (`Edit`/`Delete`) live in a popover menu in the table's last column. That column is pinned to the right-hand edge of the table's scroll container, so the actions menu stays reachable when a wide table scrolls horizontally.
+
 Each action also sets `@page_title` for use by the layout's `<title>` tag - `"Posts"` on index, `"New Post"` on new, the record's primary column value on show, and `"Edit <record label>"` on edit. Override after `super` in a custom action if you need something different.
 
 ## Options
