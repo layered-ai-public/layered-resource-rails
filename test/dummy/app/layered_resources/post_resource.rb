@@ -21,7 +21,10 @@ class PostResource < Layered::Resource::Base
 
   fields [
     { attribute: :title },
-    { attribute: :body, as: :text }
+    { attribute: :body, as: :text },
+    # A belongs_to's foreign key infers a single-select combobox over the
+    # associated records, labelled by Layered::Resource.record_label.
+    { attribute: :user_id, label: "Author" }
   ]
 
   def self.scope(controller)
