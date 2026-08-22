@@ -13,13 +13,22 @@ users = [
   end
 end
 
-# Posts
+# Posts. Body is required, so it is assigned outside the create block as well:
+# re-seeding a database whose posts predate that validation repairs them rather
+# than leaving rows that no longer validate.
 10.times do |i|
   owner = users[i % users.size]
-  Post.find_or_create_by!(title: "Post #{i + 1}") do |p|
-    p.body = "This is the body of post #{i + 1}."
-    p.user = owner
-  end
+  post = Post.find_or_initialize_by(title: "Post #{i + 1}")
+  post.body = "This is the body of post #{i + 1}."
+  post.user ||= owner
+  post.save!
+end
+
+# Any post seeded before body was required - or left behind by a previous
+# session - would now fail validation on its next save, which reads as a bug
+# when you edit it rather than as the stale row it is.
+Post.where(body: [nil, ""]).find_each do |post|
+  post.update!(body: "This is the body of #{post.title.presence || "an untitled post"}.")
 end
 
 # Comments

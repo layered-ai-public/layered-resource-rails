@@ -19,7 +19,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "index renders edit and delete actions in a popover menu when crud enabled" do
-    post = Post.create!(title: "Hello", user: @user)
+    post = Post.create!(title: "Hello", user: @user, body: "Body")
     get "/users/#{@user.id}/posts"
     assert_response :success
     assert_select "td.l-ui-table__cell--action [data-controller~='l-ui--popover']" do
@@ -30,7 +30,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "index pins the actions column while the table scrolls horizontally" do
-    Post.create!(title: "Hello", user: @user)
+    Post.create!(title: "Hello", user: @user, body: "Body")
     get "/users/#{@user.id}/posts"
     assert_response :success
     assert_select "table.l-ui-table.l-ui-table--floating-actions"
@@ -46,7 +46,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "show renders edit and delete buttons when crud enabled" do
-    record = Post.create!(title: "Showcase", user: @user)
+    record = Post.create!(title: "Showcase", user: @user, body: "Body")
     get "/posts/#{record.id}"
     assert_response :success
     assert_select "a[href='/posts/#{record.id}/edit']", text: "Edit"
@@ -59,21 +59,21 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "show renders without an index route registered" do
-    record = Post.create!(title: "Standalone", user: @user)
+    record = Post.create!(title: "Standalone", user: @user, body: "Body")
     get "/showonly/posts/#{record.id}"
     assert_response :success
     assert_select "h1", text: "Standalone"
   end
 
   test "index links primary column to edit when editable" do
-    record = Post.create!(title: "Linked", user: @user)
+    record = Post.create!(title: "Linked", user: @user, body: "Body")
     get "/posts"
     assert_response :success
     assert_select "th[scope='row'] a[href='/posts/#{record.id}/edit']", text: "Linked"
   end
 
   test "index links primary column to show when not editable but show is enabled" do
-    record = Post.create!(title: "Detail", user: @user)
+    record = Post.create!(title: "Detail", user: @user, body: "Body")
     get "/detailonly/posts"
     assert_response :success
     # /detailonly/posts is only: [:index, :show] - no edit, so the title falls
@@ -157,14 +157,14 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   # -- update --
 
   test "update with valid params redirects to index" do
-    record = Post.create!(title: "Old title", user: @user)
+    record = Post.create!(title: "Old title", user: @user, body: "Body")
     patch "/users/#{@user.id}/posts/#{record.id}", params: { post: { title: "New title" } }
     assert_redirected_to "/users/#{@user.id}/posts"
     assert_equal "New title", record.reload.title
   end
 
   test "update with invalid params re-renders with 422" do
-    record = Post.create!(title: "Valid", user: @user)
+    record = Post.create!(title: "Valid", user: @user, body: "Body")
     patch "/users/#{@user.id}/posts/#{record.id}", params: { post: { title: "" } }
     assert_response :unprocessable_entity
     assert_select "form.l-ui-form"
@@ -174,7 +174,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   # -- destroy --
 
   test "destroy removes record and redirects to index" do
-    record = Post.create!(title: "Doomed", user: @user)
+    record = Post.create!(title: "Doomed", user: @user, body: "Body")
     assert_difference "Post.count", -1 do
       delete "/users/#{@user.id}/posts/#{record.id}"
     end
@@ -187,7 +187,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "destroy handles halted callback gracefully" do
-    record = Post.create!(title: "Protected", user: @user)
+    record = Post.create!(title: "Protected", user: @user, body: "Body")
     Post.before_destroy { throw :abort }
     begin
       assert_no_difference "Post.count" do
@@ -202,7 +202,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "destroy handles foreign-key violation gracefully" do
-    record = Post.create!(title: "Locked", user: @user)
+    record = Post.create!(title: "Locked", user: @user, body: "Body")
     Post.singleton_class.attr_accessor :_raise_fk_on_destroy
     fk_module = Module.new
     fk_module.module_eval do
@@ -229,7 +229,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "destroy works without fields" do
-    record = Post.create!(title: "Hello", user: @user)
+    record = Post.create!(title: "Hello", user: @user, body: "Body")
     original_fields = PostResource.instance_variable_get(:@fields)
     PostResource.instance_variable_set(:@fields, [])
     begin
@@ -246,8 +246,8 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
 
   test "index only shows posts belonging to the parent user" do
     other_user = User.create!(email: "other@test.com", name: "Other", password: "password1234", password_confirmation: "password1234")
-    Post.create!(title: "My post", user: @user)
-    Post.create!(title: "Their post", user: other_user)
+    Post.create!(title: "My post", user: @user, body: "Body")
+    Post.create!(title: "Their post", user: other_user, body: "Body")
 
     get "/users/#{@user.id}/posts"
     assert_response :success
@@ -257,7 +257,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
 
   test "edit for post belonging to different user returns 404" do
     other_user = User.create!(email: "other@test.com", name: "Other", password: "password1234", password_confirmation: "password1234")
-    theirs = Post.create!(title: "Their post", user: other_user)
+    theirs = Post.create!(title: "Their post", user: other_user, body: "Body")
 
     get "/users/#{@user.id}/posts/#{theirs.id}/edit"
     assert_response :not_found
@@ -267,8 +267,8 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
 
   test "standalone index shows all posts regardless of user" do
     other_user = User.create!(email: "other@test.com", name: "Other", password: "password1234", password_confirmation: "password1234")
-    Post.create!(title: "My post", user: @user)
-    Post.create!(title: "Their post", user: other_user)
+    Post.create!(title: "My post", user: @user, body: "Body")
+    Post.create!(title: "Their post", user: other_user, body: "Body")
 
     get "/posts"
     assert_response :success
@@ -290,7 +290,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "standalone destroy removes record" do
-    record = Post.create!(title: "Gone", user: @user)
+    record = Post.create!(title: "Gone", user: @user, body: "Body")
     assert_difference "Post.count", -1 do
       delete "/posts/#{record.id}"
     end
@@ -305,7 +305,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "show sets @page_title to record's primary column" do
-    record = Post.create!(title: "Memorable", user: @user)
+    record = Post.create!(title: "Memorable", user: @user, body: "Body")
     get "/posts/#{record.id}"
     assert_select "title", text: /Memorable/
   end
@@ -316,7 +316,7 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
   end
 
   test "edit sets @page_title to 'Edit <record label>'" do
-    record = Post.create!(title: "Memorable", user: @user)
+    record = Post.create!(title: "Memorable", user: @user, body: "Body")
     get "/posts/#{record.id}/edit"
     assert_select "title", text: /Edit Memorable/
   end

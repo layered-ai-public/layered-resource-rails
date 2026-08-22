@@ -7,4 +7,5 @@ class Post < ApplicationRecord
   delegate :name, to: :user, prefix: true
 
   validates :title, presence: true
+  validates :body, presence: true
 end

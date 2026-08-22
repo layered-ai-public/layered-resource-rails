@@ -19,7 +19,7 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   end
 
   test "only: [:index] excludes CRUD routes" do
-    record = Post.create!(title: "Hello", user: @user)
+    record = Post.create!(title: "Hello", user: @user, body: "Body")
     get "/users/#{@user.id}/readonly/posts/new"
     assert_response :not_found
 
@@ -124,7 +124,7 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   # -- namespace / scope --
 
   test "scope with path prefix infers base model not namespaced model" do
-    Post.create!(title: "Scoped", user: @user)
+    Post.create!(title: "Scoped", user: @user, body: "Body")
     get "/users/#{@user.id}/admin/posts"
     assert_response :success
     assert_select "th", text: "Title"
@@ -367,7 +367,7 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   # -- custom member action @record auto-load --
 
   test "custom member actions get @record auto-populated from params[:id]" do
-    post = Post.create!(title: "Hello", user: @user)
+    post = Post.create!(title: "Hello", user: @user, body: "Body")
 
     post "/custom/posts/#{post.id}/publish"
 
@@ -383,7 +383,7 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   end
 
   test "skip_before_action :load_layered_member_record opts out of auto-load" do
-    post = Post.create!(title: "Skip", user: @user)
+    post = Post.create!(title: "Skip", user: @user, body: "Body")
 
     post "/custom/posts/#{post.id}/deferred"
 
@@ -397,7 +397,7 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   end
 
   test "custom member action dispatches with @resource and @resource_can_* loaded" do
-    post = Post.create!(title: "Hello", user: @user)
+    post = Post.create!(title: "Hello", user: @user, body: "Body")
 
     get "/custom/posts/#{post.id}/state"
 
@@ -456,7 +456,7 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   end
 
   test "polymorphic_path resolves nested layered_resources routes" do
-    post = Post.create!(title: "Hello", user: @user)
+    post = Post.create!(title: "Hello", user: @user, body: "Body")
     helpers = Rails.application.routes.url_helpers
 
     # The whole point of the Rails-standard helper-name shape: stock
@@ -471,7 +471,7 @@ class LayeredResourceRoutingTest < ActionDispatch::IntegrationTest
   # -- multi-level nesting --
 
   test "two-level nested route renders breadcrumbs that link with all parent ids" do
-    post = Post.create!(title: "Hello", user: @user)
+    post = Post.create!(title: "Hello", user: @user, body: "Body")
 
     get "/users/#{@user.id}/posts/#{post.id}/comments"
 
