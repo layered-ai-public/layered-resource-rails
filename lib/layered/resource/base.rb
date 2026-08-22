@@ -77,13 +77,19 @@ module Layered
           end
         end
 
+        # The fields as the form layer wants them: each one's `required:`
+        # resolved from its validators unless declared, and `permit:` dropped.
+        # `permit:` is strong-parameters configuration read by
+        # `permitted_params`; the form helper passes any key it does not
+        # recognise through to the field's input, where a stray `permit`
+        # renders as an HTML attribute (on a `select` or text input) or raises
+        # (on a `combobox`, whose helper takes named options only).
         def resolved_fields
           fields.map do |field|
-            if field.key?(:required)
-              field
-            else
-              field.merge(required: attribute_required?(field[:attribute]))
-            end
+            field = field.except(:permit)
+            next field if field.key?(:required)
+
+            field.merge(required: attribute_required?(field[:attribute]))
           end
         end
 

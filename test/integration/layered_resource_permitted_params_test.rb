@@ -34,6 +34,25 @@ class LayeredResourcePermittedParamsTest < ActiveSupport::TestCase
     assert_equal [:title, { address_attributes: [:street, :city] }], NestedPermitResource.permitted_params
   end
 
+  # `permit:` is strong-parameters configuration, and the form helper passes
+  # any field key it does not recognise through to the input - where a stray
+  # `permit` renders as an HTML attribute, or raises on a field type whose
+  # helper takes named options only (`as: :combobox`).
+  test "resolved_fields drops permit: while permitted_params keeps it" do
+    resolved = ArrayPermitResource.resolved_fields
+
+    assert_equal %i[title documents], resolved.map { |f| f[:attribute] }
+    refute resolved.any? { |f| f.key?(:permit) }, "resolved_fields leaked permit: to the form layer"
+    assert_equal [:title, { documents: [] }], ArrayPermitResource.permitted_params
+  end
+
+  test "resolved_fields drops permit: from a nested-hash field too" do
+    resolved = NestedPermitResource.resolved_fields
+
+    refute resolved.any? { |f| f.key?(:permit) }
+    assert resolved.all? { |f| f.key?(:required) }, "dropping permit: cost the field its required flag"
+  end
+
   test "splatting through ActionController::Parameters#permit accepts the mixed shape" do
     raw = ActionController::Parameters.new(
       title: "Hi",
