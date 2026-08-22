@@ -11,21 +11,21 @@
 
 <%= render "features" %>
 
-<h2 class="mt-8">Examples</h2>
+<h2 class="mt-8 l-ui-heading--section">Examples</h2>
 <ul class="l-ui-list mt-4">
   <li><%= link_to "Users", users_path %> - restricted actions via <code>only:</code>, with a column linking to nested posts</li>
   <li><%= link_to "Posts", posts_path %> - full CRUD with search, sort, and pagination</li>
 </ul>
 
-<h2 class="mt-8">Requirements</h2>
+<h2 class="mt-8 l-ui-heading--section">Requirements</h2>
 <ul class="l-ui-list mt-4">
   <li>Ruby on Rails >= 8.0</li>
-  <li><a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> ~> 0.14</li>
+  <li><a href="https://github.com/layered-ai-public/layered-ui-rails">layered-ui-rails</a> ~> 0.23</li>
   <li><a href="https://github.com/activerecord-hackery/ransack">Ransack</a> ~> 4.0</li>
   <li><a href="https://github.com/ddnexus/pagy">Pagy</a> ~> 43.2</li>
 </ul>
 
-<h2 class="mt-8">Agent skill</h2>
+<h2 class="mt-8 l-ui-heading--section">Agent skill</h2>
 <p class="mt-4">
   An <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer">agent skill</a> is included so AI coding agents can work with <code>layered-resource-rails</code> in your project. Once installed, the agent can handle the full setup - just ask it to add <code>layered-resource-rails</code> to your app and it will install the gem, scaffold resources, and wire up routes.
 </p>
@@ -36,20 +36,20 @@
 <p class="mt-4">Or install remotely without cloning the repo:</p>
 <pre class="l-ui-surface mt-4"><code>curl -fsSL https://raw.githubusercontent.com/layered-ai-public/layered-resource-rails/main/install-skill.sh | sh</code></pre>
 
-<h2 class="mt-8">Installation</h2>
+<h2 class="mt-8 l-ui-heading--section">Installation</h2>
 <p class="mt-4">Add to your Gemfile:</p>
 <pre class="l-ui-surface mt-4"><code>gem "layered-resource-rails"</code></pre>
 <p class="l-ui-mt-4">Then run:</p>
 <pre class="l-ui-surface mt-4"><code>bundle install</code></pre>
 
-<h2 class="mt-8">Quick start</h2>
+<h2 class="mt-8 l-ui-heading--section">Quick start</h2>
 <p class="mt-4">The fastest path - scaffold the model, migration, resource, and route in one shot:</p>
 <pre class="l-ui-surface mt-4"><code>rails g layered:resource:scaffold post title:string body:text</code></pre>
 <p class="mt-4">This invokes Rails' built-in <code>model</code> generator, writes <code>app/layered_resources/post_resource.rb</code> with <code>columns</code> and <code>fields</code> derived from the attributes, and appends <code>layered_resources :posts</code> to <code>config/routes.rb</code>. Views are intentionally not generated - the gem's defaults render until you eject them with <code>rails g layered:resource:views posts</code>.</p>
 <p class="mt-4">Pass <code>--skip-model</code> if the model already exists. Restrict which CRUD actions get routed with <code>--actions index show</code> (emits <code>only:</code>) or <code>--except destroy</code> (emits <code>except:</code>). Pass <code>--controller</code> to also eject a controller and wire it into the route, or <code>--views</code> to eject the templates upfront.</p>
 <p class="mt-4">If the model already exists and you just want the resource class plus its route, use <code>rails g layered:resource post title:string body:text</code> instead. It writes <code>app/layered_resources/post_resource.rb</code> and appends <code>layered_resources :posts</code> - pass <code>--skip-route</code> to skip the route line.</p>
 
-<h2 class="mt-8">Setup</h2>
+<h2 class="mt-8 l-ui-heading--section">Setup</h2>
 
 <h3 class="l-ui-mt-4">1. Routes</h3>
 <p class="mt-4">Use <code>layered_resources</code> in your routes to register a model for CRUD management:</p>
@@ -101,12 +101,12 @@ end</code></pre>
         caption: "Resource configuration methods") %>
 </div>
 
-<h2 class="mt-8">Authentication</h2>
+<h2 class="mt-8 l-ui-heading--section">Authentication</h2>
 <p class="mt-4">
   <code>Layered::Resource::ResourcesController</code> inherits from your app's <code>ApplicationController</code>, so any <code>before_action</code> declared there (e.g. Devise's <code>authenticate_user!</code>) already protects every layered resource request.
 </p>
 
-<h2 class="mt-8">License</h2>
+<h2 class="mt-8 l-ui-heading--section">License</h2>
 <p class="mt-4">
   Released under the <a href="https://github.com/layered-ai-public/layered-resource-rails/blob/main/LICENSE">Apache 2.0 License</a>.
 </p>

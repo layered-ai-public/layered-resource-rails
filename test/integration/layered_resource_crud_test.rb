@@ -29,6 +29,13 @@ class LayeredResourceCrudTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "index pins the actions column while the table scrolls horizontally" do
+    Post.create!(title: "Hello", user: @user)
+    get "/users/#{@user.id}/posts"
+    assert_response :success
+    assert_select "table.l-ui-table.l-ui-table--floating-actions"
+  end
+
   # -- show --
 
   test "show renders the primary column as the heading" do
