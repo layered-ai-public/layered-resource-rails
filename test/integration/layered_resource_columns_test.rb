@@ -11,8 +11,8 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
   end
 
   test "link option wraps the column's rendered value in a link to the nested layered resource" do
-    Post.create!(title: "First", user: @user)
-    Post.create!(title: "Second", user: @user)
+    Post.create!(title: "First", user: @user, body: "Body")
+    Post.create!(title: "Second", user: @user, body: "Body")
 
     swap_columns(UserResource,
       [{ attribute: :name, primary: true },
@@ -27,8 +27,8 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
   test "counter-cache count renders as a rounded badge linking to the nested index" do
     # UserResource's posts_count is the canonical nested-count column:
     # counter-cache attribute + as: :badge, rounded: true + link:.
-    Post.create!(title: "First", user: @user)
-    Post.create!(title: "Second", user: @user)
+    Post.create!(title: "First", user: @user, body: "Body")
+    Post.create!(title: "Second", user: @user, body: "Body")
 
     get "/users"
     assert_response :success
@@ -37,7 +37,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
   end
 
   test "link combined with as: :badge wraps the badge in a link" do
-    Post.create!(title: "First", user: @user)
+    Post.create!(title: "First", user: @user, body: "Body")
 
     swap_columns(UserResource,
       [{ attribute: :name, primary: true },
@@ -80,7 +80,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
   # -- sortability defaults --
 
   test "DB-backed columns are sortable by default" do
-    Post.create!(title: "Hello", user: @user)
+    Post.create!(title: "Hello", user: @user, body: "Body")
     get "/posts"
     assert_response :success
     # title is a real column on posts → header should render a sort link
@@ -88,7 +88,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
   end
 
   test "association-derived columns default to non-sortable" do
-    Post.create!(title: "Hello", user: @user)
+    Post.create!(title: "Hello", user: @user, body: "Body")
     get "/posts"
     assert_response :success
     # user_name is virtual (delegated) → no sort link, no q[s]=user_name in headers
@@ -96,7 +96,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
   end
 
   test "manually requesting a sort by an association-derived column does not 500" do
-    Post.create!(title: "Hello", user: @user)
+    Post.create!(title: "Hello", user: @user, body: "Body")
     get "/posts", params: { q: { s: "user_name asc" } }
     assert_response :success
   end
@@ -107,7 +107,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     swap_columns(PostResource,
       [{ attribute: :title, primary: true },
        { attribute: :created_at, as: :datetime }]) do
-      Post.create!(title: "Hello", user: @user, created_at: Time.utc(2026, 4, 15, 10, 30))
+      Post.create!(title: "Hello", body: "Body", user: @user, created_at: Time.utc(2026, 4, 15, 10, 30))
       get "/posts"
       assert_response :success
       assert_select "td.l-ui-table__cell", text: "15 Apr 2026 10:30"
@@ -118,7 +118,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     swap_columns(PostResource,
       [{ attribute: :title, primary: true },
        { attribute: :created_at, as: :datetime, format: "%Y-%m-%d" }]) do
-      Post.create!(title: "Hello", user: @user, created_at: Time.utc(2026, 4, 15))
+      Post.create!(title: "Hello", body: "Body", user: @user, created_at: Time.utc(2026, 4, 15))
       get "/posts"
       assert_response :success
       assert_select "td.l-ui-table__cell", text: "2026-04-15"
@@ -129,7 +129,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     swap_columns(PostResource,
       [{ attribute: :title, primary: true, as: :badge,
          variants: { Hello: :success } }]) do
-      Post.create!(title: "Hello", user: @user)
+      Post.create!(title: "Hello", user: @user, body: "Body")
       get "/posts"
       assert_response :success
       assert_select "th.l-ui-table__cell--primary span.l-ui-badge.l-ui-badge--success", text: "Hello"
@@ -140,7 +140,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     swap_columns(PostResource,
       [{ attribute: :title, primary: true, as: :badge,
          variants: { Hello: :success } }]) do
-      post = Post.create!(title: "Hello", user: @user)
+      post = Post.create!(title: "Hello", user: @user, body: "Body")
       get "/posts"
       assert_response :success
       # The edit link must wrap the badge, not the other way around.
@@ -154,7 +154,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
   test "as: :badge falls back to the default variant when the value isn't mapped" do
     swap_columns(PostResource,
       [{ attribute: :title, primary: true, as: :badge }]) do
-      Post.create!(title: "Hello", user: @user)
+      Post.create!(title: "Hello", user: @user, body: "Body")
       get "/posts"
       assert_response :success
       assert_select "span.l-ui-badge.l-ui-badge--default", text: "Hello"
@@ -164,7 +164,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
   test "as: :badge with rounded: true adds the rounded modifier" do
     swap_columns(PostResource,
       [{ attribute: :title, primary: true, as: :badge, rounded: true }]) do
-      Post.create!(title: "Hello", user: @user)
+      Post.create!(title: "Hello", user: @user, body: "Body")
       get "/posts"
       assert_response :success
       assert_select "span.l-ui-badge.l-ui-badge--default.l-ui-badge--rounded", text: "Hello"
@@ -218,7 +218,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
   test "as: with an unknown type raises ArgumentError" do
     swap_columns(PostResource,
       [{ attribute: :title, primary: true, as: :nope_doesnt_exist }]) do
-      Post.create!(title: "Hello", user: @user)
+      Post.create!(title: "Hello", user: @user, body: "Body")
       error = assert_raises(ArgumentError) { get "/posts" }
       assert_match(/No column partial found for as: :nope_doesnt_exist/, error.message)
     end
@@ -228,7 +228,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     # Override partial lives at test/dummy/app/views/layered/posts/columns/_text.html.erb.
     swap_columns(PostResource,
       [{ attribute: :title, primary: true, as: :text }]) do
-      Post.create!(title: "Hello", user: @user)
+      Post.create!(title: "Hello", user: @user, body: "Body")
       get "/posts"
       assert_response :success
       assert_select "th.l-ui-table__cell--primary span.per-resource-text-override", text: "Hello"
@@ -242,7 +242,7 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
       { attribute: :user_name, label: "Owner", sortable: true }
     ]
     begin
-      Post.create!(title: "Hello", user: @user)
+      Post.create!(title: "Hello", user: @user, body: "Body")
       get "/posts"
       assert_response :success
       assert_select "a[href*='q%5Bs%5D=user_name']"

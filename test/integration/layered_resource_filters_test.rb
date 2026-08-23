@@ -114,9 +114,9 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     @bob = User.create!(email: "bob@test.com", name: "Bob",
                         password: "password1234", password_confirmation: "password1234")
 
-    @draft    = Post.create!(title: "Draft post",    user: @alice, status: :draft,     featured: false)
-    @live     = Post.create!(title: "Live post",     user: @alice, status: :published, featured: true)
-    @archived = Post.create!(title: "Archived post", user: @bob,   status: :archived,  featured: false)
+    @draft    = Post.create!(title: "Draft post",    user: @alice, status: :draft,     featured: false, body: "Body")
+    @live     = Post.create!(title: "Live post",     user: @alice, status: :published, featured: true, body: "Body")
+    @archived = Post.create!(title: "Archived post", user: @bob,   status: :archived,  featured: false, body: "Body")
 
     # Give comments_count and created_at deterministic, distinct values.
     @draft.update_columns(comments_count: 1, created_at: Time.utc(2026, 1, 1))
@@ -185,7 +185,7 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "the one-shot fo param is dropped by forms, sort, and pagination links" do
-    16.times { |i| Post.create!(title: "Filler #{i}", user: @alice, status: :published) }
+    16.times { |i| Post.create!(title: "Filler #{i}", user: @alice, status: :published, body: "Body") }
     get "/posts", params: { f: %w[created_at], fo: "created_at" }
     assert_response :success
 
@@ -301,7 +301,7 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
 
   test "pagination links keep filters and unset tags" do
     Post.first.user.tap do |author|
-      16.times { |i| Post.create!(title: "Filler #{i}", user: author, status: :published) }
+      16.times { |i| Post.create!(title: "Filler #{i}", user: author, status: :published, body: "Body") }
     end
     get "/posts", params: { f: %w[created_at], q: { status_in: [1] } }
     page_link = css_select(".l-ui-pagy-container a[href]").map { |a| a["href"] }.first
@@ -390,8 +390,8 @@ class LayeredResourceFiltersPinnedTest < ActionDispatch::IntegrationTest
   setup do
     @user = User.create!(email: "pin@test.com", name: "Pin",
                          password: "password1234", password_confirmation: "password1234")
-    @draft = Post.create!(title: "Draft post", user: @user, status: :draft)
-    @live  = Post.create!(title: "Live post", user: @user, status: :published, featured: true)
+    @draft = Post.create!(title: "Draft post", user: @user, status: :draft, body: "Body")
+    @live  = Post.create!(title: "Live post", user: @user, status: :published, featured: true, body: "Body")
   end
 
   test "a default value filters the index and shows on its tag" do

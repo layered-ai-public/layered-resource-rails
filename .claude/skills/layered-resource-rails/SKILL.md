@@ -105,6 +105,7 @@ end
 | `search_fields [...]` | Ransack attributes the index search box matches against. Association-walking entries like `:user_name` (for `belongs_to :user` + `users.name`) join into the association |
 | `search_placeholder "..."` | Replaces the search box placeholder. Default derives from `search_fields` via `human_attribute_name`, so `activerecord.attributes.<model>.<attr>` i18n renames flow through (association walks resolve each half against its own model) |
 | `filters :a, :b, c: {...}` | Structured filter controls on the index — an "Add filter" popover plus removable tags. Control + Ransack predicate inferred per column; trailing hash overrides per attribute. See [Filters](#filters) |
+| `label_attribute :title` | Attribute a record is labelled by (page titles, row action menus, another resource's picker). Defaults to the `primary:` column, else the first. Falls back through `name`/`title`/`label`/`email`, then the model's own `to_s`, then `"Post #12"` |
 | `default_sort attribute:, direction:` | Default sort order for the index |
 | `per_page n` | Pagination size (default 15) |
 | `root_breadcrumb "Home", "/"` | Static first crumb in the breadcrumb trail (e.g. back to the host app's dashboard). Without it, top-level resources render no trail; nested routes prepend it to the derived parent trail |
@@ -153,6 +154,8 @@ A scaffolded partial ships with the locals contract in a comment, ready to fill 
 ### Field types
 
 Field `as:` follows Rails' `form_with` field helpers - `:text`, `:checkbox`, `:date`, `:datetime`, `:select`, etc. A field is automatically marked required if its model has an unconditional presence validator on that attribute.
+
+**Record pickers.** A field naming a `belongs_to`'s foreign key (`user_id`) infers `as: :combobox, multiple: false` - a type-ahead token select over the associated records. Default options are `klass.all` labelled by the first present of `name`/`title`/`label`/`email` (else `"User #12"`), resolved per request via a callable. It posts the plain foreign key, so the write path is unchanged. Required comes from the association's `optional:` (via `belongs_to_required_by_default`), not from a presence validator on the column - `belongs_to` validates the *association*, and with an `if:` Rails attaches for its own reasons. Polymorphic associations are skipped (no single class to fill the picker). `as:` opts out; `collection:` keeps the control and replaces the options - use it to scope, order, or label by a specific resource (`-> { User.editors.map { |u| [UserResource.record_label(u), u.id] } }`), since the default does *not* consult the associated model's own resource (a model can have several). Other combobox options (`multiple:`, `url:`, `min_chars:`, `create:`/`create_name:`, `reorder:`, `text:`) pass through to `l_ui_combobox`. Requires layered-ui-rails ~> 0.25, which is where the `:combobox` field type landed.
 
 ### Filters
 
@@ -301,7 +304,7 @@ In ejected views, prefer `resource_can?(:update, @record)` over the raw `@resour
 
 ## Inheritance / variants
 
-Subclasses inherit `model`, `columns`, `fields`, `search_fields`, `search_placeholder`, `default_sort`, `per_page`, and `root_breadcrumb`. Override only what differs:
+Subclasses inherit `model`, `columns`, `fields`, `search_fields`, `search_placeholder`, `label_attribute`, `default_sort`, `per_page`, and `root_breadcrumb`. Override only what differs:
 
 ```ruby
 # app/layered_resources/admin/post_resource.rb

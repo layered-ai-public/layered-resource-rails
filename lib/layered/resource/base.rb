@@ -77,14 +77,42 @@ module Layered
           end
         end
 
+        # The fields as the form layer wants them: each one's `required:`
+        # resolved from its validators unless declared, and `permit:` dropped.
+        # `permit:` is strong-parameters configuration read by
+        # `permitted_params`; the form helper passes any key it does not
+        # recognise through to the field's input, where a stray `permit`
+        # renders as an HTML attribute (on a `select` or text input) or raises
+        # (on a `combobox`, whose helper takes named options only).
         def resolved_fields
           fields.map do |field|
-            if field.key?(:required)
-              field
-            else
-              field.merge(required: attribute_required?(field[:attribute]))
-            end
+            field = infer_association_field(field.except(:permit))
+            next field if field.key?(:required)
+
+            field.merge(required: attribute_required?(field[:attribute]))
           end
+        end
+
+        # The attribute one of this resource's records is labelled by - in a
+        # page title, a row's actions menu, or as an option in another
+        # resource's picker. Defaults to the primary column (the column marked
+        # `primary: true`, else the first), which is the label the index
+        # already leads each row with. Declare it when that column is not the
+        # record's name - a `primary:` column rendered by a `render:` proc,
+        # say, or one that is not the record's own attribute at all:
+        #
+        #   label_attribute :title
+        def label_attribute(value = nil)
+          if value
+            @label_attribute = value
+          else
+            inherited_attribute(:@label_attribute) ||
+              (columns.find { |c| c[:primary] } || columns.first)&.fetch(:attribute, nil)
+          end
+        end
+
+        def record_label(record)
+          Layered::Resource.record_label(record, attribute: label_attribute)
         end
 
         # Declares structured filter controls for the index table. Each entry
@@ -503,10 +531,64 @@ module Layered
         # context-scoped (:on), and "skip when blank/nil" validators don't
         # qualify because they may not fire for the form being rendered.
         def attribute_required?(attribute)
+          # A `belongs_to` validates the presence of the *association*, not of
+          # the foreign key the form posts, so the picker for one would always
+          # look optional. Its validator is no use here either: Rails attaches
+          # an `if:` that fires only while the key is nil or changed - an
+          # internal optimisation, not conditionality the app asked for - which
+          # the unconditional-only rule below would reject. The association's
+          # own `optional:` is the declaration to read, resolved the way
+          # ActiveRecord resolves it.
+          if (reflection = belongs_to_reflection_for_key(attribute))
+            optional = reflection.options[:optional]
+            return optional.nil? ? !!model.belongs_to_required_by_default : !optional
+          end
+
           model.validators_on(attribute).any? { |v|
             v.is_a?(ActiveRecord::Validations::PresenceValidator) &&
               v.options.slice(:if, :unless, :on, :allow_nil, :allow_blank).empty?
           }
+        end
+
+        # A field naming a `belongs_to`'s foreign key is a record picker, so it
+        # renders as a single-select combobox over the associated records rather
+        # than as the number the column happens to hold. Declaring `as:` opts
+        # out, and `collection:` replaces the options (to scope or order them,
+        # or to label them differently) while keeping the control.
+        #
+        # The default collection is a callable, so the query runs per request
+        # rather than once at boot, and each record is labelled by the shared
+        # `Layered::Resource.record_label`. Note that this does *not* consult
+        # the associated model's own resource for its `label_attribute`: a
+        # model can have several resources (a plain one and an admin variant,
+        # say), so there is no single resource to ask. Pass `collection:` to
+        # label by one deliberately:
+        #
+        #   { attribute: :user_id,
+        #     collection: -> { User.kept.map { |u| [UserResource.record_label(u), u.id] } } }
+        def infer_association_field(field)
+          return field if field[:as]
+
+          reflection = belongs_to_reflection_for_key(field[:attribute])
+          return field if reflection.nil?
+
+          collection = field[:collection] || lambda do
+            reflection.klass.all.map { |record| [Layered::Resource.record_label(record), record.id] }
+          end
+
+          { as: :combobox, multiple: false, collection: collection }.merge(field)
+        end
+
+        # The `belongs_to` a field/attribute name is the foreign key of, if any.
+        # Polymorphic associations are skipped: there is no single class whose
+        # records could fill a picker.
+        def belongs_to_reflection_for_key(key)
+          key = key.to_s
+          return nil unless model.column_names.include?(key)
+
+          model.reflect_on_all_associations(:belongs_to)
+               .reject(&:polymorphic?)
+               .find { |reflection| reflection.foreign_key.to_s == key }
         end
       end
     end

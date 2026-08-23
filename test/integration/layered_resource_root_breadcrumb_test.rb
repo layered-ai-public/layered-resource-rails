@@ -32,7 +32,7 @@ class LayeredResourceRootBreadcrumbTest < ActionDispatch::IntegrationTest
   end
 
   test "show renders no breadcrumb trail when there is nothing to show" do
-    record = Post.create!(title: "Hello", user: @user)
+    record = Post.create!(title: "Hello", user: @user, body: "Body")
     get "/showonly/posts/#{record.id}"
     assert_response :success
     assert_select "nav.l-ui-breadcrumbs", count: 0

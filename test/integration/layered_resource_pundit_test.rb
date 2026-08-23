@@ -17,8 +17,8 @@ class LayeredResourcePunditTest < ActionDispatch::IntegrationTest
   end
 
   test "scope uses Pundit::Policy::Scope to filter records" do
-    Post.create!(title: "Mine", user: @user)
-    Post.create!(title: "Theirs", user: @other)
+    Post.create!(title: "Mine", user: @user, body: "Body")
+    Post.create!(title: "Theirs", user: @other, body: "Body")
     sign_in @user
 
     get "/pundit/posts"
@@ -28,7 +28,7 @@ class LayeredResourcePunditTest < ActionDispatch::IntegrationTest
   end
 
   test "show on someone else's record is hidden by policy scope" do
-    theirs = Post.create!(title: "Theirs", user: @other)
+    theirs = Post.create!(title: "Theirs", user: @other, body: "Body")
     sign_in @user
 
     # Policy::Scope#resolve already filters foreign records out, so the find
@@ -70,7 +70,7 @@ class LayeredResourcePunditTest < ActionDispatch::IntegrationTest
   end
 
   test "row actions hide for records the user can't update" do
-    mine = Post.create!(title: "Mine", user: @user)
+    mine = Post.create!(title: "Mine", user: @user, body: "Body")
     sign_in @user
 
     get "/pundit/posts"

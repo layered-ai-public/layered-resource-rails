@@ -17,7 +17,7 @@ class LayeredResourceOwnedByTest < ActionDispatch::IntegrationTest
   end
 
   test "raises when via returns nil and allow_nil is not set" do
-    Post.create!(title: "Mine", user: @user)
+    Post.create!(title: "Mine", user: @user, body: "Body")
 
     assert_raises(Layered::Resource::MissingOwnerError) do
       get "/owned/posts"
@@ -25,8 +25,8 @@ class LayeredResourceOwnedByTest < ActionDispatch::IntegrationTest
   end
 
   test "with allow_nil: true returns model.none when via returns nil" do
-    Post.create!(title: "Mine", user: @user)
-    Post.create!(title: "Theirs", user: @other)
+    Post.create!(title: "Mine", user: @user, body: "Body")
+    Post.create!(title: "Theirs", user: @other, body: "Body")
 
     get "/public_owned/posts"
     assert_response :success
@@ -35,8 +35,8 @@ class LayeredResourceOwnedByTest < ActionDispatch::IntegrationTest
   end
 
   test "scope filters records to the signed-in user" do
-    Post.create!(title: "Mine", user: @user)
-    Post.create!(title: "Theirs", user: @other)
+    Post.create!(title: "Mine", user: @user, body: "Body")
+    Post.create!(title: "Theirs", user: @other, body: "Body")
     sign_in @user
 
     get "/owned/posts"
@@ -46,7 +46,7 @@ class LayeredResourceOwnedByTest < ActionDispatch::IntegrationTest
   end
 
   test "edit on someone else's record returns 404" do
-    theirs = Post.create!(title: "Theirs", user: @other)
+    theirs = Post.create!(title: "Theirs", user: @other, body: "Body")
     sign_in @user
 
     get "/owned/posts/#{theirs.id}/edit"

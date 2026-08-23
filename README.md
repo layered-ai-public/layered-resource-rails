@@ -44,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/layered-ai-public/layered-resource-
 ## Requirements
 
 - Ruby on Rails >= 8.0
-- [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) ~> 0.13
+- [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) ~> 0.25
 - Ransack ~> 4.0
 - Pagy ~> 43.2
 
@@ -173,6 +173,23 @@ end
 ```
 
 Nested routes prepend it to the derived parent trail (e.g. Home / Users / Alice). Pass `nil` as the path to render unlinked text.
+
+**Record label:** a record is labelled by its **primary column** (the one marked `primary: true`, else the first) wherever the gem has to name it: the `show` and `edit` page titles, a row's actions menu, and its options in another resource's picker. Declare `label_attribute` when that column isn't the record's name — a `primary:` column rendered by a `render:` proc, say:
+
+```ruby
+class PostResource < Layered::Resource::Base
+  model Post
+
+  columns [
+    { attribute: :headline, primary: true, render: ->(record, view) { view.tag.strong(record.headline) } },
+    { attribute: :created_at }
+  ]
+
+  label_attribute :title
+end
+```
+
+When the attribute has no value, the label falls back to the first of `name`/`title`/`label`/`email` that does, then to the model's own `to_s` if it defines one, and finally to `"Post #12"` — never a bare `#<Post:0x...>`.
 
 **Custom scope (e.g. tenant isolation):**
 
@@ -558,6 +575,37 @@ To render an introduction above the search area on a resource's index page, drop
 ```
 
 The partial sits inside the resource's view directory, so it follows the same per-resource override path as ejected views and column partials.
+
+## Record pickers
+
+A field naming a `belongs_to`'s **foreign key** is a record picker, so it renders as a single-select [combobox](https://github.com/layered-ai-public/layered-ui-rails) - a type-ahead input whose selection becomes a removable token - over the associated records, rather than as the number the column happens to hold:
+
+```ruby
+fields [
+  { attribute: :title },
+  { attribute: :user_id, label: "Author" }   # belongs_to :user -> author picker
+]
+```
+
+The default options are `klass.all`, labelled the same way a `belongs_to` filter's are (the first present of `name`/`title`/`label`/`email`, else `"User #12"`), and resolved per request rather than once at boot. The picker posts the plain foreign key (`post[user_id]`), so nothing else in the write path changes.
+
+Two things follow from the association rather than the column:
+
+- **Required.** A `belongs_to` validates the presence of the *association*, not of the foreign key, so the picker's required flag comes from the association's own `optional:` (resolved as ActiveRecord resolves it, via `belongs_to_required_by_default`) instead of from a presence validator on the column.
+- **Polymorphic associations are skipped.** There is no single class whose records could fill the picker, so the field falls back to its column type.
+
+Override with `as:` to opt out of the control entirely, or `collection:` to keep it and replace the options - to scope them, order them, or label them by a particular resource:
+
+```ruby
+fields [
+  { attribute: :user_id, as: :select, collection: -> { User.pluck(:name, :id) } },  # plain <select>
+  { attribute: :editor_id, collection: -> { User.editors.map { |u| [UserResource.record_label(u), u.id] } } }
+]
+```
+
+Note that the default labelling deliberately does **not** consult the associated model's own resource for its `label_attribute`: a model can have several resources (a plain one and an admin variant, say), so there is no single resource to ask. Name one in a `collection:` when you want its labelling.
+
+Every other combobox option - `multiple:`, `url:`, `min_chars:`, `create:`/`create_name:`, `reorder:`, `text:` - passes straight through to `l_ui_combobox`.
 
 ## Strong parameters for nested or array fields
 

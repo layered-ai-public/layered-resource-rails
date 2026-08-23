@@ -154,8 +154,8 @@ class LayeredResourceAssociationSearchIntegrationTest < ActionDispatch::Integrat
                           password: "password1234", password_confirmation: "password1234")
     @bob = User.create!(email: "bob@test.com", name: "Bob",
                         password: "password1234", password_confirmation: "password1234")
-    Post.create!(title: "First", user: @alice)
-    Post.create!(title: "Second", user: @bob)
+    Post.create!(title: "First", user: @alice, body: "Body")
+    Post.create!(title: "Second", user: @bob, body: "Body")
   end
 
   test "index filters by an association-walking search field" do

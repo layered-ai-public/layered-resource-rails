@@ -11,7 +11,7 @@ class LayeredResourceNamespaceTest < ActionDispatch::IntegrationTest
   end
 
   test "infers resource class from surrounding namespace" do
-    Post.create!(title: "Namespaced", user: @user)
+    Post.create!(title: "Namespaced", user: @user, body: "Body")
 
     get "/custom_namespace/posts"
     assert_response :success
