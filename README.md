@@ -2,6 +2,7 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Website](https://img.shields.io/badge/Website-layered.ai-purple)](https://www.layered.ai/)
+[![Demo](https://img.shields.io/badge/Demo-layered--resource--rails.layered.ai-purple)](https://layered-resource-rails.layered.ai/)
 [![GitHub](https://img.shields.io/badge/GitHub-layered--resource--rails-black)](https://github.com/layered-ai-public/layered-resource-rails)
 [![Discord](https://img.shields.io/badge/Discord-join-5865F2)](https://discord.gg/aCGqz9Bx)
 [![YouTube](https://img.shields.io/badge/YouTube-subscribe-FF0000)](https://www.youtube.com/@UseLayeredAi)
@@ -542,6 +543,8 @@ end
 
 A remote combobox has no collection in the browser to look a label up in, so an active filter's current values are labelled server-side from the records themselves (the same `name`/`title`/`label`/`email` fallbacks) — the tag reads "User: Alice", not "User: 12". A `url:` on a plain column has no records to read, so its values label themselves.
 
+> **Label lookups are not scoped.** Whatever scoping the `url:` endpoint applies covers the options it *serves*; it does not cover the labels. Current values arrive in the query string, and the gem labels them with an unscoped `klass.where(id: ...)` — so hand-editing `?q[user_id_in][]=` to an id outside the endpoint's scope still renders that record's label in the tag and the combobox token. This is the same position a `belongs_to` filter's default `klass.all` options take, and it discloses one label at a time; treat it as a reason not to rely on a filter's option scoping to keep an association's names or e-mail addresses private.
+
 `min_chars:` and `text:` pass through to `l_ui_combobox` alongside `url:`. The write-side combobox options (`create:`, `create_name:`, `reorder:`) don't: a filter picks among values that already exist.
 
 ### Overriding the inference
@@ -869,7 +872,9 @@ resources :posts
 
 ## Documentation
 
-Run the included dummy app locally to explore:
+A live demo of the dummy app is deployed at **[https://layered-resource-rails.layered.ai](https://layered-resource-rails.layered.ai)**.
+
+You can also run it locally to explore:
 
 ```bash
 git clone https://github.com/layered-ai-public/layered-resource-rails.git
@@ -877,6 +882,20 @@ cd layered-resource-rails
 bundle install
 cd test/dummy && bin/rails db:setup && bin/dev
 ```
+
+### Deploying the dummy app
+
+The dummy app can be deployed with [Kamal](https://kamal-deploy.org). Set the required environment variables and deploy from `test/dummy`:
+
+```bash
+cd test/dummy
+export KAMAL_DEPLOY_IP=<server-ip>
+export KAMAL_DEPLOY_DOMAIN=<domain>
+export KAMAL_SSH_KEY=<path-to-ssh-key>
+kamal deploy
+```
+
+`KAMAL_DEPLOY_DOMAIN` defaults to `layered-resource-rails.layered.ai`. `SECRET_KEY_BASE` is read from `test/dummy/.kamal/secrets`, which is gitignored - create it locally before the first deploy.
 
 ## Contributing
 
