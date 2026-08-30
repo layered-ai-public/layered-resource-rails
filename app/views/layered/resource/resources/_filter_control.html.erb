@@ -1,13 +1,18 @@
 <%# One filter's editing UI, rendered inside its tag's popover.
-    Single-selects and booleans apply instantly via links; multi-selects,
-    ranges, and text filters are GET forms whose hidden fields round-trip
-    every other q param (search, sort, other filters) and the other unset
-    tags' f[] entries, so submits compose. %>
+    Short single-selects and booleans apply instantly via links; multi-selects,
+    comboboxes, ranges, and text filters are GET forms whose hidden fields
+    round-trip every other q param (search, sort, other filters) and the other
+    unset tags' f[] entries, so submits compose.
+
+    `layered_filter_control` — not `filter[:as]` — decides which control a
+    select renders as: a long option list (or a remote `url:` one) becomes a
+    type-ahead combobox, which needs the form even when single-choice. %>
 <% scope = layered_filter_scope
+   control = layered_filter_control(filter)
    active = layered_filter_active?(filter)
    frame_data = { turbo_frame: turbo_frame_name, turbo_action: "advance" } %>
 
-<% if [:select, :boolean].include?(filter[:as]) && !filter[:multiple] %>
+<% if [:select, :boolean].include?(control) && !filter[:multiple] %>
   <div class="l-ui-popover__menu">
     <% layered_filter_collection(filter).each do |label, value| %>
       <% selected = layered_filter_selected?(filter, value) %>
@@ -29,7 +34,16 @@
         class: "l-ui-form", data: frame_data do %>
     <%= layered_filter_hidden_fields(filter) %>
 
-    <% if filter[:as] == :select %>
+    <% if control == :combobox %>
+      <%# The combobox names the bare key: it appends its own `[]` when
+          multiple, so a single-choice one posts a scalar the `eq` predicate
+          can use. Its leading blank hidden value means clearing every token
+          and applying submits an empty filter rather than omitting the key. %>
+      <% key = layered_filter_param_keys(filter).first %>
+      <%= l_ui_combobox("#{scope}[#{key}]",
+            id: "layered-filter-#{@layered_route_key}-#{filter[:attribute]}-combobox",
+            **layered_filter_combobox_options(filter)) %>
+    <% elsif control == :select %>
       <% key = layered_filter_param_keys(filter).first %>
       <% layered_filter_collection(filter).each_with_index do |(label, value), index| %>
         <%# The wrapping label makes the whole row toggle the checkbox, so the

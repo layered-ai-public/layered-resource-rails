@@ -2,27 +2,44 @@
 
 All notable changes to this project will be documented in this file. This project follows [Semantic Versioning](https://semver.org/).
 
-## Unreleased
-
-- `filters :status, :created_at, user: { multiple: true }` — structured index filters rendered as an "Add filter" popover plus removable chips (picking a filter adds an unset chip to the end of the row; its popover holds the controls, its ✕ removes it). Control and Ransack predicate are inferred from the column type (enum/`belongs_to` → multi-select via `_in` — pass `multiple: false` for single-choice `_eq`, boolean → Yes/No, date/datetime → date range, numeric → number range, string → contains); override per attribute with `as:`/`collection:`/`multiple:`/`label:`/`pinned:`/`default:`. Pinned filters render as always-shown chips (no ✕, never in the add menu — which disappears entirely once every filter is pinned); a default applies when the request carries no state for the filter, and clearing writes an explicit blank so it doesn't re-apply. Filters, search, and sort round-trip each other as hidden fields, so they compose in the URL with no JavaScript.
-- Requires layered-ui-rails ~> 0.25 (up from ~> 0.23), which is where the `:combobox` form field type record pickers render through landed.
-- Record pickers: a field naming a `belongs_to`'s foreign key (`user_id`) now renders as a single-select combobox over the associated records - a type-ahead input whose selection becomes a removable token - instead of as the number the column holds. Options default to `klass.all` labelled the way a `belongs_to` filter's are, resolved per request; the picker posts the plain foreign key, so the write path is unchanged. `as:` opts out, `collection:` replaces the options, and every other combobox option passes through to `l_ui_combobox`. Polymorphic associations are skipped, having no single class to fill a picker.
-- A field on a `belongs_to`'s foreign key takes its required flag from the association's `optional:` rather than from a presence validator on the column. `belongs_to` validates the presence of the *association*, and does so with an `if:` that ActiveRecord attaches for its own reasons, so a required association previously rendered an optional-looking field.
-- `label_attribute :title` — the attribute a record is labelled by wherever the gem names one (the `show`/`edit` page titles, a row's actions menu, and its options in another resource's picker). Defaults to the primary column, so nothing changes unless you declare it. A record whose labelling attribute is blank now falls back through `name`/`title`/`label`/`email`, then the model's own `to_s` when it defines one, then `"Post #12"` — previously it fell straight to `to_s`, which for a model that doesn't define one is `#<Post:0x...>`.
-- `permit:` no longer reaches the form layer. It is strong-parameters configuration read by `permitted_params`, but was passed through to the field's input, where it rendered as a stray HTML attribute (`permit="[]"`) — and would raise outright on a field type whose helper takes named options only, such as `as: :combobox`.
-- `layered_resources :foo, namespace: "Foo::Bar"` derives the resource class as `Foo::Bar::FooResource` and routes to `Foo::Bar::ResourcesController` when defined — replaces the old three-line `resource:`/`controller:` plumbing for engine mounts.
-- Extracted `Layered::Resource::Controller` concern. Engines can define their own `<Namespace>::ResourcesController` inheriting from their own `ApplicationController` and `include Layered::Resource::Controller` to keep auth/authorize before_actions wired correctly.
-- `destroy` rescues `ActiveRecord::InvalidForeignKey` and `ActiveRecord::DeleteRestrictionError`, redirecting to the index with a flash instead of 500ing.
-- Flash messages move to i18n (`config/locales/en.yml`, key `layered.resource.flash.*`). Override per-locale in the host app.
-- `owned_by` raises `Layered::Resource::MissingOwnerError` when `via` returns nil — surfaces auth misconfiguration loudly instead of silently 404ing every request. Pass `allow_nil: true` to opt into public-with-scope behaviour. (No-op when `use_pundit` is enabled — Pundit handles the policy gate.)
-
-## [0.1.0] - 2026-04-28
+## [0.1.0] - 2026-08-30
 
 Initial release.
 
+### Resource DSL
+
 - `Layered::Resource::Base` DSL: `model`, `columns`, `fields`, `search_fields`, `default_sort`, `per_page`.
-- `layered_resources` route helper with full CRUD, plus `only:`/`except:` to restrict actions.
+- `label_attribute :title` — the attribute a record is labelled by wherever the gem names one (the `show`/`edit` page titles, a row's actions menu, and its options in another resource's picker). Defaults to the primary column. A record whose labelling attribute is blank falls back through `name`/`title`/`label`/`email`, then the model's own `to_s` when it defines one, then `"Post #12"`.
+- Resource inheritance for namespaced variants (e.g. `Admin::PostResource`), with `inherited_attribute` walking the ancestor chain so subclasses pick up their parent's declarations.
+- Escape hatches: `scope`, `build_record`, and `after_save_path`.
+
+### Routing and controllers
+
+- `layered_resources` route helper with full CRUD, plus `only:`/`except:` to restrict actions. Incoherent combinations (`:new` without `:create`) raise at route-definition time rather than 404ing later.
+- `layered_resources :foo, namespace: "Foo::Bar"` derives the resource class as `Foo::Bar::FooResource` and routes to `Foo::Bar::ResourcesController` when one is defined — the supported path for mounting resources inside an engine.
+- `Layered::Resource::Controller` concern. An engine can define its own `<Namespace>::ResourcesController` inheriting from its own `ApplicationController` and `include Layered::Resource::Controller`, keeping auth/authorize `before_action`s wired correctly.
+- Auth inherited from the host app's `ApplicationController`, so its `before_action`s (Devise and friends) apply with no extra configuration.
+- `owned_by` scopes a resource to its owner, and raises `Layered::Resource::MissingOwnerError` when `via` returns nil so auth misconfiguration surfaces loudly instead of silently 404ing every request. Pass `allow_nil: true` to opt into public-with-scope behaviour. (No-op under `use_pundit`, where Pundit handles the policy gate.)
+- `destroy` rescues `ActiveRecord::InvalidForeignKey` and `ActiveRecord::DeleteRestrictionError`, redirecting to the index with a flash rather than raising a 500.
+
+### Index: search, sort, filters, pagination
+
 - Index search, sort, and pagination via Ransack and Pagy.
-- Resource inheritance for namespaced variants (e.g. `Admin::PostResource`).
-- Escape hatches: `scope`, `build_record`, `after_save_path`, plus `layered:resource`, `layered:resource:views`, and `layered:resource:controller` generators.
-- Auth inherited from the host app's `ApplicationController`.
+- `filters :status, :created_at, user: { multiple: true }` — structured index filters rendered as an "Add filter" popover plus removable chips. Picking a filter adds an unset chip to the end of the row; its popover holds the controls, its ✕ removes it. Control and Ransack predicate are inferred from the column type (enum/`belongs_to` → multi-select via `_in`, with `multiple: false` for single-choice `_eq`; boolean → Yes/No; date/datetime → date range; numeric → number range; string → contains), and are overridable per attribute with `as:`/`collection:`/`multiple:`/`label:`/`pinned:`/`default:`. Pinned filters render as always-shown chips (no ✕, never in the add menu — which disappears entirely once every filter is pinned); a default applies when the request carries no state for the filter, and clearing writes an explicit blank so it does not re-apply. Filters, search, and sort round-trip each other as hidden fields, so they compose in the URL with no JavaScript.
+- A select-type filter with more than `Layered::Resource.filter_combobox_threshold` (10) options renders as a type-ahead combobox rather than a checkbox list (or, single-choice, a menu of instant-apply links), so a `belongs_to` filter over a large table stays usable. The count is taken per request, after a `collection:` callable resolves, so the control follows the data; declaring `as: :select` or `as: :combobox` pins it either way.
+- Filters accept `url:` (plus `min_chars:` and `text:`), fetching their options from an endpoint as the user types rather than rendering a collection up front. Such a filter is always a combobox. Give `url:` as a callable so it resolves per request in the view (`-> { user_options_path }`); the endpoint is an ordinary host-app action including `Layered::Ui::ComboboxOptions`, so it is authorised however any index is. An active remote filter's values are labelled server-side from the records, so its tag reads "User: Alice" rather than "User: 12".
+
+### Forms
+
+- Record pickers: a field naming a `belongs_to`'s foreign key (`user_id`) renders as a single-select combobox over the associated records — a type-ahead input whose selection becomes a removable token — rather than as the raw number the column holds. Options default to `klass.all`, labelled the way a `belongs_to` filter's are and resolved per request; the picker posts the plain foreign key, so the write path is unchanged. `as:` opts out, `collection:` replaces the options, and every other combobox option passes through to `l_ui_combobox`. Polymorphic associations are skipped, having no single class to fill a picker.
+- A field on a `belongs_to`'s foreign key takes its required flag from the association's `optional:` rather than from a presence validator on the column, since `belongs_to` validates the presence of the *association* under an `if:` that ActiveRecord attaches for its own reasons.
+- A field's `permit:` is strong-parameters configuration read by `permitted_params`, and is dropped before the field reaches the form layer. The form helper passes any key it does not recognise through to the field's input, where a stray `permit` would render as an HTML attribute on a `select` or text input — and raise outright on a `combobox`, whose helper takes named options only.
+
+### Generators and i18n
+
+- `layered:resource:scaffold`, `layered:resource`, `layered:resource:views`, `layered:resource:controller`, and `layered:resource:column` generators, plus `layered:resource:install_agent_skill` for the bundled agent skill.
+- Flash messages are i18n-backed (`config/locales/en.yml`, key `layered.resource.flash.*`), overridable per-locale in the host app.
+
+### Requirements
+
+- Rails ~> 8.0, Ruby >= 3.3, and layered-ui-rails ~> 0.25 (>= 0.25.1, which is where the popover overflow fix the filter comboboxes depend on landed).

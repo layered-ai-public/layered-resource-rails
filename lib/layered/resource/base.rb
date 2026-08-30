@@ -1,6 +1,17 @@
 module Layered
   module Resource
     class Base
+      # The controls that pick a value out of a list, and so share a
+      # collection, the `_in`/`_eq` predicates, and the automatic switch from
+      # the plain list to the combobox once the list gets long.
+      SELECT_FILTER_CONTROLS = %i[select combobox].freeze
+
+      # `l_ui_combobox` options a filter may declare and have passed straight
+      # through to the control. The write-side options (`create:`,
+      # `create_name:`, `reorder:`) are absent by design: a filter chooses
+      # among existing values, it never invents one.
+      COMBOBOX_FILTER_OPTIONS = %i[url min_chars text].freeze
+
       class << self
         def model(klass = nil)
           if klass
@@ -128,7 +139,11 @@ module Layered
         #
         # Select-type filters (enum, belongs_to, collection) default to
         # multi-select via the `in` predicate; pass `multiple: false` for a
-        # single-choice `eq` select.
+        # single-choice `eq` select. Their control depends on how many options
+        # there turn out to be: up to `Layered::Resource
+        # .filter_combobox_threshold` (10) they render as the plain list, past
+        # it as a type-ahead combobox — a checkbox list of every user is no way
+        # to pick one. Declaring `as:` pins the control either way.
         #
         # Recognised override keys: `as:` (control type), `collection:` (select
         # options — an array, an array of [label, value] pairs, or a callable
@@ -136,7 +151,11 @@ module Layered
         # predicate), `label:`, `pinned:` (tag always shown, never in the
         # add-filter menu, no remove ✕), and `default:` (value applied when
         # the request carries none — a scalar, `{ from:, to: }` for ranges,
-        # or a callable resolved per request).
+        # or a callable resolved per request), plus the combobox options in
+        # COMBOBOX_FILTER_OPTIONS — `url:` (fetch options from an endpoint as
+        # the user types, instead of rendering a collection up front),
+        # `min_chars:`, and `text:`. A `url:` filter is always a combobox:
+        # there is no collection to render or count.
         def filters(*entries)
           if entries.empty?
             inherited_attribute(:@filters) || []
@@ -472,15 +491,25 @@ module Layered
               select_filter(attribute, attribute, opts.fetch(:multiple, true), collection, label)
             else
               as = opts[:as] || default_filter_as(field_type_for(attribute), opts)
-              multiple = opts.fetch(:multiple, as == :select)
+              multiple = opts.fetch(:multiple, SELECT_FILTER_CONTROLS.include?(as))
               typed_filter(attribute, as, multiple, opts[:collection], label)
             end
+
+          # An association or enum filter infers `as: :select`, so a declared
+          # `as: :combobox` has to be applied over the top: the predicate and
+          # `multiple:` are the same either way, only the control differs.
+          descriptor = descriptor.merge(as: :combobox) if opts[:as] == :combobox
 
           predicates = descriptor[:predicates] ? descriptor[:predicates].values : [descriptor[:predicate]]
           descriptor.merge(
             param_keys: predicates.map { |p| "#{descriptor[:ransack_attribute]}_#{p}" },
             pinned: opts.fetch(:pinned, false),
-            default: opts[:default]
+            default: opts[:default],
+            # Whether the control was named rather than inferred. A declared
+            # `as: :select` pins the plain list, opting out of the automatic
+            # switch to a combobox once the option list gets long.
+            as_declared: opts.key?(:as),
+            **opts.slice(*COMBOBOX_FILTER_OPTIONS)
           )
         end
 
@@ -497,7 +526,7 @@ module Layered
           when :checkbox then :boolean
           when :date, :datetime then :date_range
           when :number then :range
-          else opts.key?(:collection) ? :select : :string
+          else opts.key?(:collection) || opts[:url] ? :select : :string
           end
         end
 
@@ -518,7 +547,7 @@ module Layered
           base = { attribute: attribute, ransack_attribute: attribute, as: as,
                    multiple: multiple, collection: collection, label: label }
           case as
-          when :select  then base.merge(predicate: multiple ? :in : :eq)
+          when *SELECT_FILTER_CONTROLS then base.merge(predicate: multiple ? :in : :eq)
           when :boolean then base.merge(predicate: :eq)
           when :string  then base.merge(predicate: :cont)
           when :date_range, :range then base.merge(predicates: { from: :gteq, to: :lteq })

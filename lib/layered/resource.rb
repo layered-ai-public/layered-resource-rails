@@ -50,5 +50,12 @@ module Layered
     # if your app already manages ransackable_attributes / ransackable_associations
     # on the model and you don't want the gem to redefine them.
     mattr_accessor :auto_configure_ransack, default: true
+
+    # How many options a select-type filter may have before its control
+    # switches from the plain list (checkboxes, or instant-apply links when
+    # single-choice) to a type-ahead combobox. Short lists are quicker to scan
+    # and click than to type into; long ones are unusable that way. A filter
+    # that names its own `as:` is unaffected.
+    mattr_accessor :filter_combobox_threshold, default: 10
   end
 end

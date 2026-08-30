@@ -13,6 +13,19 @@ users = [
   end
 end
 
+# More users than Layered::Resource.filter_combobox_threshold (10), so the
+# PostResource author filter crosses it and renders as a type-ahead combobox
+# rather than a checkbox list — the switch is worth seeing in bin/dev. Posts
+# stay with the four named users above.
+%w[Dana Eve Frank Grace Heidi Ivan Judy Karl].each do |name|
+  User.find_or_create_by!(email: "#{name.downcase}@example.com") do |u|
+    u.name = name
+    u.password = "notasecret123"
+    u.password_confirmation = "notasecret123"
+    u.confirmed_at = Time.now
+  end
+end
+
 # Posts. Body is required, so it is assigned outside the create block as well:
 # re-seeding a database whose posts predate that validation repairs them rather
 # than leaving rows that no longer validate.

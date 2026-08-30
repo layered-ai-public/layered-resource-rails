@@ -29,7 +29,7 @@ jobs:
           bundler-cache: true
 
       - name: Set up database
-        run: cd test/dummy && bin/rails db:prepare
+        run: cd test/dummy && bin/rails db:test:prepare
 
       - name: Build Tailwind CSS
         run: cd test/dummy && bin/rails tailwindcss:build
