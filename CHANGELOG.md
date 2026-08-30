@@ -33,6 +33,7 @@ Initial release.
 
 - Record pickers: a field naming a `belongs_to`'s foreign key (`user_id`) renders as a single-select combobox over the associated records — a type-ahead input whose selection becomes a removable token — rather than as the raw number the column holds. Options default to `klass.all`, labelled the way a `belongs_to` filter's are and resolved per request; the picker posts the plain foreign key, so the write path is unchanged. `as:` opts out, `collection:` replaces the options, and every other combobox option passes through to `l_ui_combobox`. Polymorphic associations are skipped, having no single class to fill a picker.
 - A field on a `belongs_to`'s foreign key takes its required flag from the association's `optional:` rather than from a presence validator on the column, since `belongs_to` validates the presence of the *association* under an `if:` that ActiveRecord attaches for its own reasons.
+- A field's `permit:` is strong-parameters configuration read by `permitted_params`, and is dropped before the field reaches the form layer. The form helper passes any key it does not recognise through to the field's input, where a stray `permit` would render as an HTML attribute on a `select` or text input — and raise outright on a `combobox`, whose helper takes named options only.
 
 ### Generators and i18n
 
