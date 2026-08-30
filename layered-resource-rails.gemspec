@@ -16,18 +16,20 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/layered-ai-public/layered-resource-rails"
   spec.metadata["bug_tracker_uri"] = "https://github.com/layered-ai-public/layered-resource-rails/issues"
+  spec.metadata["changelog_uri"] = "https://github.com/layered-ai-public/layered-resource-rails/blob/main/CHANGELOG.md"
+  spec.metadata["discord_uri"] = "https://discord.gg/aCGqz9Bx"
   spec.metadata["rubygems_mfa_required"] = "true"
 
   # Files
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    Dir["{app,config,lib,.claude/skills}/**/*", "NOTICE", "LICENSE", "TRADEMARK.md", "CLA.md", "CHANGELOG.md", "README.md", "AGENTS.md", "Rakefile"]
+    Dir["{app,config,lib}/**/*", ".claude/skills/layered-resource-rails/**/*", "NOTICE", "LICENSE", "TRADEMARK.md", "CLA.md", "CHANGELOG.md", "README.md", "AGENTS.md", "Rakefile"]
       .reject { |f| File.basename(f) == ".DS_Store" }
   end
   spec.require_paths = ["lib"]
 
   # Dependencies
   spec.add_dependency "concurrent-ruby", ">= 1.0"
-  spec.add_dependency "layered-ui-rails", "~> 0.25"
+  spec.add_dependency "layered-ui-rails", "~> 0.25", ">= 0.25.1"
   spec.add_dependency "pagy", "~> 43.2"
   spec.add_dependency "rails", "~> 8.0"
   spec.add_dependency "ransack", "~> 4.0"
@@ -40,4 +42,25 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "sqlite3", "~> 2.0"
   spec.add_development_dependency "stimulus-rails", "~> 1.0"
   spec.add_development_dependency "turbo-rails", "~> 2.0"
+
+  # Post-install message
+  spec.post_install_message = <<~MSG
+    layered-resource-rails builds on layered-ui-rails. If you have not already
+    set that up, run its install generator first:
+
+      bin/rails generate layered:ui:install
+
+    Then scaffold your first resource - model, migration, resource class, and
+    route in one shot:
+
+      bin/rails generate layered:resource:scaffold post title:string body:text
+
+    Views render from the engine until you eject them with
+    `bin/rails generate layered:resource:views posts`.
+
+    To let AI coding agents work with layered-resource-rails in your project,
+    install the included agent skill:
+
+      bin/rails generate layered:resource:install_agent_skill
+  MSG
 end

@@ -77,6 +77,19 @@ Rails.application.routes.draw do
     layered_resources :posts, resource: "PunditPostResource"
   end
 
+  # Options endpoint backing RemotePostResource's remote author filter.
+  resources :user_options, only: [:index]
+
+  # Exercises a remote (`url:`) combobox filter (see RemotePostResource).
+  scope "remote" do
+    layered_resources :posts, resource: "RemotePostResource", only: [:index]
+  end
+
+  # Exercises a single-choice combobox filter (see SingleAuthorPostResource).
+  scope "single_author" do
+    layered_resources :posts, resource: "SingleAuthorPostResource", only: [:index]
+  end
+
   # Exercises pinned filters + default values (see PinnedPostResource).
   scope "pinned" do
     layered_resources :posts, resource: "PinnedPostResource", only: [:index]

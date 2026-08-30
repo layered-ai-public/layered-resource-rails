@@ -44,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/layered-ai-public/layered-resource-
 ## Requirements
 
 - Ruby on Rails >= 8.0
-- [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) ~> 0.25
+- [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) ~> 0.25 (>= 0.25.1)
 - Ransack ~> 4.0
 - Pagy ~> 43.2
 
@@ -462,7 +462,7 @@ A counter-cache column reads straight off the parent row, so the index renders i
 
 ## Filters
 
-Where `search_fields` gives a single free-text box, `filters` adds structured controls for narrowing the index by specific attributes. The UI follows the "add filter" pattern: an **Add filter** button opens a popover listing the declared filters; picking one adds it as a **tag** with its controls popover already open, ready to take a value; pressing the tag's label reopens the popover, and its ✕ removes it. Booleans and single-choice selects apply instantly on click; multi-selects, ranges, and text filters have an Apply button.
+Where `search_fields` gives a single free-text box, `filters` adds structured controls for narrowing the index by specific attributes. The UI follows the "add filter" pattern: an **Add filter** button opens a popover listing the declared filters; picking one adds it as a **tag** with its controls popover already open, ready to take a value; pressing the tag's label reopens the popover, and its ✕ removes it. Booleans and short single-choice selects apply instantly on click; multi-selects, comboboxes, ranges, and text filters have an Apply button.
 
 Under the hood every filter is a Ransack predicate in the query string, so filters compose with search, sort, and pagination — all coexist in the URL and survive each other's submits (the search form and each filter form round-trip the other params as hidden fields; no JavaScript involved). The lightweight `f[]` param records which tags were added and in what order — new tags join the end of the row (after any pinned ones) and stay put when set; a tag's ✕ removes its entry.
 
@@ -489,9 +489,60 @@ end
 | `belongs_to` | multi-select of associated records | `<foreign_key>_in` (or `_eq`) |
 | `string` / `text` | text "contains" (multi-select if a `collection:` is given) | `_cont` (or `_in` / `_eq`) |
 
-Select-type filters default to **multi-select**: a checkbox list with an Apply button, filtering via the `_in` predicate. Pass `multiple: false` for a single-choice select — those render as a list of links that apply instantly on click (booleans always do).
+Select-type filters default to **multi-select**: filtering via the `_in` predicate. Pass `multiple: false` for a single-choice select via `_eq`.
 
 A `belongs_to` filter keys on the **foreign-key column** (`user_id`), so it never joins — no association-walk setup is needed, unlike `search_fields`. By default its options are `klass.all`, labelled by the first present of `name`/`title`/`label`/`email`; pass a `collection:` to scope, order, or label differently. As with search, every filtered attribute is added to the resource's Ransack allowlist; attributes that are neither shown, searched, nor filtered stay un-queryable and any `q[...]` referencing them is silently ignored rather than raising.
+
+### Long option lists
+
+How a select-type filter renders depends on how many options it turns out to have — a checkbox list of every user is no way to pick one:
+
+| Options | Multi-select | Single-choice |
+| --- | --- | --- |
+| up to 10 | checkbox list, Apply button | list of links, applying instantly on click |
+| more than 10 | [combobox](https://github.com/layered-ai-public/layered-ui-rails) — type-ahead, selections become removable tokens | single-select combobox, Apply button |
+
+The count is taken per request (a `collection:` callable resolves first), so a filter follows its data rather than a guess made when the resource was written. The threshold is global:
+
+```ruby
+# config/initializers/layered_resource.rb
+Layered::Resource.filter_combobox_threshold = 25
+```
+
+Declaring `as:` pins the control and opts out of the switch entirely — `as: :select` keeps the plain list however long it gets, `as: :combobox` uses the combobox however short:
+
+```ruby
+filters status: { as: :combobox },   # always the type-ahead
+        user:   { as: :select }      # always the checkbox list
+```
+
+### Remote filter options
+
+Past a few thousand records, rendering the options at all is the problem. Point a filter at an endpoint with `url:` and its options are fetched as the user types instead — the filter is then always a combobox, since there is no collection to render or count:
+
+```ruby
+class PostResource < Layered::Resource::Base
+  model Post
+
+  filters user: { url: -> { user_options_path }, min_chars: 2 }
+end
+```
+
+Give `url:` as a callable so it resolves per request in the view, where route helpers are available. The endpoint is an ordinary action in your app — the gem never routes it — so it's authorised however any index is:
+
+```ruby
+class UserOptionsController < ApplicationController
+  include Layered::Ui::ComboboxOptions
+
+  def index
+    render json: l_ui_combobox_options(policy_scope(User), label: :name, search: [:name, :email])
+  end
+end
+```
+
+A remote combobox has no collection in the browser to look a label up in, so an active filter's current values are labelled server-side from the records themselves (the same `name`/`title`/`label`/`email` fallbacks) — the tag reads "User: Alice", not "User: 12". A `url:` on a plain column has no records to read, so its values label themselves.
+
+`min_chars:` and `text:` pass through to `l_ui_combobox` alongside `url:`. The write-side combobox options (`create:`, `create_name:`, `reorder:`) don't: a filter picks among values that already exist.
 
 ### Overriding the inference
 
@@ -507,9 +558,10 @@ filters :created_at,
 
 Recognised keys:
 
-- `as:` — force a control type (`:select`, `:boolean`, `:string`, `:range`, `:date_range`).
+- `as:` — force a control type (`:select`, `:combobox`, `:boolean`, `:string`, `:range`, `:date_range`). Naming `:select` or `:combobox` also pins the control against the [option-count switch](#long-option-lists).
 - `collection:` — options for a select: an array of values, an array of `[label, value]` pairs, or a callable resolved per request (returning either form, or records). A `collection:` on a plain string column promotes it to a select.
-- `multiple:` — `true` (the default for select-type filters) renders checkboxes applying via the `_in` predicate; `false` renders instant-apply single-choice links via `_eq`.
+- `multiple:` — `true` (the default for select-type filters) filters via the `_in` predicate; `false` gives a single-choice `_eq`.
+- `url:`, `min_chars:`, `text:` — [remote options](#remote-filter-options), fetched from an endpoint as the user types.
 - `label:` — override the filter's name (defaults to `human_attribute_name`, so i18n flows through).
 - `pinned:` — always show the tag. Pinned tags never appear in the add-filter menu and have no remove ✕ (their popover's Clear resets the value; the tag stays).
 - `default:` — value applied when the request carries none of the filter's params: a scalar, `{ from:, to: }` for ranges, an array for `multiple:`, or a callable resolved per request (e.g. `-> { { from: 7.days.ago.to_date } }`).
