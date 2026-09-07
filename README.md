@@ -365,6 +365,14 @@ The Ransack allowlists are scoped to the resource: the association and the assoc
 
 A walked search field is also sortable — `q[s]=user_name asc` orders the index by `users.name` — because Ransack derives its sort allowlist from the search allowlist. Associations not declared in `search_fields` stay unsearchable and unsortable.
 
+### How the search box behaves
+
+There is no Search button to press. The box searches as the term is typed, debounced so a typed word is one request rather than one per letter, and the results re-render inside the index's Turbo frame. The field carries its own clear button, which appears once there is something to clear; Escape in the field clears it too.
+
+Each search **replaces** the history entry rather than pushing one, so Back leaves the index instead of replaying the term letter by letter. The term still lives in the URL, so a search remains shareable and survives a reload — and sort links, pagination and filter chips still push history as before.
+
+The parts that matter for accessibility are handled for you: the caret stays put across the re-render, so a word is never interrupted mid-letter; the number of results is announced to screen readers after each search, since with no button press there is otherwise nothing to say the page changed; and the box is a labelled `search` landmark. The form still submits on Enter and works without JavaScript.
+
 ### Search placeholder
 
 The index search box's placeholder is derived from `search_fields` via `human_attribute_name`, so attribute renames declared in the standard Rails i18n location flow through automatically. Given `search_fields [:title, :user_sid]`:
@@ -465,7 +473,7 @@ A counter-cache column reads straight off the parent row, so the index renders i
 
 Where `search_fields` gives a single free-text box, `filters` adds structured controls for narrowing the index by specific attributes. The UI follows the "add filter" pattern: an **Add filter** button opens a popover listing the declared filters; picking one adds it as a **tag** with its controls popover already open, ready to take a value; pressing the tag's label reopens the popover, and its ✕ removes it. Booleans and short single-choice selects apply instantly on click; multi-selects, comboboxes, ranges, and text filters have an Apply button.
 
-Under the hood every filter is a Ransack predicate in the query string, so filters compose with search, sort, and pagination — all coexist in the URL and survive each other's submits (the search form and each filter form round-trip the other params as hidden fields; no JavaScript involved). The lightweight `f[]` param records which tags were added and in what order — new tags join the end of the row (after any pinned ones) and stay put when set; a tag's ✕ removes its entry.
+Under the hood every filter is a Ransack predicate in the query string, so filters compose with search, sort, and pagination — all coexist in the URL and survive each other's submits (the search form and each filter form round-trip the other params as hidden fields). The filter controls themselves are plain links and forms, with no JavaScript involved; only the search box's type-to-search is scripted. The lightweight `f[]` param records which tags were added and in what order — new tags join the end of the row (after any pinned ones) and stay put when set; a tag's ✕ removes its entry.
 
 Declare `filters` with a list of attributes. The control and predicate are inferred from each column:
 
@@ -579,7 +587,7 @@ filters :created_at,
 
 Pinned filters render as tags from the start, so the common ones are one click away instead of two; the **Add filter** button only renders while there are unpinned filters left to add (pin everything and it disappears). A `default:` applies whenever the request carries no state for that filter — the tag shows it as active and every link and form round-trips it explicitly from then on. Clearing a defaulted filter writes an explicit blank (`q[status_eq]=`) rather than dropping the param, so the default doesn't immediately re-apply.
 
-The filter bar renders inside the index's Turbo frame between the search box and the table; eject the views (`rails g layered:resource:views`) to customise placement — the bar is the `_filters` partial, and each control is `_filter_control`.
+The filter bar renders inside the index's Turbo frame between the search box and the table; eject the views (`rails g layered:resource:views`) to customise placement — the search box is the `_search` partial, the bar is `_filters`, and each control is `_filter_control`.
 
 ## Column rendering
 

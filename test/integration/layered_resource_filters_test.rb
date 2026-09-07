@@ -278,14 +278,16 @@ class LayeredResourceFiltersIntegrationTest < ActionDispatch::IntegrationTest
     assert_select "form input[type=hidden][name='f[]'][value='created_at']"
   end
 
-  test "the search clear link drops the term but keeps filters" do
+  # Clearing the term submits this same form with an empty field, and the active
+  # filters are hidden fields inside it, so they ride along rather than being
+  # dropped. That is what makes the clear button safe to handle client-side.
+  test "the search form carries the filters that clearing the term must keep" do
     get "/posts", params: { q: { status_in: [1], title_or_body_or_user_name_cont: "post" } }
-    clear = css_select("a.l-ui-button--outline").find do |a|
-      a.text.strip == "Clear" && !a["class"].include?("l-ui-button--small")
-    end
-    assert clear, "expected a search clear link"
-    assert_includes clear["href"], "status_in"
-    assert_not_includes clear["href"], "cont"
+    form = css_select("form[role=search]").first
+    assert form, "expected a search form"
+    assert_select "form[role=search] button.l-ui-search-control__clear"
+    assert_select "form[role=search] input[type=hidden][name='q[status_in][]'][value='1']"
+    assert_select "form[role=search] input[type=hidden][name='q[title_or_body_or_user_name_cont]']", false
   end
 
   test "sort links keep the search term, filters, and unset tags" do

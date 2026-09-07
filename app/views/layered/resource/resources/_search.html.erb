@@ -1,0 +1,20 @@
+<%# The search box. Searching happens as the term is typed, so there is no
+    Search button to press, and the field carries its own clear button.
+
+    Any active filter and sort params ride along as hidden fields, so a search
+    composes with them rather than replacing them - which is also what makes
+    clearing the term client-side keep the filters: an empty term is submitted
+    through this same form. %>
+<div class="l-ui-mt-4">
+  <%= l_ui_search_form(@q,
+        url: layered_collection_path,
+        label: "Search #{@model.model_name.human.pluralize.downcase}",
+        count: @pagy&.count,
+        turbo_frame: turbo_frame_name) do |f| %>
+    <%= layered_filter_hidden_fields(except: layered_search_field_key) if layered_filters.any? %>
+    <div class="l-ui-search-inline">
+      <%= l_ui_search_control(f, layered_search_field_key,
+            placeholder: @resource.search_placeholder) %>
+    </div>
+  <% end %>
+</div>
