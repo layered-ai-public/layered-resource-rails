@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- The index search box searches as the term is typed. The **Search** and **Clear** buttons are gone: the box submits into the index Turbo frame as the field changes, debounced so a typed word is one request rather than one per letter, and the field carries its own clear button - shown only once there is something to clear, and reachable by keyboard with Escape clearing the field too. A typed search `replace`s the history entry rather than pushing one, so Back leaves the index instead of replaying the term letter by letter; the term still lives in the URL, so a search stays shareable and survives a reload, and sort links, pagination and filter chips still advance.
+- With no button press to signal a change, the number of results is now announced to screen readers after each search (`count:` is passed from `@pagy`), the caret is preserved across the frame re-render so a word is never interrupted mid-letter, and the box is a labelled `search` landmark. The form still submits on Enter and works without JavaScript.
+- The two search branches on the index - one for resources with `filters`, one without - are now a single `_search.html.erb` partial, ejected by `rails g layered:resource:views` along with the rest. Because the active filters are hidden fields inside the search form, clearing the term keeps them, which is what `layered_search_clear_path` used to compute; that helper is still there for an ejected view that wants the same link.
+- Requires `layered-ui-rails` ~> 0.26.
+
 ## [0.1.0] - 2026-08-30
 
 Initial release.
