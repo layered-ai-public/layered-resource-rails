@@ -106,12 +106,13 @@ class Layered::Resource::Generators::ScaffoldGeneratorTest < ::Rails::Generators
     assert_match(/search_fields/, output)
   end
 
-  test "skips reference attributes from columns and fields" do
+  test "skips reference attributes from columns but keeps them as foreign-key fields" do
     run_generator ["post", "title:string", "user:references", "--skip-model"]
 
     assert_file "app/layered_resources/post_resource.rb" do |content|
       assert_match(/\{ attribute: :title, primary: true \}/, content)
       assert_no_match(/attribute: :user\b/, content)
+      assert_match(/\{ attribute: :user_id \}/, content)
     end
   end
 end

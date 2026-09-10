@@ -44,12 +44,22 @@ module Layered
           singular_name.camelize
         end
 
+        # `speaker_id` is a poor index column - the table wants the
+        # speaker's label, which is the consumer's call - so references are
+        # left out of `columns`.
         def column_attributes
           attributes.reject { |a| a.reference? || a.password_digest? }
         end
 
+        # References belong in `fields` as their foreign key: `belongs_to` is
+        # required by default, so a form without the FK cannot create a
+        # record. A `:<name>_id` field infers a combobox of the associated
+        # records (see `Layered::Resource::Base#infer_association_field`).
+        # Polymorphic references stay out: setting one needs a `_type` as
+        # well, and there is no single class whose records could fill a
+        # picker.
         def field_attributes
-          column_attributes
+          attributes.reject { |a| a.password_digest? || (a.reference? && a.polymorphic?) }
         end
 
         def field_as(attr)

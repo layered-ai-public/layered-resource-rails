@@ -39,6 +39,8 @@ This produces:
 - `app/layered_resources/post_resource.rb` with `columns` and `fields` derived from the attributes
 - `layered_resources :posts` appended to `config/routes.rb`
 
+A `references` attribute (e.g. `speaker:references`) becomes a `:speaker_id` field - inferred as a combobox of the associated records - but is left out of `columns`, since a raw foreign key is rarely the column an index wants. Polymorphic references are left out of both: setting one takes a `_type` too, so write that field yourself.
+
 Useful flags:
 
 - `--skip-model` - the model already exists
