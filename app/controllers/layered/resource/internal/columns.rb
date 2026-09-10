@@ -13,10 +13,40 @@ module Layered
         # that doesn't already have one, then wraps columns with a `link:`
         # option in a link to the named route.
         def decorate_columns
+          validate_column_attributes!
           apply_column_sortability
           apply_column_renderers
           apply_column_links
           apply_primary_column_link if action_name == "index"
+        end
+
+        # `columns` is declarative, so a column naming a method the model
+        # doesn't have is checkable before anything renders. Without this the
+        # miss surfaces as a bare NoMethodError raised from inside a column
+        # partial, naming neither the resource nor the column. Columns with a
+        # `render:` proc are exempt: the proc decides what to call, and
+        # `attribute` is then just a header/sort key.
+        def validate_column_attributes!
+          model = @resource.model
+          # Attribute readers are defined lazily, so ask for them before
+          # asking whether they exist.
+          model.define_attribute_methods
+
+          # Public only: the default renderer reads the cell with
+          # `record.public_send`, so a private method is as unrenderable as
+          # a missing one.
+          missing = @columns.reject { |col| col[:render] }
+                            .filter_map { |col| col[:attribute] }
+                            .reject { |attr| model.method_defined?(attr) }
+          return if missing.empty?
+
+          raise ArgumentError,
+                "#{@resource.name} declares column#{'s' if missing.size > 1} " \
+                "#{missing.map(&:inspect).join(', ')}, but #{model.name} has no public method " \
+                "by that name. " \
+                "Add it to #{model.name} (`delegate :#{missing.first}, to: :<association>` for " \
+                "an associated model's attribute), correct the column's attribute:, or give the " \
+                "column a `render:` proc that produces the value."
         end
 
         # Marks columns sortable: false unless they map to a real DB column.

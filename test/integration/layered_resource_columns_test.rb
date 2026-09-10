@@ -251,6 +251,68 @@ class LayeredResourceColumnsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "a column naming a method the model doesn't have raises a named error" do
+    swap_columns(PostResource,
+      [{ attribute: :title, primary: true }, { attribute: :author_nmae }]) do
+      error = assert_raises(ArgumentError) { get "/posts" }
+
+      assert_match(/PostResource declares column :author_nmae/, error.message)
+      assert_match(/Post has no public method by that name/, error.message)
+      assert_match(/delegate :author_nmae, to: :<association>/, error.message)
+    end
+  end
+
+  test "the missing-column error lists every missing attribute at once" do
+    swap_columns(PostResource,
+      [{ attribute: :title, primary: true }, { attribute: :nope }, { attribute: :also_nope }]) do
+      error = assert_raises(ArgumentError) { get "/posts" }
+
+      assert_match(/declares columns :nope, :also_nope/, error.message)
+    end
+  end
+
+  test "a column naming a private method raises rather than rendering" do
+    # The default renderer reads the cell with public_send, so a private
+    # method would only fail later, as a bare NoMethodError from the partial.
+    Post.class_eval do
+      private def secret_note = "hidden"
+    end
+
+    swap_columns(PostResource,
+      [{ attribute: :title, primary: true }, { attribute: :secret_note }]) do
+      error = assert_raises(ArgumentError) { get "/posts" }
+
+      assert_match(/declares column :secret_note/, error.message)
+    end
+  ensure
+    Post.send(:remove_method, :secret_note)
+  end
+
+  test "a column with a render: proc is exempt from the attribute check" do
+    Post.create!(title: "Hello", user: @user, body: "Body")
+
+    swap_columns(PostResource,
+      [{ attribute: :title, primary: true },
+       { attribute: :not_a_method, label: "Derived", render: ->(record) { record.title.upcase } }]) do
+      get "/posts"
+
+      assert_response :success
+      assert_select "td", text: "HELLO"
+    end
+  end
+
+  test "a delegated method is a valid column attribute" do
+    Post.create!(title: "Hello", user: @user, body: "Body")
+
+    swap_columns(PostResource,
+      [{ attribute: :title, primary: true }, { attribute: :user_name }]) do
+      get "/posts"
+
+      assert_response :success
+      assert_select "td", text: "Author"
+    end
+  end
+
   private
 
   def swap_columns(resource_class, new_columns)

@@ -26,6 +26,11 @@ module Layered
         helper Layered::Ui::BreadcrumbsHelper
         helper Layered::Resource::FiltersHelper
 
+        # Hooks the route's `layout:` option in. Returning nil (the common
+        # case) falls through to Rails' normal layout resolution, so routes
+        # without the option are unaffected.
+        layout :layered_resource_layout
+
         before_action :load_layered_resource
         before_action :load_layered_member_record
         before_action :require_layered_fields, only: %i[new create edit update]
@@ -193,6 +198,20 @@ module Layered
         @resource_can_update  = @crud_enabled && resource_actions.include?(:update)
         @resource_can_destroy = resource_actions.include?(:destroy)
         @resource_can_show    = resource_actions.include?(:show)
+      end
+
+      # The layout named by `layered_resources :posts, layout: "manage"`,
+      # or nil when the route declared none — which Rails reads as "resolve
+      # the layout the usual way", landing on the host's
+      # ApplicationController layout. `layout: false` renders bare. Nil is
+      # also what an ejected controller sees before `load_layered_resource`
+      # has run (e.g. rendering an error page), which is the right default
+      # there too.
+      def layered_resource_layout
+        layout = @_route_entry && @_route_entry[:layout]
+        return nil if layout.nil?
+
+        layout == false ? false : layout.to_s
       end
 
       # For custom member actions declared in a `layered_resources` block,

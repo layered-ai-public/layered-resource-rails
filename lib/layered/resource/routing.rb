@@ -6,11 +6,12 @@ module Layered
       @registry = Concurrent::Map.new
 
       class << self
-        def register(route_key, resource_class_name, actions: [], routes: nil, parent_params: [], parent_collection_keys: {}, resource_name: nil, member_actions: [], collection_actions: [])
+        def register(route_key, resource_class_name, actions: [], routes: nil, parent_params: [], parent_collection_keys: {}, resource_name: nil, member_actions: [], collection_actions: [], layout: nil)
           @registry[route_key.to_s] = {
             resource: resource_class_name.to_s,
             actions: actions,
             routes: routes,
+            layout: layout,
             parent_params: parent_params,
             parent_collection_keys: parent_collection_keys,
             resource_name: resource_name.to_s,
@@ -82,7 +83,13 @@ module Layered
         end
       end
 
-      def layered_resources(resource_name, resource: nil, controller: nil, namespace: nil, only: RESOURCE_ACTIONS, except: nil, **options, &block)
+      # `layout:` renders the resource's pages inside one of the host app's
+      # layouts (`layout: "manage"` → `app/views/layouts/manage.html.erb`),
+      # or without one (`layout: false`). Without it the controller keeps
+      # Rails' normal resolution, which lands on the host's
+      # `ApplicationController` layout. An explicit `layout` declaration in
+      # an ejected controller replaces the hook and wins over this option.
+      def layered_resources(resource_name, resource: nil, controller: nil, namespace: nil, layout: nil, only: RESOURCE_ACTIONS, except: nil, **options, &block)
         # When called inside `resources :foo do ... end` (or `resource :foo do`),
         # Rails has set up a resource_scope but hasn't pushed the parent's
         # path into @scope. Push it ourselves via scope(path:) and recurse.
@@ -107,7 +114,7 @@ module Layered
               begin
                 layered_resources(resource_name,
                                   resource: resource, controller: controller, namespace: namespace,
-                                  only: only, except: except, **options, &block)
+                                  layout: layout, only: only, except: except, **options, &block)
               ensure
                 @scope.frame[:as] = saved_as
               end
@@ -123,6 +130,13 @@ module Layered
         # than the gem-shipped views expect; for that pattern, use
         # `scope path: "foo", module: "foo"` and pass `namespace:` here.
         namespace = namespace.to_s.presence
+
+        unless layout.nil? || layout == false || layout.is_a?(String) || layout.is_a?(Symbol)
+          raise ArgumentError,
+                "layered_resources :#{resource_name} got layout: #{layout.inspect}. " \
+                "Pass a layout name (String or Symbol, resolved under app/views/layouts) " \
+                "or `false` to render without a layout."
+        end
 
         resource_class_name = resource ||
           (namespace ? "#{namespace}::#{resource_name.to_s.classify}Resource" : "#{resource_name.to_s.classify}Resource")
@@ -282,7 +296,8 @@ module Layered
                                             parent_collection_keys: parent_collection_keys,
                                             resource_name: route_key,
                                             member_actions: custom_member.map { |a| a[:action] },
-                                            collection_actions: custom_collection.map { |a| a[:action] })
+                                            collection_actions: custom_collection.map { |a| a[:action] },
+                                            layout: layout)
 
         route_defaults = (options[:defaults] || {}).merge(
           _layered_resource_route_key: as_base

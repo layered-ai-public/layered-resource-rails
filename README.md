@@ -165,6 +165,15 @@ layered_resources :posts, except: [:destroy]
 
 The default `show` view is intentionally a blank canvas - the gem doesn't auto-render an attribute list, since generated detail pages tend to be low-value and always need customizing. The index links each record's title to its **edit** page, not its show page, so `show` is only worth keeping if you're going to build a real detail view (eject it with `rails g layered:resource:views` and fill in the template). If you're not, pass `except: [:show]` to drop the route.
 
+**Layout:** the gem's controller renders inside your `ApplicationController`'s layout. Point a route at a different one - an admin chrome, say - without ejecting a controller:
+
+```ruby
+layered_resources :posts, layout: "manage"   # app/views/layouts/manage.html.erb
+layered_resources :posts, layout: false      # no layout at all
+```
+
+The option covers every action on that route, and each route decides independently, so the same resource can be plain under `/posts` and wrapped under `/manage/posts`. An ejected controller that declares its own `layout` wins over the route option.
+
 **Root breadcrumb:** top-level resources render no breadcrumb trail by default. Declare a static first crumb — typically a link back to the host app's dashboard:
 
 ```ruby
@@ -609,6 +618,17 @@ rails g layered:resource:column priority_badge     # scaffold a brand-new type
 
 A custom partial receives `record`, `value`, and `options` (the column hash) as locals - read keys like `:variants` or `:format` straight off `options`.
 
+A column's `attribute:` has to be something the model publicly answers to - a DB column, an association, an `attribute`, a delegated method, or any public method you define (the default renderer reads the cell with `public_send`). Naming one it doesn't have raises before the table renders, telling you which resource and which attribute:
+
+```
+PostResource declares column :author_name, but Post has no public method by that
+name. Add it to Post (`delegate :author_name, to: :<association>` for an
+associated model's attribute), correct the column's attribute:, or give the
+column a `render:` proc that produces the value.
+```
+
+A column with a `render:` proc is exempt - the proc decides what to call, and `attribute:` is then just the header and sort key.
+
 ### Sortable headers
 
 A column header renders a sort link only when the attribute is sortable. This defaults to `true` for real DB columns and `false` for anything else - virtual attributes and delegated association values - because Ransack can't sort those without the associated model allowlisting the underlying field, and the sort link would 500 when clicked. Set `sortable: true` on the column to opt back in; you're then responsible for that model's `ransackable_attributes` (see [Associations](#associations)).
@@ -853,7 +873,7 @@ This copies the gem's actual `index`, `show`, `new`, and `edit` templates into `
 rails g layered:resource:controller posts
 ```
 
-This gives you a controller that inherits from the base - override any of the standard CRUD actions and call `super` when you only want to tweak behaviour.
+This gives you a controller that inherits from the base - override any of the standard CRUD actions and call `super` when you only want to tweak behaviour. Pass a singular name and it's pluralised (`talk` generates `TalksController`): `layered_resources` declares its routes under the plural name and `controller:` has to match, so a `talk_controller.rb` would only be reachable by moving the collection from `/talks` to `/talk`.
 
 If you outgrow the gem entirely, drop the inheritance and write a plain Rails controller:
 
