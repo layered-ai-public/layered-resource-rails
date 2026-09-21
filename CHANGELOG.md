@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. This project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0] - 2026-09-21
 
 ### Changed
 
@@ -10,6 +10,10 @@ All notable changes to this project will be documented in this file. This projec
 - With no button press to signal a change, the number of results is now announced to screen readers after each search (`count:` is passed from `@pagy`), the caret is preserved across the frame re-render so a word is never interrupted mid-letter, and the box is a labelled `search` landmark. The form still submits on Enter and works without JavaScript.
 - The two search branches on the index - one for resources with `filters`, one without - are now a single `_search.html.erb` partial, ejected by `rails g layered:resource:views` along with the rest. Because the active filters are hidden fields inside the search form, clearing the term keeps them, which is what `layered_search_clear_path` used to compute; that helper is still there for an ejected view that wants the same link.
 - Requires `layered-ui-rails` ~> 0.27, which is where the type-to-search control (`live:`, `count:`, the in-field clear button) landed.
+
+### Fixed
+
+- The breadcrumb trail ends with the page it is on - the collection name on `index`, the record's label on `show`, **New** or **Edit** on the form pages - and only that last crumb is marked `aria-current="page"`. The trail used to stop at the parent record, and because `l_ui_breadcrumb_item` marks any unlinked crumb as the current page, a nested index pointed a screen reader at its parent while `show` marked nothing at all. Crumbs now go through a `layered_breadcrumb_item` helper that lets only the current one through unlinked, and a parent record links to its own show page when its resource routes `:show`, so the middle of a trail is no longer a dead end.
 
 ## [0.2.0] - 2026-09-10
 
