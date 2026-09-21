@@ -45,7 +45,7 @@ curl -fsSL https://raw.githubusercontent.com/layered-ai-public/layered-resource-
 ## Requirements
 
 - Ruby on Rails >= 8.0
-- [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) ~> 0.25 (>= 0.25.1)
+- [layered-ui-rails](https://github.com/layered-ai-public/layered-ui-rails) ~> 0.27
 - Ransack ~> 4.0
 - Pagy ~> 43.2
 

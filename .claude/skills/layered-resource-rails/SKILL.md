@@ -2,7 +2,7 @@
 name: layered-resource-rails
 description: Installs, configures, and builds with the layered-resource-rails gem - a Rails 8+ engine providing convention-over-configuration CRUD scaffolding with search, sort, and pagination. Use when adding layered-resource-rails to a Rails app, defining resource classes, mounting `layered_resources` routes, ejecting views or controllers, or troubleshooting setup.
 license: Apache-2.0
-compatibility: Requires Ruby on Rails >= 8.0, layered-ui-rails ~> 0.9, ransack ~> 4.0, pagy ~> 43.2
+compatibility: Requires Ruby on Rails >= 8.0, layered-ui-rails ~> 0.27, ransack ~> 4.0, pagy ~> 43.2
 metadata:
   author: layered.ai
   version: "1.0"
@@ -181,7 +181,7 @@ Override per attribute with a trailing hash: `as:` (force control type: `:select
 
 **The predicate set is closed.** Each control type maps to a fixed predicate (`:select`/`:combobox` → `_in`/`_eq`, `:boolean` → `_eq`, `:string` → `_cont`, ranges → `_gteq`+`_lteq`) and there is no `predicate:` option, so predicates Ransack can otherwise express (`_not_null`, `_matches`) aren't reachable through the DSL. In particular a **"is this set / unset" filter on a nullable timestamp** (a `locked_at`-style column) has no inferred control: `as: :boolean` emits `locked_at_eq=true`, which casts against a datetime column and matches nothing. Back the flag with a real boolean column the write path maintains, or eject the filter partials and emit the predicate yourself. Filtered attributes *are* allowlisted, so `q[locked_at_not_null]=1` works hand-typed in the URL — it just has no UI control.
 
-The bar renders inside the index Turbo frame between search box and table, built from `l_ui_popover` and the `_filters`/`_filter_control` partials — eject with `rails g layered:resource:views` to customise. The search box is the `_search` partial, which calls `l_ui_search_form` in block mode with `l_ui_search_control` and passes `count: @pagy&.count` so results are announced.
+The bar renders inside the index Turbo frame between search box and table, built from `l_ui_popover` and the `_filters`/`_filter_control` partials — eject with `rails g layered:resource:views` to customise. The search box is the `_search` partial, which calls `l_ui_search_form` in block mode with `l_ui_search_control`. Both take `live: true` (opt-in in layered-ui-rails 0.27 - it is not inferred from `turbo_frame:`, and the control defaults to `live: false` on its own), and the form passes `count: @pagy&.count` so results are announced.
 
 ## Route DSL
 
