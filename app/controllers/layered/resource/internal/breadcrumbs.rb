@@ -48,31 +48,49 @@ module Layered
 
               crumbs = []
 
-              # Link to the parent's layered index if a route exists
+              # The parent's own ancestors, filled in from the current
+              # request - needed by both of the parent's path helpers.
               if collection_entry
                 rs = collection_entry[:routes] || Rails.application.routes
+                ancestor_args = collection_entry[:parent_params].index_with { |p| params[p] }
+                ancestor_args = nil unless ancestor_args.values.all?(&:present?)
+              end
+
+              # Link to the parent's layered index if a route exists
+              if collection_entry && ancestor_args
                 helper = :"#{collection_key}_path"
                 if rs.url_helpers.method_defined?(helper)
-                  ancestor_args = collection_entry[:parent_params].each_with_object({}) do |p, h|
-                    h[p] = params[p]
-                  end
-                  if ancestor_args.values.all?(&:present?)
-                    path = rs.url_helpers.send(helper, default_url_options.merge(ancestor_args))
-                    crumbs << { label: model_class.model_name.human.pluralize, path: path }
-                  end
+                  path = rs.url_helpers.send(helper, default_url_options.merge(ancestor_args))
+                  crumbs << { label: model_class.model_name.human.pluralize, path: path }
                 end
               end
 
-              # Add the specific record breadcrumb
+              # Add the specific record breadcrumb, linked to its own show
+              # page when the parent resource has one - a crumb that isn't
+              # the current page shouldn't be a dead end.
               record = model_class.find_by(id: params[key])
               if record
                 label = record.try(:name) || record.try(:title) || "#{model_class.model_name.human} ##{record.id}"
-                crumbs << { label: label, path: nil }
+                crumbs << { label: label, path: layered_parent_record_path(collection_entry, collection_key, ancestor_args, record) }
               end
 
               crumbs
             end
           end
+        end
+
+        # The parent record's show path, or nil when the parent isn't a
+        # layered resource, doesn't route :show, or can't be addressed
+        # from here.
+        def layered_parent_record_path(collection_entry, collection_key, ancestor_args, record)
+          return nil unless collection_entry && ancestor_args
+          return nil unless collection_entry[:actions].include?(:show)
+
+          rs = collection_entry[:routes] || Rails.application.routes
+          helper = :"#{collection_key.to_s.singularize}_path"
+          return nil unless rs.url_helpers.method_defined?(helper)
+
+          rs.url_helpers.send(helper, default_url_options.merge(ancestor_args).merge(id: record.to_param))
         end
       end
     end

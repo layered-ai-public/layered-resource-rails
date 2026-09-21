@@ -6,11 +6,12 @@
     <% if layered_breadcrumbs.any? || index_path %>
       <%= l_ui_breadcrumbs do %>
         <% layered_breadcrumbs.each do |crumb| %>
-          <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
+          <%= layered_breadcrumb_item crumb[:label], crumb[:path] %>
         <% end %>
         <% if index_path %>
-          <%= l_ui_breadcrumb_item @model.model_name.human.pluralize, index_path %>
+          <%= layered_breadcrumb_item @model.model_name.human.pluralize, index_path %>
         <% end %>
+        <%= layered_breadcrumb_item record_label, current: true %>
       <% end %>
     <% end %>
 

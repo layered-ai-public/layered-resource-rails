@@ -2,11 +2,14 @@
 
 <div class="l-ui-spread">
   <div>
+    <%# The trail ends on this page, so it carries aria-current - the
+        parent crumbs before it never do, linked or not. %>
     <% if layered_breadcrumbs.any? %>
       <%= l_ui_breadcrumbs do %>
         <% layered_breadcrumbs.each do |crumb| %>
-          <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
+          <%= layered_breadcrumb_item crumb[:label], crumb[:path] %>
         <% end %>
+        <%= layered_breadcrumb_item @model.model_name.human.pluralize, current: true %>
       <% end %>
     <% end %>
 

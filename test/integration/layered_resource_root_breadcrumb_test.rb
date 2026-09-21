@@ -26,7 +26,7 @@ class LayeredResourceRootBreadcrumbTest < ActionDispatch::IntegrationTest
     get "/users/#{@user.id}/edit"
     assert_response :success
     assert_select "nav.l-ui-breadcrumbs li" do |items|
-      assert_equal ["Home", "Users"], items.map { |li| li.text.strip }
+      assert_equal ["Home", "Users", "Edit"], items.map { |li| li.text.strip }
       assert_equal "/", items.first.at_css("a")["href"]
     end
   end
