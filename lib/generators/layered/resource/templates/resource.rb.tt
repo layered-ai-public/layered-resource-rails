@@ -12,7 +12,7 @@ class <%= resource_class_name %>Resource < Layered::Resource::Base
 
   fields [
 <% field_attributes.each_with_index do |attr, i| -%>
-    { attribute: :<%= attr.name %><%= field_as(attr) %> }<%= "," unless i == field_attributes.length - 1 %>
+    { attribute: :<%= attr.column_name %><%= field_as(attr) %> }<%= "," unless i == field_attributes.length - 1 %>
 <% end -%>
   ]
 <% end -%>

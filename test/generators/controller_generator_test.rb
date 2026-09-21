@@ -23,6 +23,32 @@ class Layered::Resource::Generators::ControllerGeneratorTest < ::Rails::Generato
     end
   end
 
+  test "pluralises a singular name so it matches the route" do
+    output = run_generator ["talk"]
+
+    assert_file "app/controllers/talks_controller.rb" do |content|
+      assert_match(/class TalksController < Layered::Resource::ResourcesController/, content)
+    end
+    assert_no_file "app/controllers/talk_controller.rb"
+    assert_match(/layered_resources :talks, controller: "talks"/, output)
+    assert_match(/Named the controller talks \(not talk\)/, output)
+  end
+
+  test "says nothing about pluralisation when the name is already plural" do
+    output = run_generator ["talks"]
+
+    assert_no_match(/Named the controller/, output)
+  end
+
+  test "pluralises a singular namespaced name" do
+    output = run_generator ["admin/talk"]
+
+    assert_file "app/controllers/admin/talks_controller.rb" do |content|
+      assert_match(/class Admin::TalksController < Layered::Resource::ResourcesController/, content)
+    end
+    assert_match(/layered_resources :talks, controller: "talks"/, output)
+  end
+
   test "respects namespaced names" do
     run_generator ["admin/articles"]
 

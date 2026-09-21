@@ -65,6 +65,16 @@ Rails.application.routes.draw do
     layered_resources :posts
   end
 
+  # Exercises the route-level `layout:` option: these pages render inside
+  # the dummy app's own layout, and bare, without ejecting a controller.
+  scope "boxed" do
+    layered_resources :posts, layout: "boxed", only: [:index]
+  end
+
+  scope "unwrapped" do
+    layered_resources :posts, layout: false, only: [:index]
+  end
+
   scope "owned" do
     layered_resources :posts, resource: "OwnedPostResource"
   end

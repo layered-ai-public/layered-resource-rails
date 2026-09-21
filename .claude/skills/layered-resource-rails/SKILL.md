@@ -39,6 +39,8 @@ This produces:
 - `app/layered_resources/post_resource.rb` with `columns` and `fields` derived from the attributes
 - `layered_resources :posts` appended to `config/routes.rb`
 
+A `references` attribute (e.g. `speaker:references`) becomes a `:speaker_id` field - inferred as a combobox of the associated records - but is left out of `columns`, since a raw foreign key is rarely the column an index wants. Polymorphic references are left out of both: setting one takes a `_type` too, so write that field yourself.
+
 Useful flags:
 
 - `--skip-model` - the model already exists
@@ -194,9 +196,13 @@ layered_resources :posts, except: [:destroy]                   # everything but 
 layered_resources :posts, controller: "posts"                  # use a custom controller
 layered_resources :posts, resource: "Admin::PostResource"      # explicit resource class
 layered_resources :posts, namespace: "Admin"                   # derives Admin::PostResource and Admin::ResourcesController
+layered_resources :posts, layout: "manage"                     # render inside app/views/layouts/manage.html.erb
+layered_resources :posts, layout: false                        # render with no layout
 ```
 
 Incoherent `only:` combos raise at boot time - e.g. `:new` without `:create`, or `:edit` without `:update`.
+
+`layout:` is the hook for putting a resource on a host-app layout **without ejecting a controller** - reach for it before generating one just to write a `layout` line. It applies to every action on that route, and each route decides independently, so the same resource can be plain under `/posts` and wrapped under `/manage/posts`. A `layout` declared in an ejected controller replaces the hook and wins. Anything but a String, Symbol, or `false` raises at boot.
 
 ### Nested routes
 
@@ -344,6 +350,8 @@ rails g layered:resource:views posts        # copies index/show/new/edit ERB int
 rails g layered:resource:controller posts   # generates a controller subclass for custom actions
 ```
 
+Pass the **plural** name: a singular one is pluralised (`talk` → `TalksController`) because `layered_resources` routes under the plural and `controller:` must match. Don't eject a controller just to set a layout - use the route's `layout:` option.
+
 The controller's `_prefixes` is overridden so `app/views/layered/<plural>/` overrides win automatically - no extra wiring. Delete any individual ejected template to fall back to the gem default.
 
 To outgrow the gem entirely: drop the inheritance, write a plain Rails controller, swap `layered_resources :posts` for `resources :posts` in routes.
@@ -440,6 +448,7 @@ To make an association searchable, add a Ransack-walk-shaped entry to `search_fi
 - **`NoMethodError: undefined method 'l_ui_table'`** - the host app hasn't installed `layered-ui-rails`. Run `bin/rails generate layered:ui:install`.
 - **Search/sort returns empty** - the attribute isn't in `search_fields`, or Ransack's `ransackable_attributes` on the model excludes it. The resource patches Ransack only when itself is the auth object; verify nothing in the host app removes the attribute unconditionally.
 - **`only:` validation error at boot** - `:new` requires `:create`, `:edit` requires `:update`. Adjust the action list.
+- **`<Name>Resource declares column :foo, but <Model> has no public method by that name`** - a column names something the model doesn't publicly answer to (a typo, or a private method - cells are read with `public_send`). Define or `delegate` a public method, fix the attribute name, or give the column a `render:` proc (procs are exempt from the check).
 - **Ejected view not picked up** - the controller looks under `app/views/layered/<plural_name>/`, where `<plural_name>` is the symbol passed to `layered_resources` (ignoring Rails namespaces). The generator mirrors this; if you've moved files manually, match that path.
 
 ## Further reference

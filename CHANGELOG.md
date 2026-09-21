@@ -11,6 +11,21 @@ All notable changes to this project will be documented in this file. This projec
 - The two search branches on the index - one for resources with `filters`, one without - are now a single `_search.html.erb` partial, ejected by `rails g layered:resource:views` along with the rest. Because the active filters are hidden fields inside the search form, clearing the term keeps them, which is what `layered_search_clear_path` used to compute; that helper is still there for an ejected view that wants the same link.
 - Requires `layered-ui-rails` ~> 0.27, which is where the type-to-search control (`live:`, `count:`, the in-field clear button) landed.
 
+## [0.2.0] - 2026-09-10
+
+### Routing and controllers
+
+- `layered_resources :posts, layout: "manage"` renders a resource's pages inside one of the host app's layouts, and `layout: false` renders them with no layout at all. The option belongs to the route rather than the resource, so the same resource can be plain under `/posts` and wrapped in admin chrome under `/manage/posts`. Previously the only way to put a resource on an app layout was to eject a controller purely to write one `layout` line. A `layout` declared in an ejected controller still wins; a route declaring no layout resolves exactly as before, landing on the host's `ApplicationController` layout.
+
+### Columns
+
+- A column naming a method the model has no public answer for now raises before the table renders, naming the resource, the attribute, and the model, and suggesting the `delegate`. It used to surface as a bare `NoMethodError` from inside a column partial. Columns with a `render:` proc are exempt — the proc decides what to call, and `attribute:` is then only the header and sort key.
+
+### Generators
+
+- `rails g layered:resource talk speaker:references` now emits a `:speaker_id` field, which infers a combobox of the associated records. References stay out of `columns` (a raw foreign key is rarely the column an index wants), but excluding them from `fields` too left the generated form with no way to set the association — and since `belongs_to` is required by default, every create failed with "Speaker must exist". Polymorphic references stay out of both: setting one takes a `_type` as well.
+- `rails g layered:resource:controller talk` now generates `TalksController` and advises `layered_resources :talks, controller: "talks"`. It used to generate `talk_controller.rb` and advise `layered_resources :talk`, which moved the collection from `/talks` to `/talk` and broke every path helper pointing at it.
+
 ## [0.1.0] - 2026-08-30
 
 Initial release.

@@ -47,6 +47,36 @@ class Layered::Resource::Generators::ResourceGeneratorTest < ::Rails::Generators
     end
   end
 
+  test "a reference is left out of columns but kept as a foreign-key field" do
+    write_empty_routes
+    run_generator ["talk", "title:string", "speaker:references"]
+
+    assert_file "app/layered_resources/talk_resource.rb" do |content|
+      assert_match(/\{ attribute: :title, primary: true \}/, content)
+      assert_no_match(/\{ attribute: :speaker[,\s}]/, content)
+      assert_match(/\{ attribute: :speaker_id \}/, content)
+    end
+  end
+
+  test "a polymorphic reference is left out of fields too" do
+    write_empty_routes
+    run_generator ["talk", "title:string", "speaker:references{polymorphic}"]
+
+    assert_file "app/layered_resources/talk_resource.rb" do |content|
+      assert_no_match(/attribute: :speaker/, content)
+    end
+  end
+
+  test "a reference-only resource still emits fields" do
+    write_empty_routes
+    run_generator ["talk", "speaker:references"]
+
+    assert_file "app/layered_resources/talk_resource.rb" do |content|
+      assert_no_match(/columns \[/, content)
+      assert_match(/fields \[\n    \{ attribute: :speaker_id \}\n  \]/, content)
+    end
+  end
+
   test "singularises the resource name" do
     write_empty_routes
     run_generator ["articles"]

@@ -28,6 +28,14 @@ module Layered
           template "controller.rb.tt", path
         end
 
+        def note_pluralisation
+          return unless pluralised?
+
+          say ""
+          say "Named the controller #{file_name} (not #{given_name}): layered_resources " \
+              "declares its routes under the plural name, and controller: has to match."
+        end
+
         def show_routing_instructions
           say ""
           say "Point the route at the new controller:"
@@ -45,8 +53,26 @@ module Layered
 
         private
 
+        # `layered_resources` declares its routes under the plural name, and
+        # `controller:` has to name the controller's own path, so a singular
+        # argument is pluralised. Generating `talk_controller.rb` and telling
+        # the user to write `layered_resources :talk, controller: "talk"`
+        # would move the collection from /talks to /talk and break every
+        # path helper already pointing at it.
         def file_name
-          @_file_name ||= super.sub(/_?controller$/i, "")
+          @_file_name ||= given_name.pluralize
+        end
+
+        # The name as typed, minus any `_controller` suffix. `super` here
+        # would re-enter the override, so read NamedBase's own reader.
+        def given_name
+          @_given_name ||= Rails::Generators::NamedBase
+                           .instance_method(:file_name).bind_call(self)
+                           .sub(/_?controller$/i, "")
+        end
+
+        def pluralised?
+          given_name != file_name
         end
       end
     end
