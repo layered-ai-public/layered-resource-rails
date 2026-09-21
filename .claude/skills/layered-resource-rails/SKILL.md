@@ -2,7 +2,7 @@
 name: layered-resource-rails
 description: Installs, configures, and builds with the layered-resource-rails gem - a Rails 8+ engine providing convention-over-configuration CRUD scaffolding with search, sort, and pagination. Use when adding layered-resource-rails to a Rails app, defining resource classes, mounting `layered_resources` routes, ejecting views or controllers, or troubleshooting setup.
 license: Apache-2.0
-compatibility: Requires Ruby on Rails >= 8.0, layered-ui-rails ~> 0.9, ransack ~> 4.0, pagy ~> 43.2
+compatibility: Requires Ruby on Rails >= 8.0, layered-ui-rails ~> 0.27, ransack ~> 4.0, pagy ~> 43.2
 metadata:
   author: layered.ai
   version: "1.0"
@@ -104,7 +104,7 @@ end
 | `model Post` | The ActiveRecord class this resource manages |
 | `columns [...]` | Index table columns. Each entry is `{ attribute:, label:, primary:, link:, render: }` |
 | `fields [...]` | Form fields for new/edit. Omit to disable CRUD forms |
-| `search_fields [...]` | Ransack attributes the index search box matches against. Association-walking entries like `:user_name` (for `belongs_to :user` + `users.name`) join into the association |
+| `search_fields [...]` | Ransack attributes the index search box matches against. Association-walking entries like `:user_name` (for `belongs_to :user` + `users.name`) join into the association. The box searches as the term is typed (debounced, into the index Turbo frame) with a clear button built into the field - no Search or Clear buttons. Typed searches `replace` history rather than pushing; the caret survives the re-render and the result count is announced |
 | `search_placeholder "..."` | Replaces the search box placeholder. Default derives from `search_fields` via `human_attribute_name`, so `activerecord.attributes.<model>.<attr>` i18n renames flow through (association walks resolve each half against its own model) |
 | `filters :a, :b, c: {...}` | Structured filter controls on the index — an "Add filter" popover plus removable tags. Control + Ransack predicate inferred per column; trailing hash overrides per attribute. See [Filters](#filters) |
 | `label_attribute :title` | Attribute a record is labelled by (page titles, row action menus, another resource's picker). Defaults to the `primary:` column, else the first. Falls back through `name`/`title`/`label`/`email`, then the model's own `to_s`, then `"Post #12"` |
@@ -161,7 +161,7 @@ Field `as:` follows Rails' `form_with` field helpers - `:text`, `:checkbox`, `:d
 
 ### Filters
 
-`filters` declares structured index controls complementing the single free-text `search_fields` box. The UI: an **Add filter** button opens a popover listing the declared filters; picking one adds it as an unset **tag** at the end of the row (the `f[]` param tracks added tags and their order for as long as they're shown) with its controls popover already open, ready to take a value; pressing the tag's label reopens the popover, and its ✕ removes it. Short single-choice filters apply instantly via links; ranges/text/multi-selects/comboboxes apply via a small GET form. Every filter is a Ransack predicate in the URL, so filters compose with search, sort, and pagination — the search form and each filter form round-trip the other `q` params (and `f[]` entries) as hidden fields (no JavaScript; the one-shot `fo` param marks which tag's popover renders open).
+`filters` declares structured index controls complementing the single free-text `search_fields` box. The UI: an **Add filter** button opens a popover listing the declared filters; picking one adds it as an unset **tag** at the end of the row (the `f[]` param tracks added tags and their order for as long as they're shown) with its controls popover already open, ready to take a value; pressing the tag's label reopens the popover, and its ✕ removes it. Short single-choice filters apply instantly via links; ranges/text/multi-selects/comboboxes apply via a small GET form. Every filter is a Ransack predicate in the URL, so filters compose with search, sort, and pagination — the search form and each filter form round-trip the other `q` params (and `f[]` entries) as hidden fields (the one-shot `fo` param marks which tag's popover renders open). The filter controls are plain links and forms with no JavaScript; only the search box's type-to-search is scripted. Because the filters are hidden fields inside the search form, clearing the term client-side keeps them.
 
 ```ruby
 filters :status,          # enum     -> multi-select of its values  (status_in)
@@ -183,7 +183,7 @@ Override per attribute with a trailing hash: `as:` (force control type: `:select
 
 **The predicate set is closed.** Each control type maps to a fixed predicate (`:select`/`:combobox` → `_in`/`_eq`, `:boolean` → `_eq`, `:string` → `_cont`, ranges → `_gteq`+`_lteq`) and there is no `predicate:` option, so predicates Ransack can otherwise express (`_not_null`, `_matches`) aren't reachable through the DSL. In particular a **"is this set / unset" filter on a nullable timestamp** (a `locked_at`-style column) has no inferred control: `as: :boolean` emits `locked_at_eq=true`, which casts against a datetime column and matches nothing. Back the flag with a real boolean column the write path maintains, or eject the filter partials and emit the predicate yourself. Filtered attributes *are* allowlisted, so `q[locked_at_not_null]=1` works hand-typed in the URL — it just has no UI control.
 
-The bar renders inside the index Turbo frame between search box and table, built from `l_ui_popover` and the `_filters`/`_filter_control` partials — eject with `rails g layered:resource:views` to customise.
+The bar renders inside the index Turbo frame between search box and table, built from `l_ui_popover` and the `_filters`/`_filter_control` partials — eject with `rails g layered:resource:views` to customise. The search box is the `_search` partial, which calls `l_ui_search_form` in block mode with `l_ui_search_control`. Both take `live: true` (opt-in in layered-ui-rails 0.27 - it is not inferred from `turbo_frame:`, and the control defaults to `live: false` on its own), and the form passes `count: @pagy&.count` so results are announced.
 
 ## Route DSL
 

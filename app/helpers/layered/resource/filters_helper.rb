@@ -235,8 +235,12 @@ module Layered
         @resource.search_fields.map(&:to_s).join("_or_") + "_cont"
       end
 
-      # Clear link for the search box that drops only the search term,
-      # keeping active filters and sort.
+      # A path that drops only the search term, keeping active filters and sort.
+      #
+      # The search box no longer needs this - it clears client-side by
+      # submitting its own form with an empty field, and the filters are hidden
+      # fields inside that form, so they ride along. Kept for an ejected view or
+      # a host app that wants the same "clear just the term" link.
       def layered_search_clear_path
         layered_filter_path_with(layered_filter_query_params.except(layered_search_field_key))
       end
