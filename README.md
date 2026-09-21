@@ -186,6 +186,8 @@ end
 
 Nested routes prepend it to the derived parent trail (e.g. Home / Users / Alice). Pass `nil` as the path to render unlinked text.
 
+Every trail ends with the page you're on - the collection name on `index`, the record's label on `show`, `New` or `Edit` on the form pages - and that last crumb is the only one marked `aria-current="page"`. Parent crumbs never are, whether or not they link: a parent record links to its own show page when its resource routes `:show`, and renders as plain text when it doesn't.
+
 **Record label:** a record is labelled by its **primary column** (the one marked `primary: true`, else the first) wherever the gem has to name it: the `show` and `edit` page titles, a row's actions menu, and its options in another resource's picker. Declare `label_attribute` when that column isn't the record's name — a `primary:` column rendered by a `render:` proc, say:
 
 ```ruby

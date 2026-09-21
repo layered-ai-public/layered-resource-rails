@@ -2,9 +2,10 @@
   <div>
     <%= l_ui_breadcrumbs do %>
       <% layered_breadcrumbs.each do |crumb| %>
-        <%= l_ui_breadcrumb_item crumb[:label], crumb[:path] %>
+        <%= layered_breadcrumb_item crumb[:label], crumb[:path] %>
       <% end %>
-      <%= l_ui_breadcrumb_item @model.model_name.human.pluralize, layered_collection_path %>
+      <%= layered_breadcrumb_item @model.model_name.human.pluralize, layered_collection_path %>
+      <%= layered_breadcrumb_item "New", current: true %>
     <% end %>
 
     <h1 class="l-ui-heading">New <%= @model.model_name.human.downcase %></h1>

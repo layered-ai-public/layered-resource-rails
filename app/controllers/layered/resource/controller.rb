@@ -25,6 +25,7 @@ module Layered
         helper Layered::Ui::PagyHelper
         helper Layered::Ui::BreadcrumbsHelper
         helper Layered::Resource::FiltersHelper
+        helper Layered::Resource::BreadcrumbsHelper
 
         # Hooks the route's `layout:` option in. Returning nil (the common
         # case) falls through to Rails' normal layout resolution, so routes

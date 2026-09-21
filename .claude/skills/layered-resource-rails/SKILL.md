@@ -112,6 +112,8 @@ end
 | `per_page n` | Pagination size (default 15) |
 | `root_breadcrumb "Home", "/"` | Static first crumb in the breadcrumb trail (e.g. back to the host app's dashboard). Without it, top-level resources render no trail; nested routes prepend it to the derived parent trail |
 
+The trail always ends with the current page (collection name on `index`, record label on `show`, `New`/`Edit` on the forms), and only that crumb carries `aria-current="page"`. Parent record crumbs link to their show page when the parent resource routes `:show`.
+
 ### Column options
 
 - `as: :type` - pins the cell to a column partial instead of the type-inferred default. Built in: `:text`, `:datetime`, `:badge`, `:boolean`; an unrecognised type raises `ArgumentError` at render time rather than rendering an empty cell. See [Column rendering](#column-rendering)
