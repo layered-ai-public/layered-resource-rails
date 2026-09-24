@@ -272,6 +272,27 @@ class LayeredResourceComboboxFiltersIntegrationTest < ActionDispatch::Integratio
     assert_select "button[aria-label='Edit User filter']", text: /User: Alice/
   end
 
+  # The value is hand-editable, so labels are only read for records the
+  # resource's scope references — Bob has no posts, so an id guessed into the
+  # URL must not disclose his name (think another tenant's user).
+  test "a remote filter does not label a record outside the resource's scope" do
+    get "/remote/posts", params: { q: { user_id_in: [@bob.id] } }
+
+    assert_response :success
+    assert_select ".l-ui-combobox__token[data-value='#{@bob.id}']" do
+      assert_select ".l-ui-tag__label", text: @bob.id.to_s
+    end
+    assert_select "button[aria-label='Edit User filter']", text: /User: #{@bob.id}/
+    assert_no_match(/Bob|bob@test\.com/, response.body)
+  end
+
+  test "a remote filter labels a record once the resource's scope references it" do
+    Post.create!(title: "Bob's post", user: @bob, status: :published, body: "Body")
+    get "/remote/posts", params: { q: { user_id_in: [@alice.id, @bob.id] } }
+
+    assert_select "button[aria-label='Edit User filter']", text: /User: Alice, Bob/
+  end
+
   test "a remote filter still filters through its predicate" do
     get "/remote/posts", params: { q: { user_id_in: [@alice.id] } }
     assert_select "tbody th", text: /Live post/

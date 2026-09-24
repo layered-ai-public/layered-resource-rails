@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Security
+
+- A remote (`url:`) `belongs_to` filter no longer labels records outside the resource's `scope`. Its current values come from the query string, and the labels for the tag and combobox tokens were looked up with an unscoped `klass.where(id: ...)`, so hand-editing the id (`?q[user_id_in][]=`) revealed the name or e-mail of any record, including another tenant's. The lookup now only reads records the resource's `scope(controller)` references through the foreign key. Any other value shows its raw id instead.
+
 ## [0.3.0] - 2026-09-21
 
 ### Changed
