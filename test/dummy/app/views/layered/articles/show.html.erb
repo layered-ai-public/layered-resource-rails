@@ -1,0 +1,47 @@
+<% record_label = layered_record_label(@record) %>
+<% index_path = @_route_entry[:actions].include?(:index) ? layered_collection_path : nil %>
+
+<div class="l-ui-spread">
+  <div>
+    <% if layered_breadcrumbs.any? || index_path %>
+      <%= l_ui_breadcrumbs do %>
+        <% layered_breadcrumbs.each do |crumb| %>
+          <%= layered_breadcrumb_item crumb[:label], crumb[:path] %>
+        <% end %>
+        <% if index_path %>
+          <%= layered_breadcrumb_item @model.model_name.human.pluralize, index_path %>
+        <% end %>
+        <%= layered_breadcrumb_item record_label, current: true %>
+      <% end %>
+    <% end %>
+
+    <h1 class="l-ui-heading"><%= record_label %></h1>
+  </div>
+
+  <div class="l-ui-spread">
+    <% if resource_can?(:edit, @record) %>
+      <%= link_to "Edit",
+            layered_member_path(@record, action: :edit),
+            class: "l-ui-button l-ui-button--primary" %>
+    <% end %>
+    <% if resource_can?(:destroy, @record) %>
+      <%= button_to "Delete",
+            layered_member_path(@record),
+            method: :delete,
+            class: "l-ui-button l-ui-button--outline-danger",
+            data: { turbo_confirm: "Are you sure?" } %>
+    <% end %>
+  </div>
+</div>
+
+<%# The gem's show page stops at the heading. This one is ejected for
+    ArticleResource alone (app/views/layered/articles/ wins over the gem's
+    view for this route) and carries on with the post itself. %>
+<p class="l-ui-mt-2">
+  By <%= @record.user_name %> · <%= l_ui_format_datetime(@record.created_at) %> ·
+  <%= link_to pluralize(@record.comments_count, "comment"), article_comments_path(@record.uid) %>
+</p>
+
+<div class="l-ui-surface l-ui-mt-4">
+  <%= simple_format(@record.body) %>
+</div>

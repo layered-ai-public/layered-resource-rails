@@ -52,7 +52,7 @@ module Layered
                   "No #{action || 'member'} route registered for #{@layered_route_key}. " \
                   "Include the matching action in only:."
           end
-          layered_routes.send(helper, record)
+          layered_routes.send(helper, @resource.record_param(record))
         end
       end
     end

@@ -126,6 +126,40 @@ module Layered
           Layered::Resource.record_label(record, attribute: label_attribute)
         end
 
+        # The attribute a record is looked up by from the `:id` in its URL,
+        # and that the gem's own member links put there. Defaults to `:id`,
+        # which keeps Rails' own behaviour: links use `to_param` and the
+        # lookup is `scope.find`, so a gem that overrides both (FriendlyId,
+        # say) still works. Declare it when records are addressed by
+        # something else - an unguessable token, a slug:
+        #
+        #   lookup_attribute :uid
+        def lookup_attribute(value = nil)
+          if value
+            @lookup_attribute = value.to_sym
+          else
+            inherited_attribute(:@lookup_attribute) || :id
+          end
+        end
+
+        # The record named by `id`, within `scope` - raising
+        # ActiveRecord::RecordNotFound (a 404) when it is outside it. Every
+        # member action looks its record up through here, so override it for
+        # a lookup `lookup_attribute` can't express.
+        def find_record(controller, id)
+          relation = scope(controller)
+          return relation.find(id) if lookup_attribute == :id
+
+          relation.find_by!(lookup_attribute => id)
+        end
+
+        # What a member URL carries for `record`: the inverse of `find_record`.
+        def record_param(record)
+          return record.to_param if lookup_attribute == :id
+
+          record.public_send(lookup_attribute).to_s
+        end
+
         # Declares structured filter controls for the index table. Each entry
         # is either a bare attribute (control + Ransack predicate inferred from
         # the column type, enum, or association) or an attribute with an

@@ -108,6 +108,7 @@ end
 | `search_placeholder "..."` | Replaces the search box placeholder. Default derives from `search_fields` via `human_attribute_name`, so `activerecord.attributes.<model>.<attr>` i18n renames flow through (association walks resolve each half against its own model) |
 | `filters :a, :b, c: {...}` | Structured filter controls on the index — an "Add filter" popover plus removable tags. Control + Ransack predicate inferred per column; trailing hash overrides per attribute. See [Filters](#filters) |
 | `label_attribute :title` | Attribute a record is labelled by (page titles, row action menus, another resource's picker). Defaults to the `primary:` column, else the first. Falls back through `name`/`title`/`label`/`email`, then the model's own `to_s`, then `"Post #12"` |
+| `lookup_attribute :uid` | Attribute a record is looked up by from its URL `:id` (`find_by!(uid:)` within `scope`, so out of scope is still a 404), and that the gem's links put there - primary column, row actions, `link:` columns, parent breadcrumbs. Defaults to `:id` (`scope.find` + `to_param`, so FriendlyId still works). Override `self.find_record(controller, id)` / `self.record_param(record)` for anything else |
 | `default_sort attribute:, direction:` | Default sort order for the index |
 | `per_page n` | Pagination size (default 15) |
 | `root_breadcrumb "Home", "/"` | Static first crumb in the breadcrumb trail (e.g. back to the host app's dashboard). Without it, top-level resources render no trail; nested routes prepend it to the derived parent trail |
@@ -117,7 +118,7 @@ The trail always ends with the current page (collection name on `index`, record 
 ### Column options
 
 - `as: :type` - pins the cell to a column partial instead of the type-inferred default. Built in: `:text`, `:datetime`, `:badge`, `:boolean`; an unrecognised type raises `ArgumentError` at render time rather than rendering an empty cell. See [Column rendering](#column-rendering)
-- `primary: true` - marks the cell that links to the record's edit (or show) page (defaults to first column)
+- `primary: true` - marks the cell that links to the record's edit (or show) page (defaults to first column). Add `link: false` to leave it unlinked - for a `render:` proc that links somewhere else itself (e.g. a conversation's own page rather than its edit form)
 - `label: "Custom"` - overrides the humanised attribute name
 - `sortable:` - whether the header renders a sort link. **Defaults to `false` for any attribute that isn't a real DB column** (virtual attributes, delegated association values), because a Ransack sort link on one 500s when clicked. Pass `sortable: true` to opt back in - you then own the associated model's `ransackable_attributes` (see [Associations](#associations))
 - `link: :route_key` - wraps the column's rendered value in a link to a nested route (e.g. `:users_posts`); composes with `as:` (pair with `as: :badge` for a badge link)
