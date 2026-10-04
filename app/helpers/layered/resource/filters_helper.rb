@@ -286,15 +286,23 @@ module Layered
 
       # Value => label for the filter's currently-set values. A remote filter
       # has no collection to read them from, so an association's are looked up
-      # by id; anything else (a remote filter over a plain column) resolves to
+      # by key; anything else (a remote filter over a plain column) resolves to
       # nothing and the value stands in for its own label.
+      #
+      # The values come straight from the query string, and the gem can't see
+      # whatever scoping the `url:` endpoint applies, so the lookup is confined
+      # to records the resource's own `scope` references: a hand-edited id for,
+      # say, another tenant's user labels itself rather than disclosing that
+      # user's name.
       def layered_filter_option_labels(filter, values)
         if filter[:url].present?
           reflection = filter[:reflection]
           return {} if reflection.nil?
 
-          reflection.klass.where(id: values)
-                    .to_h { |record| [record.id.to_s, layered_filter_record_label(record)] }
+          primary_key = reflection.association_primary_key
+          referenced = @resource.scope(controller).unscope(:order).select(reflection.foreign_key)
+          reflection.klass.where(primary_key => values).where(primary_key => referenced)
+                    .to_h { |record| [record.public_send(primary_key).to_s, layered_filter_record_label(record)] }
         else
           layered_filter_collection(filter).to_h { |label, value| [value, label] }
         end
