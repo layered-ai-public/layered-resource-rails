@@ -7,3 +7,4 @@ log/
 test/dummy/log/
 test/dummy/storage/*.sqlite3
 node_modules/
+.env.deploy

@@ -917,17 +917,16 @@ cd test/dummy && bin/rails db:setup && bin/dev
 
 ### Deploying the dummy app
 
-The dummy app can be deployed with [Kamal](https://kamal-deploy.org). Set the required environment variables and deploy from `test/dummy`:
+The dummy app can be deployed with [Kamal](https://kamal-deploy.org). Copy `.env.deploy.example` to `.env.deploy` (gitignored), fill in `KAMAL_DEPLOY_IP`, `KAMAL_DEPLOY_DOMAIN`, and `KAMAL_SSH_KEY`, then run `bin/deploy`:
 
 ```bash
-cd test/dummy
-export KAMAL_DEPLOY_IP=<server-ip>
-export KAMAL_DEPLOY_DOMAIN=<domain>
-export KAMAL_SSH_KEY=<path-to-ssh-key>
-kamal deploy
+cp .env.deploy.example .env.deploy
+bin/deploy setup   # first run on a new server
+bin/deploy         # kamal deploy
+bin/deploy logs    # any other kamal subcommand passes straight through
 ```
 
-`KAMAL_DEPLOY_DOMAIN` defaults to `layered-resource-rails.layered.ai`. `SECRET_KEY_BASE` is read from `test/dummy/.kamal/secrets`, which is gitignored - create it locally before the first deploy.
+`SECRET_KEY_BASE` is read from `test/dummy/.kamal/secrets`, which is gitignored - create it locally before the first deploy.
 
 ## Contributing
 
