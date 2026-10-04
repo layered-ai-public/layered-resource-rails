@@ -75,6 +75,14 @@ Rails.application.routes.draw do
     layered_resources :posts, layout: false, only: [:index]
   end
 
+  # Posts addressed by uid, with a title column that links to the show page
+  # (see ArticleResource), and their comments nested beneath.
+  layered_resources :articles, resource: "ArticleResource"
+
+  resources :articles, only: [] do
+    layered_resources :comments, resource: "ArticleCommentResource"
+  end
+
   scope "owned" do
     layered_resources :posts, resource: "OwnedPostResource"
   end

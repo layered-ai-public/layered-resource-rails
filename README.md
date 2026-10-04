@@ -205,6 +205,18 @@ end
 
 When the attribute has no value, the label falls back to the first of `name`/`title`/`label`/`email` that does, then to the model's own `to_s` if it defines one, and finally to `"Post #12"` — never a bare `#<Post:0x...>`.
 
+**Lookup attribute:** records are looked up by the `:id` in their URL, the Rails way: member links use `to_param` and the lookup is `scope.find`. Declare `lookup_attribute` when records are addressed by something else - an unguessable token, say, so ids can't be enumerated:
+
+```ruby
+class ConversationResource < Layered::Resource::Base
+  model Conversation
+
+  lookup_attribute :uid   # /conversations/Xk3…/edit, found with find_by!(uid:)
+end
+```
+
+Every member action (`show`, `edit`, `update`, `destroy`, and custom `member` routes) finds the record by it within `scope`, so one outside the scope is still a 404. The gem's own links - the primary column, the row actions, `link:` columns into a nested resource, and parent breadcrumbs - put the same attribute in the URL. For a lookup the attribute can't express, override `self.find_record(controller, id)` (and `self.record_param(record)`, which produces the URL value).
+
 **Custom scope (e.g. tenant isolation):**
 
 ```ruby
@@ -638,6 +650,15 @@ column a `render:` proc that produces the value.
 ```
 
 A column with a `render:` proc is exempt - the proc decides what to call, and `attribute:` is then just the header and sort key.
+
+The primary column links to the record's edit page (or its show page when the resource isn't editable). Pass `link: false` to leave it unlinked - when its `render:` proc links somewhere more useful itself, say:
+
+```ruby
+columns [
+  { attribute: :name, primary: true, link: false,
+    render: ->(record, view) { view.link_to(record.name, view.conversation_path(record)) } }
+]
+```
 
 ### Sortable headers
 

@@ -63,7 +63,7 @@ module Layered
       end
 
       def show
-        @record = @resource.scope(self).find(params[:id])
+        @record = @resource.find_record(self, params[:id])
         authorize_layered_record(@record)
         @page_title = layered_record_label(@record)
       end
@@ -89,14 +89,14 @@ module Layered
       end
 
       def edit
-        @record = @resource.scope(self).find(params[:id])
+        @record = @resource.find_record(self, params[:id])
         authorize_layered_record(@record)
         @form_url = layered_member_path(@record)
         @page_title = "Edit #{layered_record_label(@record)}"
       end
 
       def update
-        @record = @resource.scope(self).find(params[:id])
+        @record = @resource.find_record(self, params[:id])
         authorize_layered_record(@record)
         if @record.update(layered_resource_params)
           redirect_to @resource.after_save_path(self, @record),
@@ -109,7 +109,7 @@ module Layered
       end
 
       def destroy
-        @record = @resource.scope(self).find(params[:id])
+        @record = @resource.find_record(self, params[:id])
         authorize_layered_record(@record)
         redirect_path = @resource.after_save_path(self, @record)
         model_name = @resource.model.model_name.human
@@ -217,7 +217,7 @@ module Layered
 
       # For custom member actions declared in a `layered_resources` block,
       # populate @record from params[:id] so action bodies don't have to
-      # repeat `@resource.scope(self).find(params[:id])`. Skip this with
+      # repeat `@resource.find_record(self, params[:id])`. Skip this with
       # `skip_before_action :load_layered_member_record, only: [:foo]` if
       # the action doesn't need the record (or shouldn't 404 on a missing
       # one).
@@ -228,7 +228,7 @@ module Layered
         member_actions = @_route_entry[:member_actions] || []
         return unless member_actions.include?(action_name.to_sym)
 
-        @record = @resource.scope(self).find(params[:id])
+        @record = @resource.find_record(self, params[:id])
         authorize_layered_record(@record)
       end
 

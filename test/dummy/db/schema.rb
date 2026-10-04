@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_09_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_04_000000) do
   create_table "comments", force: :cascade do |t|
     t.text "body", null: false
     t.datetime "created_at", null: false
@@ -26,8 +26,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_000000) do
     t.boolean "featured", default: false, null: false
     t.integer "status", default: 0, null: false
     t.string "title", null: false
+    t.string "uid"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
+    t.index ["uid"], name: "index_posts_on_uid", unique: true
     t.index ["user_id"], name: "index_posts_on_user_id"
   end
 

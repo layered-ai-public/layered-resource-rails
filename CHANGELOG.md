@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `lookup_attribute :uid` on a resource looks its records up by an attribute other than `id` - an unguessable token, a slug - with `find_by!` inside `scope`, so a record outside it is still a 404. The gem's own links (the primary column, row actions, `link:` columns into a nested resource, and parent breadcrumbs) put the same attribute in the URL. The default stays `:id`, with `scope.find` and `to_param` as before. `find_record(controller, id)` and `record_param(record)` are the override points behind it
+- `link: false` on a column leaves the primary column unlinked, for a `render:` proc that links somewhere other than the edit form itself. Before, the gem wrapped such a proc's link in its own
+
 ## [0.3.1] - 2026-10-04
 
 ### Security

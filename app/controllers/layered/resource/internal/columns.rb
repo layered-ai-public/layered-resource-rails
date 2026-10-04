@@ -154,7 +154,8 @@ module Layered
         # and only falls back to show for read-only resources that still
         # expose a detail page. The "primary" column is the one marked
         # primary: true (or the first column if none is). Columns that already
-        # declare a custom link: are left alone.
+        # declare a custom link: are left alone, and `link: false` leaves the
+        # column unlinked - for a `render:` proc that links somewhere else.
         def apply_primary_column_link
           singular = @layered_route_key.singularize
           helper = if @resource_can_edit
@@ -172,13 +173,13 @@ module Layered
 
           @columns = @columns.each_with_index.map do |col, i|
             next col unless i == primary_index
-            next col if col[:link]
+            next col if col.key?(:link)
 
             inner_render = col[:render]
             col.merge(
               render: ->(record) {
                 value = inner_render.call(record)
-                view.link_to value, routes_proxy.send(helper, record), data: { turbo_frame: "_top" }
+                view.link_to value, routes_proxy.send(helper, @resource.record_param(record)), data: { turbo_frame: "_top" }
               }
             )
           end
@@ -224,7 +225,10 @@ module Layered
                 value = inner_render.call(record)
                 args = opts.dup
                 ancestor_params.each { |p| args[p] = record.public_send(p) }
-                args[immediate_parent] = record.id
+                # The parent is this resource's record, so it goes in the URL
+                # the way this resource's own links put it - its id unless
+                # the resource declares a `lookup_attribute`.
+                args[immediate_parent] = @resource.lookup_attribute == :id ? record.id : @resource.record_param(record)
                 path = rs.url_helpers.send(path_helper, args)
                 view.link_to value, path, data: { turbo_frame: "_top" }
               }

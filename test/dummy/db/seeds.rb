@@ -29,10 +29,21 @@ end
 # Posts. Body is required, so it is assigned outside the create block as well:
 # re-seeding a database whose posts predate that validation repairs them rather
 # than leaving rows that no longer validate.
+#
+# A few paragraphs each, so a post's show page (see
+# app/views/layered/articles/show.html.erb) has something to show.
+paragraphs = [
+  "Resources are declared once and mounted with a single route. The index, forms and show page all come from that one class, so a new screen is a few lines rather than a controller, a set of views and the tests to go with them.",
+  "Search, sorting and filters are Ransack underneath, but the resource only names the attributes. The gem works out which control each one needs - a date range for a timestamp, a checkbox list for an enum - and keeps the query in the URL so a filtered list can be shared.",
+  "Nesting follows Rails' own conventions. A resource mounted under another picks up its parent from the path, scopes its records to it, and builds the breadcrumb trail back up without being told how.",
+  "When the defaults stop fitting, any view can be ejected and edited in place. Only the views you eject change; everything else keeps tracking the gem, so upgrades stay small.",
+  "Ownership and authorisation sit on the resource too. A scope decides which records a request can see, and an optional Pundit policy decides what it can do with each one, down to the actions in a row's menu."
+]
+
 10.times do |i|
   owner = users[i % users.size]
   post = Post.find_or_initialize_by(title: "Post #{i + 1}")
-  post.body = "This is the body of post #{i + 1}."
+  post.body = paragraphs.rotate(i).first(3).join("\n\n")
   post.user ||= owner
   post.save!
 end

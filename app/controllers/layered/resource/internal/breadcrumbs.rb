@@ -35,9 +35,10 @@ module Layered
               # parent that lives in the same namespace.
               collection_key = parent_collection_keys[key]
               collection_entry = collection_key && Layered::Resource::Routing.lookup(collection_key)
+              parent_resource = collection_entry && collection_entry[:resource].constantize
               model_class =
-                if collection_entry
-                  collection_entry[:resource].constantize.model
+                if parent_resource
+                  parent_resource.model
                 elsif current_namespace
                   "#{current_namespace}::#{model_name.classify}".safe_constantize ||
                     model_name.classify.safe_constantize
@@ -67,11 +68,13 @@ module Layered
 
               # Add the specific record breadcrumb, linked to its own show
               # page when the parent resource has one - a crumb that isn't
-              # the current page shouldn't be a dead end.
-              record = model_class.find_by(id: params[key])
+              # the current page shouldn't be a dead end. The param holds
+              # whatever the parent resource addresses its records by.
+              lookup_attribute = parent_resource ? parent_resource.lookup_attribute : :id
+              record = model_class.find_by(lookup_attribute => params[key])
               if record
                 label = record.try(:name) || record.try(:title) || "#{model_class.model_name.human} ##{record.id}"
-                crumbs << { label: label, path: layered_parent_record_path(collection_entry, collection_key, ancestor_args, record) }
+                crumbs << { label: label, path: layered_parent_record_path(collection_entry, parent_resource, collection_key, ancestor_args, record) }
               end
 
               crumbs
@@ -82,7 +85,7 @@ module Layered
         # The parent record's show path, or nil when the parent isn't a
         # layered resource, doesn't route :show, or can't be addressed
         # from here.
-        def layered_parent_record_path(collection_entry, collection_key, ancestor_args, record)
+        def layered_parent_record_path(collection_entry, parent_resource, collection_key, ancestor_args, record)
           return nil unless collection_entry && ancestor_args
           return nil unless collection_entry[:actions].include?(:show)
 
@@ -90,7 +93,7 @@ module Layered
           helper = :"#{collection_key.to_s.singularize}_path"
           return nil unless rs.url_helpers.method_defined?(helper)
 
-          rs.url_helpers.send(helper, default_url_options.merge(ancestor_args).merge(id: record.to_param))
+          rs.url_helpers.send(helper, default_url_options.merge(ancestor_args).merge(id: parent_resource.record_param(record)))
         end
       end
     end
