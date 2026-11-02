@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- Refresh the development/test bundle to Rails 8.1.4, layered-ui-rails 0.28.1, Pagy 43.8.1, concurrent-ruby 1.3.8, SQLite 2.10.2, and compatible transitive updates.
+- Raise runtime and development dependency minimums to the versions verified by the suite, retaining their current major-version ranges. Ruby >= 3.3 and Rails ~> 8.0 support are unchanged; Rails keeps its existing minimum so Rails 8.0 apps remain supported.
+
+### Security
+
+- Require Ransack >= 4.4.4 within the existing 4.x range, including the sort-link reflected XSS and open redirect fix for GHSA-58rx-96gf-w92x.
+
 ## [0.4.0] - 2026-10-04
 
 ### Added
