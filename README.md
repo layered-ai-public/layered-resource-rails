@@ -386,7 +386,7 @@ class PostResource < Layered::Resource::Base
 end
 ```
 
-The Ransack allowlists are scoped to the resource: the association and the associated model's attribute are only ransackable when this resource is the one searching, so nothing else gains access to the associated model and any host-app Ransack config is preserved.
+The Ransack allowlists are scoped to the resource: the association and the associated model's attribute are only ransackable when this resource is the one searching, so nothing else gains access to the associated model and any host-app Ransack config is preserved. A model the gem configures isn't opened up for anything else either: other Ransack calls still go through the model's own `ransackable_attributes`/`ransackable_associations`, and if it doesn't define them, Ransack raises its usual "needs explicitly allowlisted" error.
 
 A walked search field is also sortable — `q[s]=user_name asc` orders the index by `users.name` — because Ransack derives its sort allowlist from the search allowlist. Associations not declared in `search_fields` stay unsearchable and unsortable.
 

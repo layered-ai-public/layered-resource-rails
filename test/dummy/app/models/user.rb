@@ -15,4 +15,13 @@ class User < ApplicationRecord
 
   # Callbacks
   after_create :confirm
+
+  # Searched by UserOptionsController's remote combobox endpoint
+  def self.ransackable_attributes(auth_object = nil)
+    %w[name email]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    []
+  end
 end

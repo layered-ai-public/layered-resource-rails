@@ -401,24 +401,46 @@ module Layered
         # `m`. The overrides only answer when the `auth_object` is a layered
         # resource that references `m` — either as its own model, or via an
         # association-walking search field. Every other caller falls through
-        # to the methods captured below (whether host-defined or the framework
-        # default), so any allowlist the host app has set up is preserved.
+        # to the host's own allowlist when it has one. When it doesn't, a
+        # layered resource gets nothing and anyone else gets the error Ransack
+        # raises for an unconfigured model. Delegating to Ransack's builtin
+        # instead would be deprecated, and since these overrides count as an
+        # explicit definition it would allowlist every column — so patching a
+        # model must not widen what the rest of the app can search.
         def patch_ransack(m)
           return if m.instance_variable_get(:@_layered_resource_ransack_configured)
 
           original_attributes = m.method(:ransackable_attributes)
           original_associations = m.method(:ransackable_associations)
           # Detect a host-defined override anywhere in the model's singleton
-          # ancestry (Post, ApplicationRecord, ActiveRecord::Base, etc.).
-          # Ransack supplies the default via a regular Module mixin, so its
-          # `owner` is a Module but not a Class; an explicit `def self.x` in
-          # any host class produces a singleton-class owner, which is a Class.
-          host_attributes_defined = original_attributes.owner.is_a?(Class)
-          host_associations_defined = original_associations.owner.is_a?(Class)
+          # ancestry: a `def self.x` in Post or ApplicationRecord, or a module
+          # brought in with `extend` or a concern's `class_methods`. Only
+          # Ransack's own default (the module it extends ActiveRecord::Base
+          # with) counts as "no allowlist".
+          host_attributes_defined = original_attributes.owner != ::Ransack::Adapters::ActiveRecord::Base
+          host_associations_defined = original_associations.owner != ::Ransack::Adapters::ActiveRecord::Base
+          fallback_attributes = ->(auth_object) do
+            if host_attributes_defined
+              original_attributes.call(auth_object)
+            elsif auth_object.is_a?(Class) && auth_object < Layered::Resource::Base
+              []
+            else
+              Layered::Resource::Base.send(:raise_unconfigured_ransack, m, :ransackable_attributes)
+            end
+          end
+          fallback_associations = ->(auth_object) do
+            if host_associations_defined
+              original_associations.call(auth_object)
+            elsif auth_object.is_a?(Class) && auth_object < Layered::Resource::Base
+              []
+            else
+              Layered::Resource::Base.send(:raise_unconfigured_ransack, m, :ransackable_associations)
+            end
+          end
 
           m.define_singleton_method(:ransackable_attributes) do |auth_object = nil|
             unless auth_object.is_a?(Class) && auth_object < Layered::Resource::Base
-              next original_attributes.call(auth_object)
+              next fallback_attributes.call(auth_object)
             end
 
             if auth_object.model == self
@@ -452,12 +474,7 @@ module Layered
               declared = auth_object.association_search_fields
                                     .select { |a| a[:klass] == self }
                                     .map { |a| a[:attribute] }
-              if declared.any?
-                base = host_attributes_defined ? original_attributes.call(auth_object) : []
-                base | declared
-              else
-                original_attributes.call(auth_object)
-              end
+              fallback_attributes.call(auth_object) | declared
             end
           end
 
@@ -468,14 +485,24 @@ module Layered
           # rather than 500ing.
           m.define_singleton_method(:ransackable_associations) do |auth_object = nil|
             if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
-              base = host_associations_defined ? original_associations.call(auth_object) : []
-              base | auth_object.association_search_fields.map { |a| a[:association] }
+              fallback_associations.call(auth_object) | auth_object.association_search_fields.map { |a| a[:association] }
             else
-              original_associations.call(auth_object)
+              fallback_associations.call(auth_object)
             end
           end
 
           m.instance_variable_set(:@_layered_resource_ransack_configured, true)
+        end
+
+        # Mirrors Ransack 4's refusal to search a model that hasn't
+        # allowlisted anything, for callers outside the gem.
+        def raise_unconfigured_ransack(m, method)
+          raise <<~MESSAGE.squish
+            Ransack needs #{m.name} #{method.to_s.delete_prefix("ransackable_")} explicitly
+            allowlisted as searchable. Define `#{m.name}.#{method}(auth_object = nil)`,
+            leaving out anything you don't want searchable. layered-resource-rails
+            only allowlists for its own resources.
+          MESSAGE
         end
 
         # Walks the resource class ancestry to find the first ancestor that

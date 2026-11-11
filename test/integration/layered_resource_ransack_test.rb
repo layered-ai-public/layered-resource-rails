@@ -146,6 +146,68 @@ class LayeredResourceRansackTest < ActiveSupport::TestCase
     assert_equal ["host_assoc", "author"], parent.ransackable_associations(r)
     assert_equal ["host_assoc"], parent.ransackable_associations
   end
+
+  # -- a real model relying on Ransack's builtin (no host allowlist) --
+
+  def build_unconfigured_model
+    Class.new(ApplicationRecord) do
+      self.table_name = "posts"
+      define_singleton_method(:name) { "UnconfiguredPost" }
+    end
+  end
+
+  test "patching a model without a host allowlist doesn't widen it for non-layered callers" do
+    m = build_unconfigured_model
+    build_resource(m).configure_ransack
+
+    error = assert_raises(RuntimeError) { m.ransackable_attributes }
+    assert_match "UnconfiguredPost attributes explicitly allowlisted", error.message
+    assert_raises(RuntimeError) { m.ransackable_associations(Object) }
+  end
+
+  test "a host allowlist from an extended module is preserved" do
+    allowlist = Module.new do
+      def ransackable_attributes(_a = nil) = ["title"]
+      def ransackable_associations(_a = nil) = ["user"]
+    end
+    m = build_unconfigured_model
+    m.extend(allowlist)
+    build_resource(m).configure_ransack
+    other_resource = build_resource(build_model)
+
+    assert_equal ["title"], m.ransackable_attributes
+    assert_equal ["user"], m.ransackable_associations(Object)
+    assert_equal ["title"], m.ransackable_attributes(other_resource)
+    assert_equal ["user"], m.ransackable_associations(other_resource)
+  end
+
+  test "a host allowlist from a concern's class_methods is preserved" do
+    concern = Module.new do
+      extend ActiveSupport::Concern
+      class_methods do
+        def ransackable_attributes(_a = nil) = ["title"]
+        def ransackable_associations(_a = nil) = ["user"]
+      end
+    end
+    m = build_unconfigured_model
+    m.include(concern)
+    build_resource(m).configure_ransack
+    other_resource = build_resource(build_model)
+
+    assert_equal ["title"], m.ransackable_attributes
+    assert_equal ["user"], m.ransackable_associations
+    assert_equal ["title"], m.ransackable_attributes(other_resource)
+    assert_equal ["user"], m.ransackable_associations(other_resource)
+  end
+
+  test "another resource gets nothing from a model without a host allowlist" do
+    m = build_unconfigured_model
+    build_resource(m).configure_ransack
+    other_resource = build_resource(build_model)
+
+    assert_equal [], m.ransackable_attributes(other_resource)
+    assert_equal [], m.ransackable_associations(other_resource)
+  end
 end
 
 class LayeredResourceAssociationSearchIntegrationTest < ActionDispatch::IntegrationTest
