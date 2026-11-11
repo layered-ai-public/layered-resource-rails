@@ -413,12 +413,12 @@ module Layered
           original_attributes = m.method(:ransackable_attributes)
           original_associations = m.method(:ransackable_associations)
           # Detect a host-defined override anywhere in the model's singleton
-          # ancestry (Post, ApplicationRecord, ActiveRecord::Base, etc.).
-          # Ransack supplies the default via a regular Module mixin, so its
-          # `owner` is a Module but not a Class; an explicit `def self.x` in
-          # any host class produces a singleton-class owner, which is a Class.
-          host_attributes_defined = original_attributes.owner.is_a?(Class)
-          host_associations_defined = original_associations.owner.is_a?(Class)
+          # ancestry: a `def self.x` in Post or ApplicationRecord, or a module
+          # brought in with `extend` or a concern's `class_methods`. Only
+          # Ransack's own default (the module it extends ActiveRecord::Base
+          # with) counts as "no allowlist".
+          host_attributes_defined = original_attributes.owner != ::Ransack::Adapters::ActiveRecord::Base
+          host_associations_defined = original_associations.owner != ::Ransack::Adapters::ActiveRecord::Base
           fallback_attributes = ->(auth_object) do
             if host_attributes_defined
               original_attributes.call(auth_object)

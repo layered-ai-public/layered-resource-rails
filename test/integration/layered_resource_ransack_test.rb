@@ -165,6 +165,41 @@ class LayeredResourceRansackTest < ActiveSupport::TestCase
     assert_raises(RuntimeError) { m.ransackable_associations(Object) }
   end
 
+  test "a host allowlist from an extended module is preserved" do
+    allowlist = Module.new do
+      def ransackable_attributes(_a = nil) = ["title"]
+      def ransackable_associations(_a = nil) = ["user"]
+    end
+    m = build_unconfigured_model
+    m.extend(allowlist)
+    build_resource(m).configure_ransack
+    other_resource = build_resource(build_model)
+
+    assert_equal ["title"], m.ransackable_attributes
+    assert_equal ["user"], m.ransackable_associations(Object)
+    assert_equal ["title"], m.ransackable_attributes(other_resource)
+    assert_equal ["user"], m.ransackable_associations(other_resource)
+  end
+
+  test "a host allowlist from a concern's class_methods is preserved" do
+    concern = Module.new do
+      extend ActiveSupport::Concern
+      class_methods do
+        def ransackable_attributes(_a = nil) = ["title"]
+        def ransackable_associations(_a = nil) = ["user"]
+      end
+    end
+    m = build_unconfigured_model
+    m.include(concern)
+    build_resource(m).configure_ransack
+    other_resource = build_resource(build_model)
+
+    assert_equal ["title"], m.ransackable_attributes
+    assert_equal ["user"], m.ransackable_associations
+    assert_equal ["title"], m.ransackable_attributes(other_resource)
+    assert_equal ["user"], m.ransackable_associations(other_resource)
+  end
+
   test "another resource gets nothing from a model without a host allowlist" do
     m = build_unconfigured_model
     build_resource(m).configure_ransack
