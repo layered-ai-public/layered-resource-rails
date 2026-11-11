@@ -419,28 +419,28 @@ module Layered
           # with) counts as "no allowlist".
           host_attributes_defined = original_attributes.owner != ::Ransack::Adapters::ActiveRecord::Base
           host_associations_defined = original_associations.owner != ::Ransack::Adapters::ActiveRecord::Base
-          fallback_attributes = ->(auth_object) do
+          fallback_attributes = ->(klass, auth_object) do
             if host_attributes_defined
               original_attributes.call(auth_object)
             elsif auth_object.is_a?(Class) && auth_object < Layered::Resource::Base
               []
             else
-              Layered::Resource::Base.send(:raise_unconfigured_ransack, m, :ransackable_attributes)
+              Layered::Resource::Base.send(:raise_unconfigured_ransack, klass, :ransackable_attributes)
             end
           end
-          fallback_associations = ->(auth_object) do
+          fallback_associations = ->(klass, auth_object) do
             if host_associations_defined
               original_associations.call(auth_object)
             elsif auth_object.is_a?(Class) && auth_object < Layered::Resource::Base
               []
             else
-              Layered::Resource::Base.send(:raise_unconfigured_ransack, m, :ransackable_associations)
+              Layered::Resource::Base.send(:raise_unconfigured_ransack, klass, :ransackable_associations)
             end
           end
 
           m.define_singleton_method(:ransackable_attributes) do |auth_object = nil|
             unless auth_object.is_a?(Class) && auth_object < Layered::Resource::Base
-              next fallback_attributes.call(auth_object)
+              next fallback_attributes.call(self, auth_object)
             end
 
             if auth_object.model == self
@@ -474,7 +474,7 @@ module Layered
               declared = auth_object.association_search_fields
                                     .select { |a| a[:klass] == self }
                                     .map { |a| a[:attribute] }
-              fallback_attributes.call(auth_object) | declared
+              fallback_attributes.call(self, auth_object) | declared
             end
           end
 
@@ -485,9 +485,9 @@ module Layered
           # rather than 500ing.
           m.define_singleton_method(:ransackable_associations) do |auth_object = nil|
             if auth_object.is_a?(Class) && auth_object < Layered::Resource::Base && auth_object.model == self
-              fallback_associations.call(auth_object) | auth_object.association_search_fields.map { |a| a[:association] }
+              fallback_associations.call(self, auth_object) | auth_object.association_search_fields.map { |a| a[:association] }
             else
-              fallback_associations.call(auth_object)
+              fallback_associations.call(self, auth_object)
             end
           end
 

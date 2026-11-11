@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. This projec
 
 ## [Unreleased]
 
+### Fixed
+
+- The "needs explicitly allowlisted" error raised for a configured model with no allowlist of its own now names the class being searched. An STI subclass of a configured model was reported as its parent
+
 ### Changed
 
 - Refresh the development/test bundle to Rails 8.1.4, layered-ui-rails 0.28.1, Pagy 43.8.1, concurrent-ruby 1.3.8, SQLite 2.10.2, and compatible transitive updates.
