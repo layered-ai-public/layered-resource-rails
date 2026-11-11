@@ -29,20 +29,20 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Dependencies
-  spec.add_dependency "concurrent-ruby", ">= 1.0"
-  spec.add_dependency "layered-ui-rails", "~> 0.27"
-  spec.add_dependency "pagy", "~> 43.2"
+  spec.add_dependency "concurrent-ruby", "~> 1.3", ">= 1.3.8"
+  spec.add_dependency "layered-ui-rails", "~> 0.28", ">= 0.28.1"
+  spec.add_dependency "pagy", "~> 43.8", ">= 43.8.1"
   spec.add_dependency "rails", "~> 8.0"
-  spec.add_dependency "ransack", "~> 4.0"
+  spec.add_dependency "ransack", "~> 4.4", ">= 4.4.4"
 
-  spec.add_development_dependency "devise", "~> 5.0"
-  spec.add_development_dependency "importmap-rails", "~> 2.0"
-  spec.add_development_dependency "propshaft", "~> 1.0"
-  spec.add_development_dependency "pundit", "~> 2.4"
-  spec.add_development_dependency "puma", "~> 7.0"
-  spec.add_development_dependency "sqlite3", "~> 2.0"
-  spec.add_development_dependency "stimulus-rails", "~> 1.0"
-  spec.add_development_dependency "turbo-rails", "~> 2.0"
+  spec.add_development_dependency "devise", "~> 5.0", ">= 5.0.4"
+  spec.add_development_dependency "importmap-rails", "~> 2.2", ">= 2.2.3"
+  spec.add_development_dependency "propshaft", "~> 1.3", ">= 1.3.2"
+  spec.add_development_dependency "pundit", "~> 2.5", ">= 2.5.2"
+  spec.add_development_dependency "puma", "~> 7.2", ">= 7.2.1"
+  spec.add_development_dependency "sqlite3", "~> 2.10", ">= 2.10.2"
+  spec.add_development_dependency "stimulus-rails", "~> 1.3", ">= 1.3.4"
+  spec.add_development_dependency "turbo-rails", "~> 2.0", ">= 2.0.23"
 
   # Post-install message
   spec.post_install_message = <<~MSG
