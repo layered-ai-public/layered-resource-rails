@@ -352,7 +352,7 @@ Each index row's popover menu holds whatever the `_row_actions` partial renders 
 - Render items only (the index wraps them in the popover): class `l-ui-popover__menu-item` (`--danger` for destructive), `<hr class="l-ui-popover__menu-divider">` between groups, `data: { turbo_frame: "_top" }` on each. Use `button_to ..., method: :delete` for non-GET actions.
 - Empty output for a row means no menu on that row.
 - The override replaces the default's gating - wrap any kept Edit/Delete in `resource_can?` so `only:` and Pundit still apply.
-- A resource with its own partial gets the actions column even on an index-only route; without one, the column only appears when edit or destroy is routed.
+- The index renders every row's menu before the table and adds the actions column only when at least one row has one - so an index-only route gets a column only if its partial renders items, and an ejected copy of the default adds no empty column.
 - The partial is keyed by the route's resource name, so every route for that name (e.g. `/team_posts` and `/browse/team_posts`) shares it.
 
 ## Ejection

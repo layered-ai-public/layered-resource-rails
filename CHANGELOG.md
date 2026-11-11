@@ -6,7 +6,11 @@ All notable changes to this project will be documented in this file. This projec
 
 ### Added
 
-- A resource can supply its own index row actions with a `_row_actions` partial at `app/views/layered/<resource>/_row_actions.html.erb`, rendered once per row with `record` as a local. It replaces the default `Edit`/`Delete` menu for that resource, keeping the index's search, filters, sorting and pagination, so menus that vary per record or per user no longer mean ejecting the whole index. A row whose partial renders nothing gets no menu, and a resource with its own partial gets the actions column even on an index-only route. The default menu is now this partial too, and `rails g layered:resource:views` copies it
+- A resource can supply its own index row actions with a `_row_actions` partial at `app/views/layered/<resource>/_row_actions.html.erb`, rendered once per row with `record` as a local. It replaces the default `Edit`/`Delete` menu for that resource, keeping the index's search, filters, sorting and pagination, so menus that vary per record or per user no longer mean ejecting the whole index. A row whose partial renders nothing gets no menu, and the actions column appears only when at least one row on the page has one, so an index-only route can have row actions too. The default menu is now this partial too, and `rails g layered:resource:views` copies it
+
+### Changed
+
+- The index leaves out the actions column when no row on the page has a menu, such as a page where the policy denies every row. It used to show an empty column whenever edit or destroy was routed
 
 ### Fixed
 

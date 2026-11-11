@@ -18,4 +18,9 @@ class TeamPostResource < Layered::Resource::Base
     { attribute: :body, as: :text },
     { attribute: :user_id, label: "Author" }
   ]
+
+  # The Author column and the row menu both read each post's user.
+  def self.scope(controller)
+    super.includes(:user)
+  end
 end

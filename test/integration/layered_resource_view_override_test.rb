@@ -55,4 +55,15 @@ class LayeredResourceViewOverrideTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "#custom-users-search"
   end
+
+  test "an ejected default _row_actions adds no empty actions column to an index-only route" do
+    FileUtils.mkdir_p(File.join(@tmpdir, "layered/users"))
+    FileUtils.cp(Layered::Resource::Engine.root.join("app/views/layered/resource/resources/_row_actions.html.erb"),
+                 File.join(@tmpdir, "layered/users/_row_actions.html.erb"))
+
+    get "/readonly/users"
+    assert_response :success
+    assert_select "th.l-ui-table__header-cell--action", count: 0
+    assert_select "td.l-ui-table__cell--action", count: 0
+  end
 end

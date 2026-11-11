@@ -33,14 +33,38 @@ class LayeredResourceRowActionsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "the default menu shows the actions the policy permits" do
+  test "the default menu leaves out what the policy denies for each record" do
+    Post.create!(title: "Published post", body: "Body", user: @author, status: :published)
+    Post.create!(title: "Archived post", body: "Body", user: @author, status: :archived)
     sign_in @author
     get "/pundit/posts"
 
+    # Draft: both permitted, with a divider between them.
     assert_select "[aria-label='Actions for Own post'] ~ .l-ui-popover .l-ui-popover__menu" do
       assert_select "a", text: "Edit"
+      assert_select "hr.l-ui-popover__menu-divider"
       assert_select "button", text: "Delete"
     end
+
+    # Published: destroy denied, so Edit alone and no divider.
+    assert_select "[aria-label='Actions for Published post'] ~ .l-ui-popover .l-ui-popover__menu" do
+      assert_select "a", text: "Edit"
+      assert_select "hr", count: 0
+      assert_select "button", text: "Delete", count: 0
+    end
+
+    # Archived: both denied, so the row has no menu trigger at all.
+    assert_select "tr th", text: "Archived post"
+    assert_select "[aria-label='Actions for Archived post']", count: 0
+  end
+
+  test "a page where the policy denies every row has no actions column" do
+    @own.update!(status: :archived)
+    sign_in @author
+    get "/pundit/posts"
+
+    assert_select "tr th", text: "Own post"
+    assert_select "th.l-ui-table__header-cell--action", count: 0
   end
 
   test "an index-only resource without its own partial has no actions column" do

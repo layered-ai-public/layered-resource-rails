@@ -710,7 +710,7 @@ The partial renders once per row with `record` as a local, in the normal view co
 
 - **Item classes.** Give links and buttons `l-ui-popover__menu-item`, add `l-ui-popover__menu-item--danger` for destructive ones, and separate groups with `<hr class="l-ui-popover__menu-divider">`. Add `data: { turbo_frame: "_top" }` so the action leaves the index's Turbo frame.
 - **Gating is yours.** Your partial replaces the default's `resource_can?` checks. Call `resource_can?(:edit, record)` / `resource_can?(:destroy, record)` around any built-in actions you keep, so they still respect the route's `only:` and your Pundit policy. Actions on your own routes are authorised by their own controllers, as usual.
-- **Index-only routes.** Without edit or destroy routes the default renders nothing, so the actions column is left out. A resource with its own `_row_actions` partial gets the column on any route.
+- **When the column shows.** The actions column appears only when at least one row on the page has a menu. So an index-only route using the default gets none, while a resource whose own partial renders items gets the column on any route.
 - **Ejected views.** `rails g layered:resource:views` copies the default `_row_actions.html.erb` along with the other templates; edit it in place.
 
 ## Record pickers
