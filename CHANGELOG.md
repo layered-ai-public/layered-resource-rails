@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Security
+
+- A model the gem configures for Ransack no longer becomes fully searchable by the rest of the app. The scoped `ransackable_attributes`/`ransackable_associations` fell through to Ransack's builtin for any other caller. Because the override counted as an explicit definition, Ransack logged a deprecation warning and allowlisted every column and association, including fields like `encrypted_password`. Where the host app hasn't defined its own allowlist, another layered resource now gets an empty list, and any other caller gets the same "needs explicitly allowlisted" error Ransack raises for an unconfigured model. A host app that searched such a model outside a resource, and relied on the accidental widening, now needs to define `ransackable_attributes`/`ransackable_associations` on it
+
 ## [0.4.0] - 2026-10-04
 
 ### Added
