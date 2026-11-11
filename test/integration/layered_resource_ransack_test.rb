@@ -165,6 +165,17 @@ class LayeredResourceRansackTest < ActiveSupport::TestCase
     assert_raises(RuntimeError) { m.ransackable_associations(Object) }
   end
 
+  test "the unconfigured error names the subclass being searched, not the patched parent" do
+    m = build_unconfigured_model
+    build_resource(m).configure_ransack
+    subclass = Class.new(m) { define_singleton_method(:name) { "ArchivedPost" } }
+
+    error = assert_raises(RuntimeError) { subclass.ransackable_attributes }
+    assert_match "ArchivedPost attributes explicitly allowlisted", error.message
+    error = assert_raises(RuntimeError) { subclass.ransackable_associations }
+    assert_match "ArchivedPost associations explicitly allowlisted", error.message
+  end
+
   test "a host allowlist from an extended module is preserved" do
     allowlist = Module.new do
       def ransackable_attributes(_a = nil) = ["title"]

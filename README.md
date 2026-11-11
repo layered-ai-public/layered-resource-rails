@@ -386,7 +386,7 @@ class PostResource < Layered::Resource::Base
 end
 ```
 
-The Ransack allowlists are scoped to the resource: the association and the associated model's attribute are only ransackable when this resource is the one searching, so nothing else gains access to the associated model and any host-app Ransack config is preserved. A model the gem configures isn't opened up for anything else either: other Ransack calls still go through the model's own `ransackable_attributes`/`ransackable_associations`, and if it doesn't define them, Ransack raises its usual "needs explicitly allowlisted" error.
+The Ransack allowlists are scoped to the resource: the association and the associated model's attribute are only ransackable when this resource is the one searching, so nothing else gains access to the associated model and any host-app Ransack config is preserved. A model the gem configures isn't opened up for anything else either: other Ransack calls still go through the model's own `ransackable_attributes`/`ransackable_associations`, and if it doesn't define them, the gem raises a "needs explicitly allowlisted" error, as Ransack does for a model with no allowlist.
 
 A walked search field is also sortable — `q[s]=user_name asc` orders the index by `users.name` — because Ransack derives its sort allowlist from the search allowlist. Associations not declared in `search_fields` stay unsearchable and unsortable.
 
@@ -562,7 +562,7 @@ class PostResource < Layered::Resource::Base
 end
 ```
 
-Give `url:` as a callable so it resolves per request in the view, where route helpers are available. The endpoint is an ordinary action in your app — the gem never routes it — so it's authorised however any index is:
+Give `url:` as a callable so it resolves per request in the view, where route helpers are available. The endpoint is an ordinary action in your app — the gem never routes it — so it's authorised however any index is. It searches with Ransack outside any resource, so the model it searches needs its own `ransackable_attributes` covering the `search:` fields:
 
 ```ruby
 class UserOptionsController < ApplicationController
