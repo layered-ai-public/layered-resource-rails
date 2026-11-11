@@ -1,0 +1,32 @@
+<%# Replaces the default Edit/Delete menu for team posts. Edit and Delete
+    still go through resource_can?, so they disappear on routes that don't
+    expose them (see /browse/team_posts). %>
+<% own = current_user.present? && record.user_id == current_user.id %>
+<% shown = false %>
+<% if record.comments_count.positive? %>
+  <%= link_to "Comments", user_post_comments_path(record.user_id, record),
+        class: "l-ui-popover__menu-item",
+        data: { turbo_frame: "_top" } %>
+  <% shown = true %>
+<% end %>
+<% if own %>
+  <% if resource_can?(:edit, record) %>
+    <%= link_to "Edit", layered_member_path(record, action: :edit),
+          class: "l-ui-popover__menu-item",
+          data: { turbo_frame: "_top" } %>
+    <% shown = true %>
+  <% end %>
+  <% if resource_can?(:destroy, record) %>
+    <% if shown %>
+      <hr class="l-ui-popover__menu-divider">
+    <% end %>
+    <%= button_to "Delete", layered_member_path(record),
+          method: :delete,
+          class: "l-ui-popover__menu-item l-ui-popover__menu-item--danger",
+          data: { turbo_confirm: "Are you sure?", turbo_frame: "_top" } %>
+  <% end %>
+<% else %>
+  <%= link_to "More by #{record.user_name}", user_posts_path(record.user_id),
+        class: "l-ui-popover__menu-item",
+        data: { turbo_frame: "_top" } %>
+<% end %>

@@ -46,4 +46,13 @@ class LayeredResourceViewOverrideTest < ActionDispatch::IntegrationTest
     assert_select "h1.l-ui-heading", text: /Users/
     assert_select "h1#custom-posts-index", count: 0
   end
+
+  test "a partial in app/views/layered/<resource_name>/ overrides the one the default index renders" do
+    FileUtils.mkdir_p(File.join(@tmpdir, "layered/users"))
+    File.write(File.join(@tmpdir, "layered/users/_search.html.erb"), %(<div id="custom-users-search"></div>))
+
+    get "/users"
+    assert_response :success
+    assert_select "#custom-users-search"
+  end
 end

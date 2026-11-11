@@ -83,6 +83,15 @@ Rails.application.routes.draw do
     layered_resources :comments, resource: "ArticleCommentResource"
   end
 
+  # Row actions that vary per record and per signed-in user (see
+  # TeamPostResource), and the same partial on an index-only route, where
+  # its Edit and Delete drop out.
+  layered_resources :team_posts, resource: "TeamPostResource"
+
+  scope "browse" do
+    layered_resources :team_posts, resource: "TeamPostResource", only: [:index]
+  end
+
   scope "owned" do
     layered_resources :posts, resource: "OwnedPostResource"
   end

@@ -133,7 +133,7 @@ That's it. You now have a full CRUD interface with search and pagination for `Po
 
 The index table's primary column (`primary: true`, or the first column) links to each record's edit page - or, for read-only resources without an edit action, to its show page.
 
-Row actions (`Edit`/`Delete`) live in a popover menu in the table's last column. That column is pinned to the right-hand edge of the table's scroll container, so the actions menu stays reachable when a wide table scrolls horizontally.
+Row actions (`Edit`/`Delete`, or [your own](#row-actions)) live in a popover menu in the table's last column. That column is pinned to the right-hand edge of the table's scroll container, so the actions menu stays reachable when a wide table scrolls horizontally.
 
 Each action also sets `@page_title` for use by the layout's `<title>` tag - `"Posts"` on index, `"New Post"` on new, the record's primary column value on show, and `"Edit <record label>"` on edit. Override after `super` in a custom action if you need something different.
 
@@ -291,7 +291,8 @@ When enabled:
   `Edit`/`Delete` items in the index row's actions popover, and the
   `Edit`/`Delete` buttons on the show page check
   `policy(record).new?/update?/destroy?` so users only see actions they
-  can perform.
+  can perform. A resource's own [`_row_actions`](#row-actions) partial
+  replaces the row menu's checks, so it calls `resource_can?` itself.
 
 > **`verify_authorized` / `verify_policy_scoped`**: if your
 > `ApplicationController` runs Pundit's `after_action :verify_authorized`
@@ -683,6 +684,34 @@ To render an introduction above the search area on a resource's index page, drop
 ```
 
 The partial sits inside the resource's view directory, so it follows the same per-resource override path as ejected views and column partials.
+
+## Row actions
+
+Each index row's actions menu holds whatever the `_row_actions` partial renders for that record. The gem's default renders `Edit` and `Delete`, each shown only when `resource_can?` allows it for the record. To give a resource its own menu, drop a partial at `app/views/layered/<resource>/_row_actions.html.erb`. It replaces the default for that resource only, and the index keeps its search, filters, sorting and pagination.
+
+The partial renders once per row with `record` as a local, in the normal view context, so `current_user`, your app's path helpers, `layered_member_path` and `resource_can?` are all available. Render the menu items only; the index wraps them in the popover. A row whose partial renders nothing gets no menu.
+
+```erb
+<%# app/views/layered/accounts/_row_actions.html.erb %>
+<% role = record.role_for(current_user) %>
+<% if role.in?(%w[owner admin]) %>
+  <%= link_to "Members", account_members_path(record),
+        class: "l-ui-popover__menu-item", data: { turbo_frame: "_top" } %>
+<% end %>
+<% if role == "owner" %>
+  <%= link_to "Settings", edit_account_path(record),
+        class: "l-ui-popover__menu-item", data: { turbo_frame: "_top" } %>
+<% end %>
+<hr class="l-ui-popover__menu-divider">
+<%= button_to "Leave", leave_account_path(record), method: :delete,
+      class: "l-ui-popover__menu-item l-ui-popover__menu-item--danger",
+      data: { turbo_confirm: "Leave this account?", turbo_frame: "_top" } %>
+```
+
+- **Item classes.** Give links and buttons `l-ui-popover__menu-item`, add `l-ui-popover__menu-item--danger` for destructive ones, and separate groups with `<hr class="l-ui-popover__menu-divider">`. Add `data: { turbo_frame: "_top" }` so the action leaves the index's Turbo frame.
+- **Gating is yours.** Your partial replaces the default's `resource_can?` checks. Call `resource_can?(:edit, record)` / `resource_can?(:destroy, record)` around any built-in actions you keep, so they still respect the route's `only:` and your Pundit policy. Actions on your own routes are authorised by their own controllers, as usual.
+- **Index-only routes.** Without edit or destroy routes the default renders nothing, so the actions column is left out. A resource with its own `_row_actions` partial gets the column on any route.
+- **Ejected views.** `rails g layered:resource:views` copies the default `_row_actions.html.erb` along with the other templates; edit it in place.
 
 ## Record pickers
 

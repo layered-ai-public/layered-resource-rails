@@ -39,22 +39,16 @@
     <%= render "filters", turbo_frame_name: turbo_frame_name %>
   <% end %>
 
-  <% actions_proc = if @resource_can_edit || @resource_can_destroy
+  <%# Each row's menu holds whatever the _row_actions partial renders for it:
+      Edit and Delete by default, or a resource's own override. Without
+      edit or destroy routes the default renders nothing, so the actions
+      column only appears then if the resource supplies its own partial. %>
+  <% row_actions = @resource_can_edit || @resource_can_destroy ||
+       lookup_context.exists?("row_actions", ["layered/#{@layered_resource_name}"], true) %>
+  <% actions_proc = if row_actions
     ->(record) do
-      items = []
-      if resource_can?(:edit, record)
-        items << link_to("Edit", layered_member_path(record, action: :edit),
-                  class: "l-ui-popover__menu-item",
-                  data: { turbo_frame: "_top" })
-      end
-      if resource_can?(:destroy, record)
-        items << tag.hr(class: "l-ui-popover__menu-divider") if items.any?
-        items << button_to("Delete", layered_member_path(record),
-                    method: :delete,
-                    class: "l-ui-popover__menu-item l-ui-popover__menu-item--danger",
-                    data: { turbo_confirm: "Are you sure?", turbo_frame: "_top" })
-      end
-      next if items.empty?
+      items = render("row_actions", record: record)
+      next if items.blank?
 
       l_ui_popover(align: :end) do |p|
         p.trigger(class: "l-ui-button l-ui-button--outline l-ui-button--icon l-ui-button--small",
@@ -62,7 +56,7 @@
           image_tag("layered_ui/icon_more.svg", alt: "",
             class: "l-ui-icon l-ui-icon--sm", aria: { hidden: true })
         end
-        tag.div(safe_join(items), class: "l-ui-popover__menu")
+        tag.div(items, class: "l-ui-popover__menu")
       end
     end
   end %>
