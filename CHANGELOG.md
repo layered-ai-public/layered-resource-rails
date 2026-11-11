@@ -4,8 +4,14 @@ All notable changes to this project will be documented in this file. This projec
 
 ## [Unreleased]
 
+### Changed
+
+- Refresh the development/test bundle to Rails 8.1.4, layered-ui-rails 0.28.1, Pagy 43.8.1, concurrent-ruby 1.3.8, SQLite 2.10.2, and compatible transitive updates.
+- Raise runtime and development dependency minimums to the versions verified by the suite, retaining their current major-version ranges. Ruby >= 3.3 and Rails ~> 8.0 support are unchanged; Rails keeps its existing minimum so Rails 8.0 apps remain supported.
+
 ### Security
 
+- Require Ransack >= 4.4.4 within the existing 4.x range, including the sort-link reflected XSS and open redirect fix for GHSA-58rx-96gf-w92x.
 - A model the gem configures for Ransack no longer becomes fully searchable by the rest of the app. The scoped `ransackable_attributes`/`ransackable_associations` fell through to Ransack's builtin for any other caller. Because the override counted as an explicit definition, Ransack logged a deprecation warning and allowlisted every column and association, including fields like `encrypted_password`. Where the host app hasn't defined its own allowlist, another layered resource now gets an empty list, and any other caller gets the same "needs explicitly allowlisted" error Ransack raises for an unconfigured model. A host app that searched such a model outside a resource, and relied on the accidental widening, now needs to define `ransackable_attributes`/`ransackable_associations` on it
 
 ## [0.4.0] - 2026-10-04
