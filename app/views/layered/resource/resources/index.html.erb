@@ -39,22 +39,19 @@
     <%= render "filters", turbo_frame_name: turbo_frame_name %>
   <% end %>
 
-  <% actions_proc = if @resource_can_edit || @resource_can_destroy
+  <%# Each row's menu holds whatever the _row_actions partial renders for it:
+      Edit and Delete by default, or a resource's own override. Rendering
+      them up front means the actions column only appears when at least one
+      row on the page has a menu - not on an index-only route, nor on a page
+      where the policy denies every row. %>
+  <% row_menus = @records.each_with_object({}.compare_by_identity) do |record, menus|
+       items = render("row_actions", record: record)
+       menus[record] = items if items.present?
+     end %>
+  <% actions_proc = if row_menus.any?
     ->(record) do
-      items = []
-      if resource_can?(:edit, record)
-        items << link_to("Edit", layered_member_path(record, action: :edit),
-                  class: "l-ui-popover__menu-item",
-                  data: { turbo_frame: "_top" })
-      end
-      if resource_can?(:destroy, record)
-        items << tag.hr(class: "l-ui-popover__menu-divider") if items.any?
-        items << button_to("Delete", layered_member_path(record),
-                    method: :delete,
-                    class: "l-ui-popover__menu-item l-ui-popover__menu-item--danger",
-                    data: { turbo_confirm: "Are you sure?", turbo_frame: "_top" })
-      end
-      next if items.empty?
+      items = row_menus[record]
+      next unless items
 
       l_ui_popover(align: :end) do |p|
         p.trigger(class: "l-ui-button l-ui-button--outline l-ui-button--icon l-ui-button--small",
@@ -62,7 +59,7 @@
           image_tag("layered_ui/icon_more.svg", alt: "",
             class: "l-ui-icon l-ui-icon--sm", aria: { hidden: true })
         end
-        tag.div(safe_join(items), class: "l-ui-popover__menu")
+        tag.div(items, class: "l-ui-popover__menu")
       end
     end
   end %>

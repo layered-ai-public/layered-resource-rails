@@ -309,7 +309,7 @@ When enabled:
 
 - `scope(controller)` defaults to the controller's `policy_scope(model)` helper, so apps that override `pundit_user` (e.g. `current_account`) get the same identity used by `authorize`.
 - The controller calls `authorize(@record)` after loading a member record (show/edit/update/destroy and any custom member action).
-- The `New`/`Edit`/`Delete` actions in the default views (inline buttons on show, a per-row actions popover menu on index, in a column pinned to the right edge via `l_ui_table`'s `floating_actions:`) hide for users whose policy denies the action - the views call a `resource_can?(action, record = nil)` helper that ANDs the route-exposure flag with `policy(record).<action>?`.
+- The `New`/`Edit`/`Delete` actions in the default views (inline buttons on show, a per-row actions popover menu on index, in a column pinned to the right edge via `l_ui_table`'s `floating_actions:`) hide for users whose policy denies the action - the views call a `resource_can?(action, record = nil)` helper that ANDs the route-exposure flag with `policy(record).<action>?`. A resource's own `_row_actions` partial replaces the index menu's checks, so it must call `resource_can?` itself (see Row actions).
 
 `owned_by` composes with `use_pundit`: Pundit's `Policy::Scope#resolve` wins for the read filter; `owned_by` still drives owner assignment on create. Stack both when needed.
 
@@ -343,6 +343,17 @@ end
 ## Index introduction
 
 Drop a partial at `app/views/layered/<resource>/_introduction.html.erb` to render content above the search area on that resource's index page. The partial is rendered when present and skipped otherwise — no DSL, no configuration. It uses the same per-resource view path as ejected templates and column overrides.
+
+## Row actions
+
+Each index row's popover menu holds whatever the `_row_actions` partial renders for that record. The default renders `Edit`/`Delete`, gated by `resource_can?(action, record)`. For a menu that varies per record or per user (a role-dependent "Members"/"Settings"/"Leave", say), drop `app/views/layered/<resource>/_row_actions.html.erb` - **don't eject the whole index for this**; the override keeps search, filters, sort and pagination.
+
+- Locals: `record`. Full view context: `current_user`, host path helpers, `layered_member_path`, `resource_can?`.
+- Render items only (the index wraps them in the popover): class `l-ui-popover__menu-item` (`--danger` for destructive), `<hr class="l-ui-popover__menu-divider">` between groups, `data: { turbo_frame: "_top" }` on each. Use `button_to ..., method: :delete` for non-GET actions.
+- Empty output for a row means no menu on that row.
+- The override replaces the default's gating - wrap any kept Edit/Delete in `resource_can?` so `only:` and Pundit still apply.
+- The index renders every row's menu before the table and adds the actions column only when at least one row has one - so an index-only route gets a column only if its partial renders items, and an ejected copy of the default adds no empty column.
+- The partial is keyed by the route's resource name, so every route for that name (e.g. `/team_posts` and `/browse/team_posts`) shares it.
 
 ## Ejection
 

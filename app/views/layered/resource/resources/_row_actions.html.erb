@@ -1,0 +1,19 @@
+<%# The items in an index row's actions menu, rendered once per record with
+    `record` as a local. The index wraps whatever this outputs in the row's
+    popover, and leaves the row without a menu when it outputs nothing.
+    Override per resource at app/views/layered/<resource>/_row_actions.html.erb. %>
+<% can_edit = resource_can?(:edit, record) %>
+<% if can_edit %>
+  <%= link_to "Edit", layered_member_path(record, action: :edit),
+        class: "l-ui-popover__menu-item",
+        data: { turbo_frame: "_top" } %>
+<% end %>
+<% if resource_can?(:destroy, record) %>
+  <% if can_edit %>
+    <hr class="l-ui-popover__menu-divider">
+  <% end %>
+  <%= button_to "Delete", layered_member_path(record),
+        method: :delete,
+        class: "l-ui-popover__menu-item l-ui-popover__menu-item--danger",
+        data: { turbo_confirm: "Are you sure?", turbo_frame: "_top" } %>
+<% end %>

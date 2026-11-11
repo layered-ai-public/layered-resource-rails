@@ -189,6 +189,12 @@ module Layered
         @columns = @resource.columns
         @layered_route_key = route_key
         @layered_resource_name = @_route_entry[:resource_name].presence || route_key
+        # The lookup context may already exist (an earlier before_action can
+        # build it), holding prefixes from before the resource name was
+        # known. Partials rendered by bare name - `render "row_actions"` -
+        # search those prefixes, so refresh them or a per-resource override
+        # in app/views/layered/<name>/ is never found.
+        lookup_context.prefixes = _prefixes
         @fields = @resource.resolved_fields
         @crud_enabled = @fields.any?
 

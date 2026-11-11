@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- A resource can supply its own index row actions with a `_row_actions` partial at `app/views/layered/<resource>/_row_actions.html.erb`, rendered once per row with `record` as a local. It replaces the default `Edit`/`Delete` menu for that resource, keeping the index's search, filters, sorting and pagination, so menus that vary per record or per user no longer mean ejecting the whole index. A row whose partial renders nothing gets no menu, and the actions column appears only when at least one row on the page has one, so an index-only route can have row actions too. The default menu is now this partial too, and `rails g layered:resource:views` copies it
+
+### Changed
+
+- The index leaves out the actions column when no row on the page has a menu, such as a page where the policy denies every row. It used to show an empty column whenever edit or destroy was routed
+
+### Fixed
+
+- A partial the default views render by bare name, such as `_search` or `_filters`, is now picked up from `app/views/layered/<resource>/` when overridden there. The lookup context could be built before the resource was known, so its prefixes left out the per-resource directory and the gem's own partial always won
+
 ## [0.5.0] - 2026-11-11
 
 ### Fixed

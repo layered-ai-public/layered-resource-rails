@@ -4,7 +4,7 @@
     ) %>
 
 <p class="mt-4">
-  Three examples, each demonstrating a distinct capability of the gem.
+  Four examples, each demonstrating a distinct capability of the gem.
 </p>
 
 <h2 class="mt-8 l-ui-heading--section"><%= link_to "Users", users_path %></h2>
@@ -20,4 +20,9 @@
 <h2 class="mt-8 l-ui-heading--section"><%= link_to "Articles", articles_path %></h2>
 <p class="mt-4">
   The same posts, addressed by an unguessable token instead of their id. <code>lookup_attribute :uid</code> on <code>ArticleResource</code> makes every member URL - edit, show, delete, and the comments nested beneath - carry the post's <code>uid</code>, and looks the record up by it. The title column passes <code>link: false</code> so its own <code>render:</code> proc can link to the show page rather than the edit form.
+</p>
+
+<h2 class="mt-8 l-ui-heading--section"><%= link_to "Team posts", team_posts_path %></h2>
+<p class="mt-4">
+  Row actions that vary per record and per signed-in user, from a <code>_row_actions</code> partial in <code>app/views/layered/team_posts/</code>. Your own posts get Edit and Delete, everyone else's get a link to their author's posts, and only posts with comments get a Comments link. The same partial on the index-only <%= link_to "/browse/team_posts", "/browse/team_posts" %> drops Edit and Delete, and a row left with nothing to show gets no menu.
 </p>
